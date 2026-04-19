@@ -11,6 +11,7 @@ WORKFLOW_EXTRACT_TEMPLATE  = _ACETALK / "workflow_extract_template.json"
 ACEUSER_HTML               = _ACETALK / "Aceuser.html"
 ACETALK_INSTRUMENTS        = _ACETALK / "acetalk" / "data" / "instruments.json"
 ACETALK_TEMPLATES          = _ACETALK / "acetalk" / "data" / "templates.json"
+ACETALK_GENRES             = _ACETALK / "acetalk" / "data" / "genres.json"
 
 COMFYUI_OUTPUT_DIR  = _COMFYUI / "output" / "audio"
 COMFYUI_INPUT_DIR   = _COMFYUI / "input"

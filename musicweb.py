@@ -73,6 +73,11 @@ async def api_instruments():
         cats.append({"name": cat_name, "subcategories": subs})
     return {"categories": cats}
 
+@app.get("/api/genres")
+async def api_genres():
+    import config
+    return _json.loads(config.ACETALK_GENRES.read_text())
+
 @app.get("/api/vocals")
 async def api_vocals():
     return {

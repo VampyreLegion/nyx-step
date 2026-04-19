@@ -101,11 +101,15 @@
 
   <!-- STYLE -->
   <div class="tab-panel" id="tab-style">
+    <div class="field-group">
+      <input type="text" id="genre-search" placeholder="🔍 Search genres…">
+    </div>
+    <div style="display:flex;height:260px;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:10px">
+      <div id="genre-categories" style="width:140px;overflow-y:auto;border-right:1px solid var(--border);flex-shrink:0"></div>
+      <div id="genre-grid" style="flex:1;overflow-y:auto;padding:8px"></div>
+    </div>
+    <div id="genre-info" style="font-size:12px;color:var(--muted);margin-bottom:10px;min-height:16px">Select a genre above.</div>
     <div class="row">
-      <div class="field-group">
-        <label>Genre</label>
-        <input type="text" id="style-genre" placeholder="e.g. Psytrance, Lo-fi Hip Hop, Dark Ambient">
-      </div>
       <div class="field-group">
         <label>BPM</label>
         <input type="number" id="style-bpm" value="120" min="40" max="300">
@@ -121,21 +125,22 @@
       <div class="field-group">
         <label>Scale</label>
         <select id="style-scale">
-          <option>Major</option><option>Minor</option><option>Dorian</option>
-          <option>Phrygian</option><option>Lydian</option><option>Mixolydian</option>
-          <option>Locrian</option>
+          <option>Major</option><option>Minor</option><option>Harmonic Minor</option>
+          <option>Melodic Minor</option><option>Pentatonic Major</option><option>Pentatonic Minor</option>
         </select>
       </div>
-    </div>
-    <div class="row">
       <div class="field-group">
         <label>Mode</label>
-        <input type="text" id="style-mode" placeholder="e.g. Phrygian (optional)">
+        <select id="style-mode">
+          <option value="">—</option><option>Dorian</option><option>Phrygian</option>
+          <option>Lydian</option><option>Mixolydian</option><option>Aeolian</option><option>Locrian</option>
+        </select>
       </div>
       <div class="field-group">
-        <label>Time Signature</label>
+        <label>Time</label>
         <select id="style-timesig">
-          <option>4/4</option><option>3/4</option><option>6/8</option><option>5/4</option>
+          <option>4/4</option><option>3/4</option><option>6/8</option>
+          <option>5/4</option><option>7/8</option><option>2/4</option>
         </select>
       </div>
     </div>
