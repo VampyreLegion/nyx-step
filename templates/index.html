@@ -1,1 +1,310 @@
-<!DOCTYPE html><html><body><h1>MusicWeb</h1></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MusicWeb — ACE-Step Generator</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div id="header">
+  <h1>🎛 MusicWeb</h1>
+  <span id="queue-badge">Queue: —</span>
+  <span id="comfy-status" style="font-size:12px;color:var(--muted)">ComfyUI: connecting…</span>
+</div>
+
+<div id="tab-bar">
+  <button class="tab-btn active" data-tab="overview">Overview</button>
+  <button class="tab-btn" data-tab="easy">Easy</button>
+  <button class="tab-btn" data-tab="style">Style</button>
+  <button class="tab-btn" data-tab="instruments">Instruments</button>
+  <button class="tab-btn" data-tab="vocals">Vocals</button>
+  <button class="tab-btn" data-tab="lyrics">Lyrics</button>
+  <button class="tab-btn" data-tab="parameters">Parameters</button>
+  <button class="tab-btn" data-tab="stems">Stems</button>
+  <button class="tab-btn" data-tab="guide">Guide</button>
+  <button class="tab-btn" data-tab="lint">Lint</button>
+</div>
+
+<div id="tab-content">
+
+  <!-- OVERVIEW -->
+  <div class="tab-panel active" id="tab-overview">
+    <div class="field-group">
+      <label>Song Name</label>
+      <input type="text" id="song-name" placeholder="e.g. Dark Psy Journey">
+    </div>
+    <div class="row">
+      <div>
+        <div class="section-title">Tags Preview</div>
+        <div class="preview-box" id="preview-tags">(empty)</div>
+      </div>
+      <div style="flex:2">
+        <div class="section-title">Lyrics Preview</div>
+        <div class="preview-box" id="preview-lyrics" style="min-height:80px">(empty)</div>
+      </div>
+    </div>
+    <div style="margin:14px 0">
+      <button id="btn-generate">🎵 Generate</button>
+      <span id="generate-status" style="margin-left:12px;font-size:12px;color:var(--muted)"></span>
+    </div>
+    <div id="jobs-list"></div>
+  </div>
+
+  <!-- EASY -->
+  <div class="tab-panel" id="tab-easy">
+    <div class="row">
+      <div class="field-group">
+        <label>Topic / Prompt</label>
+        <input type="text" id="easy-topic" placeholder="e.g. goddess of night, deep space journey">
+      </div>
+      <div class="field-group">
+        <label>Mood</label>
+        <input type="text" id="easy-mood" placeholder="e.g. dark, euphoric, melancholic">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field-group">
+        <label>Subject / Character</label>
+        <input type="text" id="easy-subject" placeholder="e.g. Nyx — goddess of night">
+      </div>
+      <div class="field-group">
+        <label>Call them</label>
+        <input type="text" id="easy-name-override" placeholder="e.g. Nyx">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field-group">
+        <label>Structure</label>
+        <select id="easy-structure">
+          <option>Verse-Chorus</option>
+          <option>Verse-Chorus-Bridge</option>
+          <option>Intro-Verse-Chorus-Outro</option>
+          <option>EDM Structure</option>
+          <option>Minimal</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Model</label>
+        <select id="easy-model"><option>Loading…</option></select>
+      </div>
+    </div>
+    <button id="btn-easy-gen">✨ Generate Lyrics via Ollama</button>
+    <div id="easy-log" class="log-panel" style="margin-top:12px;display:none"></div>
+  </div>
+
+  <!-- STYLE -->
+  <div class="tab-panel" id="tab-style">
+    <div class="row">
+      <div class="field-group">
+        <label>Genre</label>
+        <input type="text" id="style-genre" placeholder="e.g. Psytrance, Lo-fi Hip Hop, Dark Ambient">
+      </div>
+      <div class="field-group">
+        <label>BPM</label>
+        <input type="number" id="style-bpm" value="120" min="40" max="300">
+      </div>
+      <div class="field-group">
+        <label>Key</label>
+        <select id="style-key">
+          <option>C</option><option>C#</option><option>D</option><option>D#</option>
+          <option>E</option><option>F</option><option>F#</option><option>G</option>
+          <option>G#</option><option>A</option><option>A#</option><option>B</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Scale</label>
+        <select id="style-scale">
+          <option>Major</option><option>Minor</option><option>Dorian</option>
+          <option>Phrygian</option><option>Lydian</option><option>Mixolydian</option>
+          <option>Locrian</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field-group">
+        <label>Mode</label>
+        <input type="text" id="style-mode" placeholder="e.g. Phrygian (optional)">
+      </div>
+      <div class="field-group">
+        <label>Time Signature</label>
+        <select id="style-timesig">
+          <option>4/4</option><option>3/4</option><option>6/8</option><option>5/4</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSTRUMENTS -->
+  <div class="tab-panel" id="tab-instruments">
+    <div id="instrument-chips" style="margin-bottom:12px"></div>
+    <div class="section-title">Selected</div>
+    <div id="instrument-selected" class="preview-box" style="min-height:36px">(none)</div>
+  </div>
+
+  <!-- VOCALS -->
+  <div class="tab-panel" id="tab-vocals">
+    <div id="vocal-chips"></div>
+    <div class="section-title" style="margin-top:12px">Selected</div>
+    <div id="vocal-selected" class="preview-box" style="min-height:36px">(none)</div>
+  </div>
+
+  <!-- LYRICS -->
+  <div class="tab-panel" id="tab-lyrics">
+    <div style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap">
+      <span class="section-title" style="align-self:center">Insert:</span>
+      <button class="tag-btn" data-tag="[Intro]">[Intro]</button>
+      <button class="tag-btn" data-tag="[Intro: Atmospheric]">[Intro: Atmospheric]</button>
+      <button class="tag-btn" data-tag="[Verse]">[Verse]</button>
+      <button class="tag-btn" data-tag="[Pre-Chorus]">[Pre-Chorus]</button>
+      <button class="tag-btn" data-tag="[Chorus]">[Chorus]</button>
+      <button class="tag-btn" data-tag="[Chorus: Anthemic]">[Chorus: Anthemic]</button>
+      <button class="tag-btn" data-tag="[Bridge]">[Bridge]</button>
+      <button class="tag-btn" data-tag="[Build]">[Build]</button>
+      <button class="tag-btn" data-tag="[Drop]">[Drop]</button>
+      <button class="tag-btn" data-tag="[Breakdown]">[Breakdown]</button>
+      <button class="tag-btn" data-tag="[Guitar Solo]">[Guitar Solo]</button>
+      <button class="tag-btn" data-tag="[Piano Interlude]">[Piano Interlude]</button>
+      <button class="tag-btn" data-tag="[Drum Break]">[Drum Break]</button>
+      <button class="tag-btn" data-tag="[Solo: Virtuosic]">[Solo: Virtuosic]</button>
+      <button class="tag-btn" data-tag="[Outro]">[Outro]</button>
+      <button class="tag-btn" data-tag="[Fade Out]">[Fade Out]</button>
+      <button class="tag-btn" data-tag="[Silence]">[Silence]</button>
+    </div>
+    <div class="field-group">
+      <label>Template</label>
+      <select id="lyrics-template"><option value="">-- select template --</option></select>
+    </div>
+    <textarea id="lyrics-editor" placeholder="Lyrics appear here. Edit freely."></textarea>
+  </div>
+
+  <!-- PARAMETERS -->
+  <div class="tab-panel" id="tab-parameters">
+    <div class="row">
+      <div class="field-group">
+        <label>Steps</label>
+        <input type="number" id="param-steps" value="8" min="1" max="100">
+      </div>
+      <div class="field-group">
+        <label>CFG Scale</label>
+        <input type="number" id="param-cfg" value="2.0" step="0.1" min="0.1" max="20">
+      </div>
+      <div class="field-group">
+        <label>Duration (s)</label>
+        <input type="number" id="param-duration" value="30" min="5" max="300">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field-group">
+        <label>Temperature</label>
+        <input type="number" id="param-temp" value="0.85" step="0.01" min="0" max="2">
+      </div>
+      <div class="field-group">
+        <label>Top-P</label>
+        <input type="number" id="param-topp" value="0.9" step="0.01" min="0" max="1">
+      </div>
+      <div class="field-group">
+        <label>Top-K</label>
+        <input type="number" id="param-topk" value="0" min="0">
+      </div>
+      <div class="field-group">
+        <label>Min-P</label>
+        <input type="number" id="param-minp" value="0.0" step="0.01" min="0" max="1">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field-group">
+        <label>Seed</label>
+        <input type="number" id="param-seed" value="0">
+      </div>
+      <div class="field-group" style="display:flex;align-items:flex-end">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="param-lock-seed"> Lock seed
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEMS -->
+  <div class="tab-panel" id="tab-stems">
+    <div class="inner-tabs">
+      <button class="inner-tab-btn active" data-inner="stems-extract">ACE-Step Extract</button>
+      <button class="inner-tab-btn" data-inner="stems-demucs">Demucs Separate</button>
+    </div>
+    <div class="inner-panel active" id="stems-extract">
+      <div class="field-group">
+        <label>Input Audio File</label>
+        <input type="file" id="stems-file" accept="audio/*">
+      </div>
+      <div class="field-group">
+        <label>Song Name</label>
+        <input type="text" id="stems-song-name" placeholder="Stem Extract">
+      </div>
+      <button id="btn-stems-extract">Send Extract Job to ComfyUI</button>
+      <div id="stems-extract-status" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
+    </div>
+    <div class="inner-panel" id="stems-demucs">
+      <div class="row">
+        <div class="field-group">
+          <label>Output File (MP3 filename)</label>
+          <input type="text" id="demucs-filename" placeholder="e.g. ComfyUI_00001_.mp3">
+        </div>
+        <div class="field-group">
+          <label>Model</label>
+          <select id="demucs-model">
+            <option value="htdemucs">4-stem (htdemucs)</option>
+            <option value="htdemucs_6s">6-stem (htdemucs_6s)</option>
+          </select>
+        </div>
+      </div>
+      <button id="btn-demucs-run">Separate</button>
+      <div id="demucs-log" class="log-panel" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- GUIDE -->
+  <div class="tab-panel" id="tab-guide">
+    <div class="inner-tabs" id="guide-tabs">
+      <button class="inner-tab-btn active" data-guide="summary">Summary</button>
+      <button class="inner-tab-btn" data-guide="ch1">1. Philosophy</button>
+      <button class="inner-tab-btn" data-guide="ch2">2. Tags</button>
+      <button class="inner-tab-btn" data-guide="ch3">3. Lyrics</button>
+      <button class="inner-tab-btn" data-guide="ch4">4. DAW</button>
+      <button class="inner-tab-btn" data-guide="ch5">5. Hidden Syntax</button>
+      <button class="inner-tab-btn" data-guide="ch6">6. Operations</button>
+      <button class="inner-tab-btn" data-guide="ch7">7. Examples</button>
+      <button class="inner-tab-btn" data-guide="ch8">8. Troubleshooting</button>
+    </div>
+    <div id="guide-content" style="padding:8px 0"></div>
+  </div>
+
+  <!-- LINT -->
+  <div class="tab-panel" id="tab-lint">
+    <div class="inner-tabs">
+      <button class="inner-tab-btn active" data-inner="lint-state">Current State</button>
+      <button class="inner-tab-btn" data-inner="lint-paste">Paste</button>
+    </div>
+    <div class="inner-panel active" id="lint-state">
+      <div class="preview-box" id="lint-state-preview" style="margin-bottom:10px">(build prompt first)</div>
+      <button id="btn-lint-state">Lint Current State</button>
+    </div>
+    <div class="inner-panel" id="lint-paste">
+      <div class="field-group">
+        <label>Tags</label>
+        <input type="text" id="lint-tags" placeholder="ambient, slow, guitar, melodic">
+      </div>
+      <div class="field-group">
+        <label>Lyrics</label>
+        <textarea id="lint-lyrics" style="min-height:80px" placeholder="[Verse]&#10;..."></textarea>
+      </div>
+      <button id="btn-lint-paste">Lint</button>
+    </div>
+    <div id="lint-results" style="margin-top:14px"></div>
+  </div>
+
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
