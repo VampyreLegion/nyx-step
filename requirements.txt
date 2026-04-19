@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+sse-starlette
+jinja2
+python-multipart
+requests
+pytest
+httpx
