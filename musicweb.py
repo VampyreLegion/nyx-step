@@ -42,3 +42,42 @@ app.include_router(queue_router)
 app.include_router(stems_router)
 app.include_router(ollama_router)
 app.include_router(dl_router)
+
+import json as _json
+from fastapi.responses import JSONResponse
+from core.prompt_linter import PromptLinter
+from pydantic import BaseModel as _BaseModel
+
+_linter = PromptLinter()
+
+class _LintRequest(_BaseModel):
+    tags: str = ""
+    lyrics: str = ""
+
+@app.post("/lint")
+async def lint(req: _LintRequest):
+    results = _linter.lint(req.tags, req.lyrics)
+    return {"results": [{"severity": r.severity, "field": r.field,
+                         "message": r.message, "suggestion": r.suggestion}
+                        for r in results]}
+
+@app.get("/api/instruments")
+async def api_instruments():
+    import config
+    data = _json.loads(config.ACETALK_INSTRUMENTS.read_text())
+    cats = []
+    for cat_name, subcats in data["categories"].items():
+        subs = []
+        for sub_name, items in subcats.items():
+            subs.append({"name": sub_name, "items": items})
+        cats.append({"name": cat_name, "subcategories": subs})
+    return {"categories": cats}
+
+@app.get("/api/vocals")
+async def api_vocals():
+    return {
+        "Tone": ["breathy", "raspy", "smooth", "nasal", "powerful", "clear"],
+        "Style": ["whispered", "belted", "falsetto", "spoken word", "operatic"],
+        "Texture": ["airy", "gritty", "warm", "bright", "vibrato", "melismatic"],
+        "Gender": ["male vocal", "female vocal", "androgynous vocal"],
+    }
