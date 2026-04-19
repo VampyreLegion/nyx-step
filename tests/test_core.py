@@ -10,3 +10,44 @@ def test_paths_exist():
 
 def test_comfyui_output_dir_exists():
     assert config.COMFYUI_OUTPUT_DIR.exists()
+
+from core.prompt_builder import build_caption, build_lyrics, build_prompt
+from core.prompt_linter import PromptLinter, LintResult
+
+# ── prompt_builder ────────────────────────────────────────────────────────────
+
+def test_build_caption_empty():
+    assert build_caption({}) == ""
+
+def test_build_caption_genre_bpm():
+    s = {"genre": "Psytrance", "bpm": 140, "key": "", "scale": "", "mode": "",
+         "time_sig": "4/4", "instruments": [], "vocal_tags": []}
+    cap = build_caption(s)
+    assert "psytrance" in cap
+    assert "140 BPM" in cap
+
+def test_build_lyrics():
+    s = {"lyrics": "[Verse]\nhello"}
+    assert build_lyrics(s) == "[Verse]\nhello"
+
+def test_build_prompt_tuple():
+    s = {"genre": "EDM", "bpm": 128, "key": "", "scale": "", "mode": "",
+         "time_sig": "4/4", "instruments": [], "vocal_tags": [], "lyrics": "[Chorus]\ndrop"}
+    cap, lyr = build_prompt(s)
+    assert "edm" in cap
+    assert lyr == "[Chorus]\ndrop"
+
+# ── prompt_linter ─────────────────────────────────────────────────────────────
+
+def test_linter_brackets_in_tags():
+    r = PromptLinter().lint("[Verse], ambient", "")
+    assert any(res.severity == "error" and "racket" in res.message for res in r)
+
+def test_linter_no_issues():
+    r = PromptLinter().lint("ambient, slow, guitar, melodic, warm", "[Verse]\nhello\n[Chorus]\nyes")
+    errors = [x for x in r if x.severity == "error"]
+    assert not errors
+
+def test_lint_result_fields():
+    r = LintResult(severity="tip", field="tags", message="msg", suggestion="fix")
+    assert r.severity == "tip"
