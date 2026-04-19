@@ -51,3 +51,32 @@ def test_linter_no_issues():
 def test_lint_result_fields():
     r = LintResult(severity="tip", field="tags", message="msg", suggestion="fix")
     assert r.severity == "tip"
+
+from unittest.mock import patch, MagicMock
+from core.comfyui import ComfyUIClient
+
+def test_comfyui_ping_true():
+    client = ComfyUIClient()
+    with patch("requests.get") as mock_get:
+        mock_get.return_value.raise_for_status = MagicMock()
+        assert client.ping() is True
+
+def test_comfyui_ping_false():
+    client = ComfyUIClient()
+    with patch("requests.get", side_effect=Exception("offline")):
+        assert client.ping() is False
+
+def test_build_workflow_missing_template():
+    client = ComfyUIClient()
+    import pathlib
+    result = client.build_workflow("tags", "lyrics", {}, pathlib.Path("/nonexistent.json"))
+    assert "error" in result
+
+def test_get_queue_structure():
+    client = ComfyUIClient()
+    with patch("requests.get") as mock_get:
+        mock_get.return_value.json.return_value = {"queue_running": [], "queue_pending": []}
+        mock_get.return_value.raise_for_status = MagicMock()
+        q = client.get_queue()
+        assert "queue_running" in q
+        assert "queue_pending" in q
