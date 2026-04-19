@@ -39,3 +39,12 @@ def test_generate_missing_template():
                return_value={"error": "No template"}):
         resp = client.post("/generate", json=payload)
         assert resp.status_code == 400
+
+def test_download_unknown_file_returns_404():
+    resp = client.get("/download/nonexistent_file.mp3")
+    assert resp.status_code == 404
+
+def test_guide_summary_returns_html():
+    resp = client.get("/guide/summary")
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers["content-type"]
