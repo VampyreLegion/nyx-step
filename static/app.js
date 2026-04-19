@@ -13,7 +13,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
-    if (btn.dataset.tab === "overview") updatePreviews();
+    if (btn.dataset.tab === "overview") syncOverviewFromState();
     if (btn.dataset.tab === "lint") updateLintStatePreview();
   });
 });
@@ -39,7 +39,7 @@ const bind = (id, key, transform) => {
   if (!el) return;
   el.addEventListener("input", () => {
     mwState[key] = transform ? transform(el.value) : el.value;
-    updatePreviews();
+    updatePayloadPreview();
   });
 };
 
@@ -64,7 +64,7 @@ document.getElementById("param-lock-seed").addEventListener("change", e => {
 // ── Lyrics tab ────────────────────────────────────────────────────────────────
 document.getElementById("lyrics-editor").addEventListener("input", e => {
   mwState.lyrics = e.target.value;
-  updatePreviews();
+  updatePayloadPreview();
 });
 
 document.querySelectorAll(".tag-btn").forEach(btn => {
@@ -78,7 +78,7 @@ document.querySelectorAll(".tag-btn").forEach(btn => {
     editor.selectionStart = editor.selectionEnd = pos + tag.length + 2;
     editor.focus();
     mwState.lyrics = editor.value;
-    updatePreviews();
+    updatePayloadPreview();
   });
 });
 
@@ -101,7 +101,7 @@ tplSel.addEventListener("change", () => {
   const editor = document.getElementById("lyrics-editor");
   editor.value = TEMPLATES[tplSel.value] || "";
   mwState.lyrics = editor.value;
-  updatePreviews();
+  updatePayloadPreview();
 });
 
 // ── Instruments tab ───────────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ fetch("/api/instruments").then(r => r.json()).then(data => {
           }
           document.getElementById("instrument-selected").textContent =
             mwState.instruments.join(", ") || "(none)";
-          updatePreviews();
+          updatePayloadPreview();
         });
         row.appendChild(chip);
       });
@@ -162,7 +162,7 @@ fetch("/api/vocals").then(r => r.json()).then(data => {
         }
         document.getElementById("vocal-selected").textContent =
           mwState.vocal_tags.join(", ") || "(none)";
-        updatePreviews();
+        updatePayloadPreview();
       });
       row.appendChild(chip);
     });
@@ -187,10 +187,30 @@ function buildCaption() {
   return parts.join(", ");
 }
 
-function updatePreviews() {
-  const cap = buildCaption();
-  document.getElementById("preview-tags").textContent = cap || "(empty)";
-  document.getElementById("preview-lyrics").textContent = mwState.lyrics || "(empty)";
+function syncOverviewFromState() {
+  document.getElementById("overview-tags").value = buildCaption();
+  document.getElementById("overview-lyrics").value = mwState.lyrics || "";
+  updatePayloadPreview();
+}
+
+function updatePayloadPreview() {
+  const el = document.getElementById("payload-preview");
+  if (!el) return;
+  const tags = document.getElementById("overview-tags").value;
+  const lyrics = document.getElementById("overview-lyrics").value;
+  const s = mwState;
+  const seedLabel = (s.lock_seed && s.seed !== 0) ? s.seed : "(random)";
+  const lyricsLines = lyrics ? lyrics.split("\n").filter(l => l.trim()) : [];
+  const lyricsSnippet = lyricsLines.length
+    ? lyricsLines.slice(0, 3).join(" / ") + (lyricsLines.length > 3 ? " …" : "")
+    : "(empty)";
+  el.textContent = [
+    `Tags:     ${tags || "(empty)"}`,
+    `Lyrics:   ${lyricsSnippet}`,
+    `BPM: ${s.bpm}   Key: ${s.key} ${s.scale}   Time: ${s.time_sig}`,
+    `Steps: ${s.steps}   CFG: ${s.cfg_scale}   Duration: ${s.duration}s   Seed: ${seedLabel}`,
+    `Temp: ${s.temperature}   Top-P: ${s.top_p}   Top-K: ${s.top_k}   Min-P: ${s.min_p}`,
+  ].join("\n");
 }
 
 function updateLintStatePreview() {
@@ -198,6 +218,11 @@ function updateLintStatePreview() {
   document.getElementById("lint-state-preview").textContent =
     `[Tags]\n${cap}\n\n[Lyrics]\n${mwState.lyrics || "(empty)"}`;
 }
+
+// ── Overview editable fields ──────────────────────────────────────────────────
+document.getElementById("overview-tags").addEventListener("input", updatePayloadPreview);
+document.getElementById("overview-lyrics").addEventListener("input", updatePayloadPreview);
+document.getElementById("btn-sync-overview").addEventListener("click", syncOverviewFromState);
 
 // ── Generate ──────────────────────────────────────────────────────────────────
 document.getElementById("btn-generate").addEventListener("click", async () => {
@@ -208,7 +233,8 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
 
   const payload = {
     ...mwState,
-    tags: buildCaption(),
+    tags: document.getElementById("overview-tags").value.trim(),
+    lyrics: document.getElementById("overview-lyrics").value,
     song_name: songName,
   };
 
@@ -348,7 +374,7 @@ document.getElementById("btn-easy-gen").addEventListener("click", () => {
   es.addEventListener("done", () => {
     es.close();
     log.textContent += "\n[done]";
-    updatePreviews();
+    syncOverviewFromState();
   });
   es.onerror = () => { es.close(); log.textContent += "\n[error]"; };
 });

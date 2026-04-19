@@ -35,15 +35,20 @@
       <label>Song Name</label>
       <input type="text" id="song-name" placeholder="e.g. Dark Psy Journey">
     </div>
-    <div class="row">
-      <div>
-        <div class="section-title">Tags Preview</div>
-        <div class="preview-box" id="preview-tags">(empty)</div>
+    <div class="field-group">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <label style="margin:0;color:var(--muted);font-size:12px">Tags <span style="font-size:11px;opacity:0.7">(editable — overrides Style/Instruments/Vocals tabs)</span></label>
+        <button class="secondary small" id="btn-sync-overview">↺ Sync from tabs</button>
       </div>
-      <div style="flex:2">
-        <div class="section-title">Lyrics Preview</div>
-        <div class="preview-box" id="preview-lyrics" style="min-height:80px">(empty)</div>
-      </div>
+      <textarea id="overview-tags" rows="2" style="min-height:unset;resize:vertical" placeholder="e.g. psytrance, 140 BPM, C Minor, synthesizer"></textarea>
+    </div>
+    <div class="field-group">
+      <label>Lyrics <span style="font-size:11px;color:var(--muted);opacity:0.7">(editable — synced from Lyrics tab)</span></label>
+      <textarea id="overview-lyrics" style="min-height:140px"></textarea>
+    </div>
+    <div class="field-group">
+      <div class="section-title">What gets sent</div>
+      <div class="preview-box" id="payload-preview" style="font-size:11px;line-height:1.8;color:var(--text)"></div>
     </div>
     <div style="margin:14px 0">
       <button id="btn-generate">🎵 Generate</button>
