@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>MusicWeb — ACE-Step Generator</title>
-  <link rel="stylesheet" href="/static/style.css?v=3">
+  <title>Nyx's ai Music Studio by Legion</title>
+  <link rel="stylesheet" href="/static/style.css?v=4">
 </head>
 <body>
 
 <div id="header">
-  <h1>🎛 MusicWeb</h1>
+  <h1>🎛 Nyx's ai Music Studio by Legion</h1>
   <span id="queue-badge">Queue: —</span>
   <span id="comfy-status" style="font-size:12px;color:var(--muted)">ComfyUI: connecting…</span>
 </div>
@@ -25,6 +25,7 @@
   <button class="tab-btn" data-tab="stems">Stems</button>
   <button class="tab-btn" data-tab="guide">Guide</button>
   <button class="tab-btn" data-tab="lint">Lint</button>
+  <button class="tab-btn" data-tab="about">About</button>
 </div>
 
 <div id="tab-content">
@@ -313,8 +314,20 @@
     <div id="lint-results" style="margin-top:14px"></div>
   </div>
 
+
+  <!-- ABOUT -->
+  <div class="tab-panel" id="tab-about">
+    <div style="max-width:500px;margin:40px auto;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">🎛</div>
+      <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:8px">Nyx's Music Studio</h2>
+      <div style="color:var(--muted);font-size:14px;margin-bottom:4px">Version 1.5</div>
+      <div style="color:var(--muted);font-size:14px;margin-bottom:4px">by Legion</div>
+      <div style="color:var(--muted);font-size:14px">April 2026</div>
+    </div>
+  </div>
+
 </div>
 
-<script src="/static/app.js?v=3"></script>
+<script src="/static/app.js?v=4"></script>
 </body>
 </html>
