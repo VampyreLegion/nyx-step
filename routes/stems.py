@@ -1,1 +1,81 @@
-from fastapi import APIRouter; router = APIRouter()
+from __future__ import annotations
+import json
+import tempfile
+from pathlib import Path
+from typing import AsyncGenerator
+
+from fastapi import APIRouter, Request, UploadFile, File, Form
+from fastapi.responses import JSONResponse
+from sse_starlette.sse import EventSourceResponse
+
+import config
+from core.comfyui import ComfyUIClient
+from core.demucs import run_demucs
+from musicweb import tracker, get_user_email
+
+router = APIRouter(prefix="/stems")
+_client = ComfyUIClient()
+
+
+@router.post("/extract")
+async def stems_extract(
+    request: Request,
+    audio: UploadFile = File(...),
+    steps: int = Form(8),
+    seed: int = Form(0),
+    duration: float = Form(30.0),
+    song_name: str = Form("Stem Extract"),
+):
+    user_email = get_user_email(request)
+    tmp = Path(tempfile.mktemp(suffix=Path(audio.filename).suffix))
+    tmp.write_bytes(await audio.read())
+    try:
+        filename = _client.copy_to_input(tmp)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+    state = {"steps": steps, "seed": seed, "duration": duration, "lock_seed": False}
+    result = _client.build_workflow("", "", state, config.WORKFLOW_EXTRACT_TEMPLATE)
+    if "error" in result:
+        return JSONResponse({"error": result["error"]}, status_code=400)
+
+    workflow = result["workflow"]
+    for node in workflow.values():
+        if isinstance(node, dict) and node.get("class_type") == "LoadAudio":
+            node.setdefault("inputs", {})["audio"] = filename
+
+    send_result = _client.send_workflow(workflow)
+    if "error" in send_result:
+        return JSONResponse({"error": send_result["error"]}, status_code=502)
+
+    prompt_id = send_result.get("prompt_id", "")
+    tracker.register(prompt_id, user_email, song_name, seed=result.get("seed", 0))
+    return {"prompt_id": prompt_id}
+
+
+@router.get("/demucs/stream")
+async def demucs_stream(
+    request: Request,
+    filename: str,
+    model: str = "htdemucs",
+):
+    input_path = config.COMFYUI_OUTPUT_DIR / filename
+
+    async def log_gen() -> AsyncGenerator[dict, None]:
+        import asyncio
+        import concurrent.futures
+
+        loop = asyncio.get_event_loop()
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+
+        def _run():
+            return list(run_demucs(input_path, model))
+
+        lines = await loop.run_in_executor(executor, _run)
+        for line in lines:
+            if await request.is_disconnected():
+                break
+            yield {"event": "log", "data": json.dumps({"line": line})}
+        yield {"event": "done", "data": "{}"}
+
+    return EventSourceResponse(log_gen())

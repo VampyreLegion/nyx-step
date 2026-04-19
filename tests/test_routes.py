@@ -48,3 +48,10 @@ def test_guide_summary_returns_html():
     resp = client.get("/guide/summary")
     assert resp.status_code == 200
     assert "text/html" in resp.headers["content-type"]
+
+def test_ollama_models_returns_list():
+    from unittest.mock import patch
+    with patch("core.ollama.list_models", return_value=["gemma4:latest"]):
+        resp = client.get("/ollama/models")
+        assert resp.status_code == 200
+        assert "gemma4:latest" in resp.json()["models"]
