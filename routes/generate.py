@@ -1,1 +1,102 @@
-from fastapi import APIRouter; router = APIRouter()
+from __future__ import annotations
+import asyncio
+import json
+from typing import AsyncGenerator
+
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from sse_starlette.sse import EventSourceResponse
+
+from core.comfyui import ComfyUIClient
+from core.prompt_builder import build_prompt
+from musicweb import tracker, get_user_email
+
+router = APIRouter()
+_client = ComfyUIClient()
+
+
+class GenerateRequest(BaseModel):
+    tags: str = ""
+    lyrics: str = ""
+    genre: str = ""
+    bpm: int = 120
+    key: str = "C"
+    scale: str = "Major"
+    mode: str = ""
+    time_sig: str = "4/4"
+    instruments: list[str] = []
+    vocal_tags: list[str] = []
+    steps: int = 8
+    cfg_scale: float = 2.0
+    duration: float = 30.0
+    seed: int = 0
+    lock_seed: bool = False
+    temperature: float = 0.85
+    top_p: float = 0.9
+    top_k: int = 0
+    min_p: float = 0.0
+    song_name: str = "Untitled"
+
+
+@router.post("/generate")
+async def generate(req: GenerateRequest, request: Request):
+    user_email = get_user_email(request)
+
+    state = req.model_dump()
+    if req.tags.strip():
+        caption = req.tags.strip()
+        lyrics = req.lyrics
+    else:
+        caption, lyrics = build_prompt(state)
+
+    result = _client.build_workflow(caption, lyrics, state)
+    if "error" in result:
+        return JSONResponse({"error": result["error"]}, status_code=400)
+
+    send_result = _client.send_workflow(result["workflow"])
+    if "error" in send_result:
+        return JSONResponse({"error": send_result["error"]}, status_code=502)
+
+    prompt_id = send_result.get("prompt_id", "")
+    tracker.register(prompt_id, user_email, req.song_name, seed=result.get("seed", 0))
+
+    q = tracker.get_queue_counts()
+    return {"prompt_id": prompt_id, "queue_position": q["pending"]}
+
+
+@router.get("/events")
+async def events(request: Request):
+    user_email = get_user_email(request)
+    last_statuses: dict[str, str] = {}
+
+    async def generate_events() -> AsyncGenerator[dict, None]:
+        while True:
+            if await request.is_disconnected():
+                break
+
+            my_jobs = tracker.get_user_jobs(user_email)
+            for job in my_jobs:
+                prev = last_statuses.get(job.prompt_id)
+                if prev != job.status:
+                    last_statuses[job.prompt_id] = job.status
+                    if job.status == "done":
+                        yield {
+                            "event": "job_done",
+                            "data": json.dumps({
+                                "prompt_id": job.prompt_id,
+                                "files": job.output_files,
+                                "song_name": job.song_name,
+                            }),
+                        }
+                    elif job.status == "running":
+                        yield {"event": "job_running", "data": json.dumps({"prompt_id": job.prompt_id})}
+                    elif job.status == "error":
+                        yield {"event": "job_error", "data": json.dumps({"prompt_id": job.prompt_id, "message": job.error_msg})}
+
+            counts = tracker.get_queue_counts()
+            yield {"event": "queue_update", "data": json.dumps(counts)}
+
+            await asyncio.sleep(2)
+
+    return EventSourceResponse(generate_events())
