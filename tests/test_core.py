@@ -108,3 +108,21 @@ def test_job_tracker_user_owns():
     tracker.register("pid3", "a@a.com", "Song")
     assert tracker.user_owns("a@a.com", "pid3") is True
     assert tracker.user_owns("b@b.com", "pid3") is False
+
+from unittest.mock import patch, MagicMock
+from core.ollama import list_models
+
+def test_list_models_offline():
+    with patch("requests.get", side_effect=Exception("offline")):
+        models = list_models()
+        assert isinstance(models, list)
+        assert len(models) == 1
+        assert "offline" in models[0].lower()
+
+def test_list_models_success():
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = {"models": [{"name": "gemma4:latest"}]}
+    mock_resp.raise_for_status = MagicMock()
+    with patch("requests.get", return_value=mock_resp):
+        models = list_models()
+        assert "gemma4:latest" in models
