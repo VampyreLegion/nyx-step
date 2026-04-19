@@ -80,3 +80,31 @@ def test_get_queue_structure():
         q = client.get_queue()
         assert "queue_running" in q
         assert "queue_pending" in q
+
+from core.job_tracker import JobTracker, JobInfo
+
+def test_job_tracker_register_and_get():
+    tracker = JobTracker.__new__(JobTracker)
+    tracker._jobs = {}
+    tracker._lock = __import__("threading").Lock()
+    tracker.register("pid1", "user@a.com", "My Song")
+    jobs = tracker.get_user_jobs("user@a.com")
+    assert len(jobs) == 1
+    assert jobs[0].prompt_id == "pid1"
+    assert jobs[0].status == "queued"
+
+def test_job_tracker_update_status():
+    tracker = JobTracker.__new__(JobTracker)
+    tracker._jobs = {}
+    tracker._lock = __import__("threading").Lock()
+    tracker.register("pid2", "user@a.com", "Song 2")
+    tracker.update("pid2", status="running")
+    assert tracker.get("pid2").status == "running"
+
+def test_job_tracker_user_owns():
+    tracker = JobTracker.__new__(JobTracker)
+    tracker._jobs = {}
+    tracker._lock = __import__("threading").Lock()
+    tracker.register("pid3", "a@a.com", "Song")
+    assert tracker.user_owns("a@a.com", "pid3") is True
+    assert tracker.user_owns("b@b.com", "pid3") is False
