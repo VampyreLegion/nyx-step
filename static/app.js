@@ -342,6 +342,7 @@ fetch("/ollama/models").then(r => r.json()).then(data => {
     opt.value = m; opt.textContent = m;
     sel.appendChild(opt);
   });
+  if (data.models.includes("gemma4:latest")) sel.value = "gemma4:latest";
 });
 
 document.getElementById("btn-easy-gen").addEventListener("click", () => {
