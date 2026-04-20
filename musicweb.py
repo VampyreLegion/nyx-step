@@ -45,12 +45,14 @@ from routes.queue import router as queue_router
 from routes.download import router as dl_router
 from routes.stems import router as stems_router
 from routes.ollama_routes import router as ollama_router
+from routes.presets import router as presets_router
 
 app.include_router(gen_router)
 app.include_router(queue_router)
 app.include_router(stems_router)
 app.include_router(ollama_router)
 app.include_router(dl_router)
+app.include_router(presets_router)
 
 import json as _json
 from fastapi.responses import JSONResponse

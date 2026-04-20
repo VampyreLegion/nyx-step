@@ -17,3 +17,6 @@ ACETALK_GENRES             = _ACETALK / "acetalk" / "data" / "genres.json"
 COMFYUI_OUTPUT_DIR  = _COMFYUI / "output" / "audio"
 COMFYUI_INPUT_DIR   = _COMFYUI / "input"
 DEMUCS_OUTPUT_DIR   = COMFYUI_OUTPUT_DIR / "separated"
+
+PRESETS_DIR = pathlib.Path("/home/legion/legionprojects/musicweb/presets")
+PRESETS_DIR.mkdir(exist_ok=True)

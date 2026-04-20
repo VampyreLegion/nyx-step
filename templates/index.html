@@ -53,9 +53,9 @@
     </div>
     <div style="margin:14px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <button id="btn-generate">🎵 Generate Music Idea</button>
-      <button class="secondary small" id="btn-save-preset" title="Save all settings and lyrics to a .nyx file">💾 Save</button>
-      <button class="secondary small" id="btn-load-preset" title="Load a previously saved .nyx file">📂 Load</button>
-      <input type="file" id="preset-file-input" accept=".nyx,.json" style="display:none">
+      <button class="secondary small" id="btn-save-preset" title="Save all settings to server">💾 Save</button>
+      <button class="secondary small" id="btn-load-preset" title="Load a saved preset">📂 Load</button>
+      <button class="secondary small" id="btn-clear-overview" title="Clear all fields and reset state">🗑 Clear</button>
       <span id="generate-status" style="font-size:12px;color:var(--muted)"></span>
     </div>
     <div id="gen-progress-wrap" style="display:none;margin-bottom:14px">
@@ -267,15 +267,15 @@
   <!-- INSTRUMENTS -->
   <div class="tab-panel" id="tab-instruments">
     <div id="instrument-chips" style="margin-bottom:12px"></div>
-    <div class="section-title">Selected</div>
-    <div id="instrument-selected" class="preview-box" style="min-height:36px">(none)</div>
+    <div class="section-title">Selected <span style="font-size:11px;color:var(--muted);font-weight:normal">(editable — comma separated)</span></div>
+    <textarea id="instrument-selected" rows="2" style="min-height:36px;resize:vertical" placeholder="(none)"></textarea>
   </div>
 
   <!-- VOCALS -->
   <div class="tab-panel" id="tab-vocals">
     <div id="vocal-chips"></div>
-    <div class="section-title" style="margin-top:12px">Selected</div>
-    <div id="vocal-selected" class="preview-box" style="min-height:36px">(none)</div>
+    <div class="section-title" style="margin-top:12px">Selected <span style="font-size:11px;color:var(--muted);font-weight:normal">(editable — comma separated)</span></div>
+    <textarea id="vocal-selected" rows="2" style="min-height:36px;resize:vertical" placeholder="(none)"></textarea>
   </div>
 
   <!-- LYRICS / TAGGING -->
@@ -742,6 +742,10 @@
       <button id="btn-lint-paste">Lint</button>
     </div>
     <div id="lint-results" style="margin-top:14px"></div>
+    <div id="lint-fix-wrap" style="display:none;margin-top:10px">
+      <button class="success small" id="btn-lint-fix">🔧 Fix It</button>
+      <span style="font-size:11px;color:var(--muted);margin-left:8px">Auto-applies safe fixes to tags and lyrics</span>
+    </div>
   </div>
 
 
@@ -862,6 +866,22 @@
 
 </div>
 
-<script src="/static/app.js?v=25"></script>
+<!-- Preset modal -->
+<div id="preset-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;width:360px;max-height:80vh;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="color:var(--accent);font-weight:600;font-size:14px">📂 Saved Presets</span>
+      <button class="secondary small" id="btn-preset-modal-close">✕</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="preset-name-input" placeholder="Preset name…" style="flex:1;font-size:12px">
+      <button class="small" id="btn-preset-save-named">💾 Save</button>
+    </div>
+    <div id="preset-list" style="overflow-y:auto;flex:1;border:1px solid var(--border);border-radius:6px;min-height:120px;padding:4px"></div>
+    <div id="preset-modal-status" style="font-size:11px;color:var(--muted);min-height:16px"></div>
+  </div>
+</div>
+
+<script src="/static/app.js?v=27"></script>
 </body>
 </html>

@@ -252,6 +252,8 @@ function _selectGenre(genre) {
     info += `<br><span style="color:var(--accent2)">Typical: ${genre.typical_instruments.join(", ")}</span>`;
   document.getElementById("genre-info").innerHTML = info;
 
+  // Immediately reflect genre change in Overview tags
+  document.getElementById("overview-tags").value = buildCaption();
   updatePayloadPreview();
 }
 
@@ -291,8 +293,8 @@ fetch("/api/instruments").then(r => r.json()).then(data => {
           } else {
             mwState.instruments = mwState.instruments.filter(i => i !== item);
           }
-          document.getElementById("instrument-selected").textContent =
-            mwState.instruments.join(", ") || "(none)";
+          document.getElementById("instrument-selected").value =
+            mwState.instruments.join(", ");
           updatePayloadPreview();
         });
         row.appendChild(chip);
@@ -325,8 +327,8 @@ fetch("/api/vocals").then(r => r.json()).then(data => {
         } else {
           mwState.vocal_tags = mwState.vocal_tags.filter(v => v !== kw);
         }
-        document.getElementById("vocal-selected").textContent =
-          mwState.vocal_tags.join(", ") || "(none)";
+        document.getElementById("vocal-selected").value =
+          mwState.vocal_tags.join(", ");
         updatePayloadPreview();
       });
       row.appendChild(chip);
@@ -500,54 +502,148 @@ function _applyPreset(p) {
   _set("lyrics-editor",   mwState.lyrics);
 
   // Re-sync instrument chip active states
-  document.querySelectorAll("#instrument-chips .chip").forEach(chip => {
-    chip.classList.toggle("active", mwState.instruments.includes(chip.textContent));
-  });
+  _syncInstrumentChips();
   const instrDisplay = document.getElementById("instrument-selected");
-  if (instrDisplay) instrDisplay.textContent = mwState.instruments.join(", ") || "(none)";
+  if (instrDisplay) instrDisplay.value = mwState.instruments.join(", ");
 
   // Re-sync vocal chip active states
-  document.querySelectorAll("#vocal-chips .chip").forEach(chip => {
-    chip.classList.toggle("active", mwState.vocal_tags.includes(chip.textContent));
-  });
+  _syncVocalChips();
   const vocalDisplay = document.getElementById("vocal-selected");
-  if (vocalDisplay) vocalDisplay.textContent = mwState.vocal_tags.join(", ") || "(none)";
+  if (vocalDisplay) vocalDisplay.value = mwState.vocal_tags.join(", ");
 
   updatePayloadPreview();
 }
 
-document.getElementById("btn-save-preset").addEventListener("click", () => {
-  const preset = _buildPreset();
-  const name = (preset.song_name || "preset").replace(/[^a-z0-9_-]/gi, "_");
-  const blob = new Blob([JSON.stringify(preset, null, 2)], {type: "application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = name + ".nyx";
-  a.click();
-  URL.revokeObjectURL(url);
+// ── Chip sync helpers ─────────────────────────────────────────────────────────
+function _syncInstrumentChips() {
+  document.querySelectorAll("#instrument-chips .chip").forEach(chip => {
+    chip.classList.toggle("active", mwState.instruments.includes(chip.textContent.trim()));
+  });
+}
+function _syncVocalChips() {
+  document.querySelectorAll("#vocal-chips .chip").forEach(chip => {
+    chip.classList.toggle("active", mwState.vocal_tags.includes(chip.textContent.trim()));
+  });
+}
+
+// Editable selected textareas
+document.getElementById("instrument-selected").addEventListener("input", e => {
+  mwState.instruments = e.target.value.split(",").map(t => t.trim()).filter(Boolean);
+  _syncInstrumentChips();
+  updatePayloadPreview();
+});
+document.getElementById("vocal-selected").addEventListener("input", e => {
+  mwState.vocal_tags = e.target.value.split(",").map(t => t.trim()).filter(Boolean);
+  _syncVocalChips();
+  updatePayloadPreview();
 });
 
-document.getElementById("btn-load-preset").addEventListener("click", () => {
-  document.getElementById("preset-file-input").click();
-});
-
-document.getElementById("preset-file-input").addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    try {
-      const preset = JSON.parse(ev.target.result);
-      _applyPreset(preset);
-      document.getElementById("generate-status").textContent = `Loaded: ${file.name}`;
-      document.getElementById("generate-status").style.color = "var(--accent2)";
-    } catch {
-      document.getElementById("generate-status").textContent = "Failed to load preset — invalid file";
-      document.getElementById("generate-status").style.color = "var(--error)";
+// ── Preset modal ──────────────────────────────────────────────────────────────
+function _openPresetModal() {
+  const modal = document.getElementById("preset-modal");
+  const songName = document.getElementById("song-name").value.trim();
+  if (songName) document.getElementById("preset-name-input").value = songName;
+  modal.style.display = "flex";
+  _refreshPresetList();
+}
+function _closePresetModal() {
+  document.getElementById("preset-modal").style.display = "none";
+}
+async function _refreshPresetList() {
+  const list = document.getElementById("preset-list");
+  list.innerHTML = "<div style='color:var(--muted);padding:8px;font-size:12px'>Loading…</div>";
+  try {
+    const data = await fetch("/presets").then(r => r.json());
+    if (!data.presets.length) {
+      list.innerHTML = "<div style='color:var(--muted);padding:8px;font-size:12px'>(no saved presets)</div>";
+      return;
     }
-    e.target.value = "";
-  };
-  reader.readAsText(file);
+    list.innerHTML = data.presets.map(name =>
+      `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid var(--border)">
+        <span style="cursor:pointer;color:var(--text);font-size:12px;flex:1" data-load="${name}">${name}</span>
+        <button class="secondary small" style="font-size:10px;padding:2px 6px" data-delete="${name}">🗑</button>
+      </div>`
+    ).join("");
+    list.querySelectorAll("[data-load]").forEach(el => {
+      el.addEventListener("click", async () => {
+        const resp = await fetch(`/presets/${encodeURIComponent(el.dataset.load)}`);
+        const preset = await resp.json();
+        if (preset.error) return;
+        _applyPreset(preset);
+        _closePresetModal();
+        document.getElementById("generate-status").textContent = `Loaded: ${el.dataset.load}`;
+        document.getElementById("generate-status").style.color = "var(--accent2)";
+      });
+    });
+    list.querySelectorAll("[data-delete]").forEach(el => {
+      el.addEventListener("click", async () => {
+        if (!confirm(`Delete "${el.dataset.delete}"?`)) return;
+        await fetch(`/presets/${encodeURIComponent(el.dataset.delete)}`, {method: "DELETE"});
+        _refreshPresetList();
+      });
+    });
+  } catch {
+    list.innerHTML = "<div style='color:var(--error);padding:8px;font-size:12px'>Failed to load presets</div>";
+  }
+}
+document.getElementById("btn-preset-save-named").addEventListener("click", async () => {
+  const nameInput = document.getElementById("preset-name-input");
+  const name = nameInput.value.trim() || document.getElementById("song-name").value.trim() || "preset";
+  const preset = _buildPreset();
+  preset.song_name = name;
+  const resp = await fetch(`/presets/${encodeURIComponent(name)}`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(preset),
+  });
+  const data = await resp.json();
+  document.getElementById("preset-modal-status").textContent = `Saved as "${data.saved || name}"`;
+  nameInput.value = "";
+  _refreshPresetList();
+});
+document.getElementById("btn-save-preset").addEventListener("click", _openPresetModal);
+document.getElementById("btn-load-preset").addEventListener("click", _openPresetModal);
+document.getElementById("btn-preset-modal-close").addEventListener("click", _closePresetModal);
+document.getElementById("preset-modal").addEventListener("click", e => {
+  if (e.target === e.currentTarget) _closePresetModal();
+});
+
+// ── Clear button ──────────────────────────────────────────────────────────────
+document.getElementById("btn-clear-overview").addEventListener("click", () => {
+  if (!confirm("Clear all fields and reset state?")) return;
+  Object.assign(mwState, {
+    genre: "", bpm: 120, key: "C", scale: "Major", mode: "",
+    time_sig: "4/4", chords: "", notes: "",
+    instruments: [], vocal_tags: [], lyrics: "",
+    steps: 8, cfg_scale: 2.0, duration: 30.0, seed: 0, lock_seed: false,
+    temperature: 0.85, top_p: 0.9, top_k: 0, min_p: 0.0,
+  });
+  document.getElementById("song-name").value = "";
+  document.getElementById("overview-tags").value = "";
+  document.getElementById("overview-lyrics").value = "";
+  document.getElementById("lyrics-editor").value = "";
+  ["style-bpm","style-key","style-scale","style-mode","style-timesig","style-chords","style-notes"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = mwState[{
+      "style-bpm":"bpm","style-key":"key","style-scale":"scale","style-mode":"mode",
+      "style-timesig":"time_sig","style-chords":"chords","style-notes":"notes"
+    }[id]] ?? "";
+  });
+  ["param-steps","param-cfg","param-duration","param-temp","param-topp","param-topk","param-minp","param-seed"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = mwState[{
+      "param-steps":"steps","param-cfg":"cfg_scale","param-duration":"duration",
+      "param-temp":"temperature","param-topp":"top_p","param-topk":"top_k",
+      "param-minp":"min_p","param-seed":"seed"
+    }[id]] ?? 0;
+  });
+  document.getElementById("param-lock-seed").checked = false;
+  document.getElementById("instrument-selected").value = "";
+  document.getElementById("vocal-selected").value = "";
+  document.querySelectorAll("#instrument-chips .chip, #vocal-chips .chip").forEach(c => c.classList.remove("active"));
+  _activeGenre = null;
+  document.querySelectorAll("#genre-grid .chip").forEach(c => c.classList.remove("active"));
+  updatePayloadPreview();
 });
 
 // ── Generate ──────────────────────────────────────────────────────────────────
@@ -803,8 +899,8 @@ async function _doArtistLookup(artist, infoEl, stateObj, useWeb = false) {
       const {instrTags, vocalTags} = JSON.parse(decodeURIComponent(e.target.dataset.applyState));
       instrTags.forEach(t => { if (!mwState.instruments.includes(t)) mwState.instruments.push(t); });
       vocalTags.forEach(t => { if (!mwState.vocal_tags.includes(t)) mwState.vocal_tags.push(t); });
-      document.getElementById("instrument-selected").textContent = mwState.instruments.join(", ") || "(none)";
-      document.getElementById("vocal-selected").textContent = mwState.vocal_tags.join(", ") || "(none)";
+      document.getElementById("instrument-selected").value = mwState.instruments.join(", ");
+      document.getElementById("vocal-selected").value = mwState.vocal_tags.join(", ");
       updatePayloadPreview();
       e.target.textContent = "Applied ✓";
       e.target.disabled = true;
@@ -968,7 +1064,45 @@ function renderLintResults(results) {
     html += "</div>";
   }
   container.innerHTML = html;
+  document.getElementById("lint-fix-wrap").style.display =
+    (errors.length || warnings.length) ? "block" : "none";
 }
+
+// ── Lint Fix It ───────────────────────────────────────────────────────────────
+const _SECTION_KW = /\b(solo|verse|chorus|intro|outro|bridge|drop|breakdown|interlude|pre-chorus)\b/i;
+
+function _autoFix(tags, lyrics) {
+  let tokens = tags.split(",").map(t => t.trim()).filter(Boolean);
+  // Remove duplicates
+  const seen = new Set();
+  tokens = tokens.filter(t => { const tl = t.toLowerCase(); if (seen.has(tl)) return false; seen.add(tl); return true; });
+  // Strip tokens with brackets, parens, or section keywords
+  tokens = tokens.filter(t => !t.includes("[") && !t.includes("]") && !t.includes("(") && !t.includes(")") && !_SECTION_KW.test(t));
+  // Clamp to 12
+  if (tokens.length > 12) tokens = tokens.slice(0, 12);
+
+  let lyr = lyrics;
+  lyr = lyr.replace(/\[\[/g, "[").replace(/\]\]/g, "]");
+  lyr = lyr.replace(/\[\]/g, "");
+  const opens = (lyr.match(/\[/g) || []).length;
+  const closes = (lyr.match(/\]/g) || []).length;
+  if (opens > closes) lyr += "]".repeat(opens - closes);
+  if (lyr.trim() && !/\[(Verse|Chorus|Intro|Outro|Bridge|Interlude|Pre-Chorus|Drop|Build|Breakdown)/i.test(lyr))
+    lyr = "[Verse]\n\n" + lyr;
+
+  return { tags: tokens.join(", "), lyrics: lyr };
+}
+
+document.getElementById("btn-lint-fix").addEventListener("click", async () => {
+  const rawTags = document.getElementById("overview-tags").value;
+  const { tags, lyrics } = _autoFix(rawTags, mwState.lyrics);
+  document.getElementById("overview-tags").value = tags;
+  mwState.lyrics = lyrics;
+  document.getElementById("overview-lyrics").value = lyrics;
+  document.getElementById("lyrics-editor").value = lyrics;
+  updatePayloadPreview();
+  await lintAndShow(tags, lyrics);
+});
 
 // ── Stems tab ─────────────────────────────────────────────────────────────────
 document.getElementById("btn-stems-extract").addEventListener("click", async () => {
