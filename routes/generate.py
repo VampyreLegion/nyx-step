@@ -5,7 +5,7 @@ from typing import AsyncGenerator
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from core.comfyui import ComfyUIClient
@@ -20,22 +20,22 @@ class GenerateRequest(BaseModel):
     tags: str = ""
     lyrics: str = ""
     genre: str = ""
-    bpm: int = 120
+    bpm: int = Field(default=120, ge=40, le=300)
     key: str = "C"
     scale: str = "Major"
     mode: str = ""
     time_sig: str = "4/4"
     instruments: list[str] = []
     vocal_tags: list[str] = []
-    steps: int = 8
-    cfg_scale: float = 2.0
-    duration: float = 30.0
-    seed: int = 0
+    steps: int = Field(default=8, ge=1, le=150)
+    cfg_scale: float = Field(default=2.0, ge=0.1, le=20.0)
+    duration: float = Field(default=30.0, ge=5.0, le=300.0)
+    seed: int = Field(default=0, ge=0, le=4294967295)
     lock_seed: bool = False
-    temperature: float = 0.85
-    top_p: float = 0.9
-    top_k: int = 0
-    min_p: float = 0.0
+    temperature: float = Field(default=0.85, ge=0.0, le=2.0)
+    top_p: float = Field(default=0.9, ge=0.0, le=1.0)
+    top_k: int = Field(default=0, ge=0, le=1000)
+    min_p: float = Field(default=0.0, ge=0.0, le=1.0)
     song_name: str = "Untitled"
 
 

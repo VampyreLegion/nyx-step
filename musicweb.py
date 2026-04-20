@@ -3,7 +3,8 @@ import logging
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse, JSONResponse as _JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -12,6 +13,14 @@ from core.job_tracker import JobTracker
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="MusicWeb")
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError):
+    msgs = "; ".join(
+        f"{' → '.join(str(l) for l in e['loc'][1:])}: {e['msg']}"
+        for e in exc.errors()
+    )
+    return _JSONResponse({"error": f"Invalid parameters: {msgs}"}, status_code=400)
 
 # Shared job tracker — one instance for the process lifetime
 tracker = JobTracker()
