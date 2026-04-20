@@ -341,7 +341,27 @@ function buildCaption() {
   return parts.join(", ");
 }
 
+function syncParamsFromDOM() {
+  const fields = [
+    ["param-steps",    "steps",       v => parseInt(v)   || 8],
+    ["param-cfg",      "cfg_scale",   v => parseFloat(v) || 2.0],
+    ["param-duration", "duration",    v => parseFloat(v) || 30],
+    ["param-temp",     "temperature", v => parseFloat(v) || 0.85],
+    ["param-topp",     "top_p",       v => parseFloat(v) || 0.9],
+    ["param-topk",     "top_k",       v => parseInt(v)   || 0],
+    ["param-minp",     "min_p",       v => parseFloat(v) || 0.0],
+    ["param-seed",     "seed",        v => parseInt(v)   || 0],
+  ];
+  fields.forEach(([id, key, fn]) => {
+    const el = document.getElementById(id);
+    if (el) mwState[key] = fn(el.value);
+  });
+  const lock = document.getElementById("param-lock-seed");
+  if (lock) mwState.lock_seed = lock.checked;
+}
+
 function syncOverviewFromState() {
+  syncParamsFromDOM();
   document.getElementById("overview-tags").value = buildCaption();
   document.getElementById("overview-lyrics").value = mwState.lyrics || "";
   updatePayloadPreview();
