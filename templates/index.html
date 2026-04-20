@@ -754,7 +754,7 @@
     <div style="max-width:700px;margin:0 auto;padding-top:16px">
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
-        <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Nyx's ai Music Studio</h2>
+        <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Nyx's AI Music Studio</h2>
         <div style="color:var(--muted);font-size:13px">Version 2.5+ as we work towards version 4.20 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
       </div>
@@ -762,76 +762,94 @@
       <div class="about-section">
         <h3>Overview Tab</h3>
         <ul>
-          <li>Editable tags textarea — overrides Style / Instruments / Vocals tabs</li>
-          <li>Editable lyrics textarea — synced from Lyrics tab</li>
-          <li>Live payload preview showing exactly what gets sent to Nyx-Step</li>
-          <li>Sync from tabs button to rebuild tags from current state</li>
-          <li>Generate button with real-time job progress bar and SSE status updates</li>
-          <li>Job cards with download links for completed audio files</li>
+          <li>Editable tags textarea — overrides Style / Instruments / Vocals tabs; syncs automatically when switching to Overview</li>
+          <li>Editable lyrics textarea — bidirectionally synced with the Tagging tab editor</li>
+          <li>Live payload preview showing exactly what gets sent to Nyx-Step (tags, lyrics, BPM, key, steps, CFG, duration, seed, etc.)</li>
+          <li>↺ Sync from tabs button rebuilds tags from current state at any time</li>
+          <li>🎵 Generate Music Idea — submits job to ComfyUI with real-time progress bar and SSE status updates</li>
+          <li>Job cards with shimmer progress bars; completed jobs include a download link</li>
+          <li>💾 Save / 📂 Load — server-side preset modal; type a name to save, click any entry to load, 🗑 to delete</li>
+          <li>🗑 Clear — resets all fields, chips, and state to defaults with confirmation</li>
+          <li>All tab changes (Style, Instruments, Vocals, Parameters, Tagging) are reflected when switching to Overview</li>
         </ul>
       </div>
 
       <div class="about-section">
         <h3>Easy Tab</h3>
         <ul>
-          <li>Topic / Prompt, Mood, Subject / Character, and name-override fields</li>
+          <li>Topic / Prompt, Mood, Subject / Character, and name-override fields feed Ollama lyrics generation</li>
           <li>Style dropdown — 150+ genres grouped by category, auto-sets BPM / key / instruments</li>
-          <li>Song structure selector and Ollama model selector (defaults to gemma4:latest)</li>
-          <li>Instrumental only checkbox — switches to arrangement outline mode (no sung lyrics)</li>
+          <li>Song structure selector (Verse-Chorus, EDM, Intro-Verse-Chorus-Outro, etc.) and Ollama model selector</li>
+          <li>Instrumental only checkbox — generates an arrangement outline instead of sung lyrics</li>
           <li>Artist / Band lookup — queries Ollama (optionally grounded with Brave Search) for instruments and lyric writing style</li>
           <li>Vocal Artist lookup — queries Ollama / Brave Search for vocal style and range</li>
-          <li>Lookup results displayed as Nyx-Step formatted tags (genre, instrument, vocal, style)</li>
-          <li>Apply to state button — pushes instrument and vocal tags into generation state</li>
-          <li>All fields feed into Ollama lyrics generation with streaming output</li>
+          <li>Results displayed as Nyx-Step formatted tags; Apply to state pushes them into generation state</li>
+          <li>Live token counter during generation; streaming output directly in the tab</li>
         </ul>
       </div>
 
       <div class="about-section">
         <h3>Style Tab</h3>
         <ul>
-          <li>Genre browser with 150+ genres across 17 categories</li>
-          <li>Category sidebar + chip grid with live search</li>
-          <li>Selecting a genre auto-fills BPM, key, scale, mode, time signature</li>
+          <li>Genre browser with 150+ genres across 17 categories — category sidebar, chip grid, live search</li>
+          <li>Selecting a genre auto-fills BPM, key, scale, mode, time signature and immediately updates Overview tags</li>
           <li>Genre info panel shows description and typical instruments</li>
-          <li>BPM, Key, Scale, Mode, and Time Signature controls</li>
+          <li>BPM, Key, Scale, Mode, Time Signature controls — all reflected live in Overview payload preview</li>
+          <li>Chord Progression field with 44-preset dropdown (Pop, Rock, Electronic, R&amp;B, Jazz, Film, Metal, Ambient)</li>
+          <li>Notes / Melody Hint field for guiding harmonic and melodic structure</li>
         </ul>
       </div>
 
       <div class="about-section">
         <h3>Instruments &amp; Vocals Tabs</h3>
         <ul>
-          <li>Instruments: chip selector across all categories from AceTalk instruments database</li>
+          <li>Instruments: chip selector across all categories from the Nyx-Step instruments database</li>
           <li>Vocals: chip selectors for Tone, Style, Texture, and Gender tags</li>
-          <li>Selections feed into the Overview tags and Nyx-Step generation prompt</li>
+          <li>Both tabs have an editable Selected textarea — manually type or edit comma-separated values; chips re-sync automatically</li>
+          <li>Selections feed into Overview tags and the Nyx-Step generation prompt</li>
         </ul>
       </div>
 
       <div class="about-section">
         <h3>Tagging Tab</h3>
         <ul>
-          <li>Full lyrics editor with monospace font, synced bidirectionally with the Overview lyrics field</li>
-          <li>Song structure templates: Verse-Chorus, EDM Structure, Intro-Verse-Chorus-Outro, and more</li>
-          <li>Scrollable tag reference panel with 10 collapsible categories — all tags clickable to insert at cursor</li>
-          <li>Structural Brackets: [Verse], [Chorus], [Drop], [Build] etc. — insert on new line</li>
-          <li>Section—Adjective Combos: [Chorus - Anthemic], [Verse - Whispered] etc.</li>
+          <li>Full lyrics editor, synced bidirectionally with the Overview lyrics field</li>
+          <li>Song structure templates: Verse-Chorus, Verse-Chorus-Bridge, Intro-Verse-Chorus-Outro, EDM Structure, Minimal</li>
+          <li>10 collapsible tag categories — all tags clickable; plain-text tags stage in a buffer and insert as a (group)</li>
+          <li>Structural Brackets: [Verse], [Chorus], [Drop], [Build], [Outro] etc.</li>
+          <li>Section–Adjective Combos: [Chorus: Anthemic], [Verse: Whispered] etc.</li>
           <li>Vocal Controls: [Vocal: Rasp], [Vocal: Falsetto], [Vocal: Breathless] etc.</li>
           <li>Parenthetical markers: (echo), (harmony), (ad lib) for background vocal layers</li>
-          <li>Instrumentation: 35+ instrument tags (slap bass, juno synth, grand piano, etc.)</li>
-          <li>Performance Technique: staccato strings, legato, tremolo picking, pizzicato, etc.</li>
-          <li>Mood / Emotion: 30 descriptors (ethereal, dark, cinematic, hypnotic, etc.)</li>
-          <li>Production / Modules: lo-fi, gated reverb, sidechained, tape saturation, vocoder, etc.</li>
-          <li>Tempo &amp; Groove: BPM values, swing, shuffle, halftime, polyrhythm, etc.</li>
-          <li>Era / Style: 80s style, synthwave, shoegaze, trip hop, baroque, bossa nova, etc.</li>
-          <li>Language Codes: [zh], [ko], [ja], [es] etc. for multilingual phonetic enforcement</li>
+          <li>Instrumentation, Performance Technique, Mood / Emotion, Production, Tempo &amp; Groove, Era / Style tags</li>
+          <li>Language Codes: [zh], [ko], [ja], [es], [fr], [de], [en] for multilingual phonetic enforcement</li>
         </ul>
       </div>
 
       <div class="about-section">
         <h3>Parameters Tab</h3>
         <ul>
-          <li>Steps, CFG Scale, Duration (seconds)</li>
-          <li>Temperature, Top-P, Top-K, Min-P sampling controls</li>
-          <li>Seed with lock toggle for reproducible generations</li>
+          <li>Steps (1–150), CFG Scale (0.1–20), Duration in seconds (5–300)</li>
+          <li>Temperature (0–2), Top-P (0–1), Top-K (0–1000), Min-P (0–1) — all with deep tooltips</li>
+          <li>Seed with 🎲 random button and lock toggle for reproducible generations</li>
+          <li>All values validated server-side before reaching ComfyUI — out-of-range values return a readable error</li>
+          <li>Changes sync to Overview payload preview immediately and on tab switch</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Lint Tab</h3>
+        <ul>
+          <li>Validates current state or pasted tags / lyrics against Nyx-Step compatibility rules</li>
+          <li>Reports errors (bracket syntax in tags, section keywords in tags, mismatched brackets), warnings (duplicates, conflicting tempo), and tips</li>
+          <li>🔧 Fix It button auto-applies safe fixes: removes duplicate / malformed tags, balances brackets, adds [Verse] when missing, then re-lints</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Guide Tab</h3>
+        <ul>
+          <li>8-section reference: philosophy, tags, lyrics syntax, DAW tips, hidden syntax, operations, examples, troubleshooting</li>
+          <li>Summary page includes the Nyx-Step infographic, How AI Creates Music From Static diagram, and the full Keyword &amp; Tag Library</li>
         </ul>
       </div>
 
@@ -844,21 +862,15 @@
       </div>
 
       <div class="about-section">
-        <h3>Guide &amp; Lint Tabs</h3>
-        <ul>
-          <li>Guide: 8-section reference covering philosophy, tags, lyrics, DAW tips, hidden syntax, operations, examples, and troubleshooting</li>
-          <li>Lint: validates current state or pasted tags/lyrics — reports errors, warnings, and tips for Nyx-Step compatibility</li>
-        </ul>
-      </div>
-
-      <div class="about-section">
         <h3>Infrastructure</h3>
         <ul>
-          <li>FastAPI + uvicorn on Nyx (192.168.1.236) port 8001</li>
+          <li>FastAPI + uvicorn on Nyx (192.168.1.236) port 8001, auto-starts on reboot via systemd</li>
           <li>Server-Sent Events (SSE) for real-time job tracking and Ollama token streaming</li>
           <li>Exposed via Cloudflare Tunnel at music-ai.nyxstudios.net</li>
           <li>Protected by Cloudflare Access — Google OAuth (steve.j.petry@gmail.com only)</li>
-          <li>Brave Search API integration for real web-grounded artist lookups</li>
+          <li>Brave Search API for real web-grounded artist lookups</li>
+          <li>Presets stored server-side in ~/legionprojects/musicweb/presets/ as .nyx JSON files</li>
+          <li>ComfyUI on port 8188, Ollama on port 11434 (gemma4:latest default)</li>
         </ul>
       </div>
     </div>
