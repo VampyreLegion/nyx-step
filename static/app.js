@@ -38,10 +38,12 @@ document.querySelectorAll(".inner-tab-btn").forEach(btn => {
 const bind = (id, key, transform) => {
   const el = document.getElementById(id);
   if (!el) return;
-  el.addEventListener("input", () => {
+  const handler = () => {
     mwState[key] = transform ? transform(el.value) : el.value;
     updatePayloadPreview();
-  });
+  };
+  el.addEventListener("input", handler);
+  el.addEventListener("change", handler);
 };
 
 bind("style-bpm", "bpm", v => parseInt(v) || 120);
