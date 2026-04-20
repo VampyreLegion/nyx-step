@@ -29,35 +29,55 @@ def lookup_artist(artist: str, model: str = "gemma4:latest", use_web: bool = Fal
         from core.brave_search import search_artist
         web_context = search_artist(artist)
 
+    example = (
+        '{"genre_tag":"hip hop","instrument_tags":["drum machine","synthesizer","bass"],'
+        '"vocal_tags":["female vocal","powerful","rhythmic"],'
+        '"style_tags":["energetic","urban","bold","playful"],'
+        '"lyric_style":"Witty and confident with rapid-fire wordplay and self-empowerment themes.",'
+        '"lyric_themes":["confidence","dance","empowerment","fun"]}'
+    )
     system = (
-        "You are a music production expert. Analyze the given artist or band and return ONLY valid JSON "
-        "(no markdown fences, no explanation, nothing else). "
-        "All tags must be lowercase and suitable for ACE-Step music generation (a tag-based AI music model). "
-        "Use exactly these keys:\n"
-        "  genre_tag: primary genre as a single lowercase ACE-Step tag (e.g. 'psytrance', 'dark ambient')\n"
-        "  instrument_tags: array of instrument tags (e.g. ['electric guitar', 'synthesizer', 'drum kit'])\n"
-        "  vocal_tags: array of vocal descriptor tags (e.g. ['male vocal', 'baritone', 'raspy', 'falsetto'])\n"
-        "  style_tags: array of style/mood/texture tags (e.g. ['atmospheric', 'distorted', 'melodic', 'heavy'])\n"
-        "  lyric_style: one sentence describing their songwriting/lyric style\n"
-        "  lyric_themes: array of 3-5 common lyric theme words (e.g. ['darkness', 'rebellion', 'love'])"
+        "You are a music production expert. Your task: analyze an artist and output their musical profile "
+        "as a single JSON object — no markdown, no backticks, no explanation, just the raw JSON.\n"
+        "All string values must be lowercase. Use these exact keys:\n"
+        "  genre_tag (string): primary genre\n"
+        "  instrument_tags (array of strings): instruments used\n"
+        "  vocal_tags (array of strings): vocal style descriptors e.g. 'female vocal', 'raspy', 'falsetto'\n"
+        "  style_tags (array of strings): mood/texture/production style\n"
+        "  lyric_style (string): one sentence on their songwriting approach\n"
+        "  lyric_themes (array of strings): 3-5 common lyric themes\n\n"
+        f"Example output for a hip-hop artist:\n{example}"
     )
     prompt_parts = [system]
     if web_context:
         prompt_parts.append(f"\nWeb search context:\n{web_context}")
-    prompt_parts.append(f"\nArtist: {artist}")
+    prompt_parts.append(f"\nNow analyze this artist and return ONLY the JSON: {artist}")
 
     payload = {"model": model, "prompt": "\n".join(prompt_parts), "stream": False}
     try:
-        resp = requests.post(f"{config.OLLAMA_URL}/api/generate", json=payload, timeout=30)
+        resp = requests.post(f"{config.OLLAMA_URL}/api/generate", json=payload, timeout=60)
         resp.raise_for_status()
-        text = resp.json().get("response", "{}")
+        text = resp.json().get("response", "").strip()
+        logger.info("Artist lookup raw response for %r: %s", artist, text[:300])
+
+        # Strip markdown fences if present
+        text = re.sub(r'^```[a-z]*\s*', '', text, flags=re.MULTILINE)
+        text = re.sub(r'```\s*$', '', text, flags=re.MULTILINE)
+        text = text.strip()
+
+        # Try to find JSON object
         match = re.search(r'\{.*\}', text, re.DOTALL)
         if match:
-            return json.loads(match.group())
-        return {}
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError as exc:
+                logger.error("JSON parse failed for %r: %s — raw: %s", artist, exc, text[:200])
+                return {"error": f"Model returned malformed JSON: {text[:120]}"}
+        logger.error("No JSON found in response for %r: %s", artist, text[:200])
+        return {"error": f"No results found. Model said: {text[:120]}"}
     except Exception as exc:
         logger.error("Artist lookup failed: %s", exc)
-        return {}
+        return {"error": str(exc)}
 
 
 def stream_lyrics(
