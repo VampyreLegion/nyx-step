@@ -418,6 +418,138 @@ document.getElementById("overview-tags").addEventListener("input", updatePayload
 document.getElementById("overview-lyrics").addEventListener("input", updatePayloadPreview);
 document.getElementById("btn-sync-overview").addEventListener("click", syncOverviewFromState);
 
+// ── Save / Load preset ────────────────────────────────────────────────────────
+function _buildPreset() {
+  syncParamsFromDOM();
+  return {
+    _version: 1,
+    song_name: document.getElementById("song-name").value.trim() || "Untitled",
+    tags: document.getElementById("overview-tags").value,
+    lyrics: mwState.lyrics,
+    genre: mwState.genre,
+    bpm: mwState.bpm,
+    key: mwState.key,
+    scale: mwState.scale,
+    mode: mwState.mode,
+    time_sig: mwState.time_sig,
+    chords: mwState.chords,
+    notes: mwState.notes,
+    instruments: [...mwState.instruments],
+    vocal_tags: [...mwState.vocal_tags],
+    steps: mwState.steps,
+    cfg_scale: mwState.cfg_scale,
+    duration: mwState.duration,
+    seed: mwState.seed,
+    lock_seed: mwState.lock_seed,
+    temperature: mwState.temperature,
+    top_p: mwState.top_p,
+    top_k: mwState.top_k,
+    min_p: mwState.min_p,
+  };
+}
+
+function _applyPreset(p) {
+  // mwState
+  if (p.genre     !== undefined) mwState.genre       = p.genre;
+  if (p.bpm       !== undefined) mwState.bpm         = p.bpm;
+  if (p.key       !== undefined) mwState.key         = p.key;
+  if (p.scale     !== undefined) mwState.scale       = p.scale;
+  if (p.mode      !== undefined) mwState.mode        = p.mode;
+  if (p.time_sig  !== undefined) mwState.time_sig    = p.time_sig;
+  if (p.chords    !== undefined) mwState.chords      = p.chords;
+  if (p.notes     !== undefined) mwState.notes       = p.notes;
+  if (p.instruments !== undefined) mwState.instruments  = [...p.instruments];
+  if (p.vocal_tags  !== undefined) mwState.vocal_tags   = [...p.vocal_tags];
+  if (p.steps       !== undefined) mwState.steps        = p.steps;
+  if (p.cfg_scale   !== undefined) mwState.cfg_scale    = p.cfg_scale;
+  if (p.duration    !== undefined) mwState.duration     = p.duration;
+  if (p.seed        !== undefined) mwState.seed         = p.seed;
+  if (p.lock_seed   !== undefined) mwState.lock_seed    = p.lock_seed;
+  if (p.temperature !== undefined) mwState.temperature  = p.temperature;
+  if (p.top_p       !== undefined) mwState.top_p        = p.top_p;
+  if (p.top_k       !== undefined) mwState.top_k        = p.top_k;
+  if (p.min_p       !== undefined) mwState.min_p        = p.min_p;
+  if (p.lyrics      !== undefined) mwState.lyrics       = p.lyrics;
+
+  // Style tab DOM
+  const _set = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
+  _set("style-bpm",     mwState.bpm);
+  _set("style-key",     mwState.key);
+  _set("style-scale",   mwState.scale);
+  _set("style-mode",    mwState.mode);
+  _set("style-timesig", mwState.time_sig);
+  _set("style-chords",  mwState.chords);
+  _set("style-notes",   mwState.notes);
+
+  // Parameters tab DOM
+  _set("param-steps",    mwState.steps);
+  _set("param-cfg",      mwState.cfg_scale);
+  _set("param-duration", mwState.duration);
+  _set("param-temp",     mwState.temperature);
+  _set("param-topp",     mwState.top_p);
+  _set("param-topk",     mwState.top_k);
+  _set("param-minp",     mwState.min_p);
+  _set("param-seed",     mwState.seed);
+  const lockEl = document.getElementById("param-lock-seed");
+  if (lockEl) lockEl.checked = mwState.lock_seed;
+
+  // Overview DOM
+  _set("song-name",       p.song_name);
+  _set("overview-tags",   p.tags ?? "");
+  _set("overview-lyrics", mwState.lyrics);
+  _set("lyrics-editor",   mwState.lyrics);
+
+  // Re-sync instrument chip active states
+  document.querySelectorAll("#instrument-chips .chip").forEach(chip => {
+    chip.classList.toggle("active", mwState.instruments.includes(chip.textContent));
+  });
+  const instrDisplay = document.getElementById("instrument-selected");
+  if (instrDisplay) instrDisplay.textContent = mwState.instruments.join(", ") || "(none)";
+
+  // Re-sync vocal chip active states
+  document.querySelectorAll("#vocal-chips .chip").forEach(chip => {
+    chip.classList.toggle("active", mwState.vocal_tags.includes(chip.textContent));
+  });
+  const vocalDisplay = document.getElementById("vocal-selected");
+  if (vocalDisplay) vocalDisplay.textContent = mwState.vocal_tags.join(", ") || "(none)";
+
+  updatePayloadPreview();
+}
+
+document.getElementById("btn-save-preset").addEventListener("click", () => {
+  const preset = _buildPreset();
+  const name = (preset.song_name || "preset").replace(/[^a-z0-9_-]/gi, "_");
+  const blob = new Blob([JSON.stringify(preset, null, 2)], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name + ".nyx";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("btn-load-preset").addEventListener("click", () => {
+  document.getElementById("preset-file-input").click();
+});
+
+document.getElementById("preset-file-input").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const preset = JSON.parse(ev.target.result);
+      _applyPreset(preset);
+      document.getElementById("generate-status").textContent = `Loaded: ${file.name}`;
+      document.getElementById("generate-status").style.color = "var(--accent2)";
+    } catch {
+      document.getElementById("generate-status").textContent = "Failed to load preset — invalid file";
+      document.getElementById("generate-status").style.color = "var(--error)";
+    }
+    e.target.value = "";
+  };
+  reader.readAsText(file);
+});
+
 // ── Generate ──────────────────────────────────────────────────────────────────
 let _activeGenPromptId = null;
 let _genProgressTimer = null;

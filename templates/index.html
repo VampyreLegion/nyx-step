@@ -51,9 +51,12 @@
       <div class="section-title">What gets sent</div>
       <div class="preview-box" id="payload-preview" style="font-size:11px;line-height:1.8;color:var(--text)"></div>
     </div>
-    <div style="margin:14px 0">
+    <div style="margin:14px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <button id="btn-generate">🎵 Generate Music Idea</button>
-      <span id="generate-status" style="margin-left:12px;font-size:12px;color:var(--muted)"></span>
+      <button class="secondary small" id="btn-save-preset" title="Save all settings and lyrics to a .nyx file">💾 Save</button>
+      <button class="secondary small" id="btn-load-preset" title="Load a previously saved .nyx file">📂 Load</button>
+      <input type="file" id="preset-file-input" accept=".nyx,.json" style="display:none">
+      <span id="generate-status" style="font-size:12px;color:var(--muted)"></span>
     </div>
     <div id="gen-progress-wrap" style="display:none;margin-bottom:14px">
       <div class="job-progress" style="height:5px;border-radius:3px">
@@ -859,6 +862,6 @@
 
 </div>
 
-<script src="/static/app.js?v=24"></script>
+<script src="/static/app.js?v=25"></script>
 </body>
 </html>
