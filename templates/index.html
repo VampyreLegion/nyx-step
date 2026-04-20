@@ -188,6 +188,68 @@
     <div class="row">
       <div class="field-group">
         <label title="Chord progression using Roman numerals, note names, or Nashville notation. e.g. Am - F - C - G  or  i - VI - III - VII  or  1 - 4 - 5. Appended to the generation tags.">Chord Progression <span style="font-size:11px;color:var(--muted)">(optional)</span></label>
+        <select id="style-chords-preset" style="margin-bottom:5px" title="Pick a preset or type your own below">
+          <option value="">— pick a preset —</option>
+          <optgroup label="Pop">
+            <option value="I - V - vi - IV">I - V - vi - IV (classic pop)</option>
+            <option value="I - IV - V - I">I - IV - V - I (basic pop)</option>
+            <option value="vi - IV - I - V">vi - IV - I - V (minor-feel pop)</option>
+            <option value="I - vi - IV - V">I - vi - IV - V (50s pop)</option>
+            <option value="I - V - vi - iii - IV">I - V - vi - iii - IV (extended pop)</option>
+            <option value="ii - V - I">ii - V - I (jazz pop turnaround)</option>
+          </optgroup>
+          <optgroup label="Rock">
+            <option value="I - IV - V">I - IV - V (12-bar rock)</option>
+            <option value="i - VII - VI - VII">i - VII - VI - VII (minor rock anthem)</option>
+            <option value="I - bVII - IV - I">I - bVII - IV - I (power rock)</option>
+            <option value="i - VI - III - VII">i - VI - III - VII (epic rock)</option>
+            <option value="I - IV - bVII - IV">I - IV - bVII - IV (mixolydian rock)</option>
+            <option value="I - V - IV - V">I - V - IV - V (blues-rock)</option>
+          </optgroup>
+          <optgroup label="Electronic / Dance">
+            <option value="i - VI - III - VII">i - VI - III - VII (trance anthem)</option>
+            <option value="i - VII - VI - VII">i - VII - VI - VII (progressive house)</option>
+            <option value="i - iv - VII - III">i - iv - VII - III (dark techno loop)</option>
+            <option value="I - II - IV - I">I - II - IV - I (euphoric EDM)</option>
+            <option value="i - i - VI - VII">i - i - VI - VII (minimal loop)</option>
+            <option value="I - iii - IV - V">I - iii - IV - V (uplifting trance)</option>
+            <option value="vi - V - IV - III">vi - V - IV - III (descending EDM)</option>
+          </optgroup>
+          <optgroup label="R&B / Soul / Funk">
+            <option value="IVmaj7 - iii7 - ii7 - I7">IVmaj7 - iii7 - ii7 - I7 (neo-soul)</option>
+            <option value="i7 - IV7 - i7 - IV7">i7 - IV7 (funk groove)</option>
+            <option value="ii7 - V7 - Imaj7 - VImaj7">ii7 - V7 - Imaj7 - VImaj7 (smooth R&B)</option>
+            <option value="I - bIII - IV - bVII">I - bIII - IV - bVII (soulful)</option>
+            <option value="i - VI - i - V">i - VI - i - V (moody R&B)</option>
+          </optgroup>
+          <optgroup label="Jazz">
+            <option value="IIm7 - V7 - Imaj7">IIm7 - V7 - Imaj7 (jazz ii-V-I)</option>
+            <option value="Imaj7 - VIm7 - IIm7 - V7">Imaj7 - VIm7 - IIm7 - V7 (rhythm changes)</option>
+            <option value="IIm7b5 - V7 - Im">IIm7b5 - V7 - Im (minor ii-V-i)</option>
+            <option value="I7 - IV7 - I7 - V7">I7 - IV7 - I7 - V7 (12-bar jazz blues)</option>
+            <option value="IIIm7 - VI7 - IIm7 - V7">IIIm7 - VI7 - IIm7 - V7 (bird changes)</option>
+          </optgroup>
+          <optgroup label="Film / Cinematic">
+            <option value="i - bVI - bIII - bVII">i - bVI - bIII - bVII (epic cinematic)</option>
+            <option value="I - bVII - bVI - bVII">I - bVII - bVI - bVII (heroic theme)</option>
+            <option value="i - bVII - bVI - V">i - bVII - bVI - V (dramatic tension)</option>
+            <option value="I - iii - vi - IV">I - iii - vi - IV (emotional score)</option>
+            <option value="i - iv - bVII - bIII">i - iv - bVII - bIII (dark orchestral)</option>
+            <option value="Imaj7 - IVmaj7 - bVIImaj7 - bIIImaj7">Imaj7 - IVmaj7 - bVIImaj7 - bIIImaj7 (dreamy film)</option>
+          </optgroup>
+          <optgroup label="Metal / Heavy">
+            <option value="i - bVI - bVII - i">i - bVI - bVII - i (power metal)</option>
+            <option value="i - bVII - bVI - bVII">i - bVII - bVI - bVII (thrash riff)</option>
+            <option value="i - iv - i - V">i - iv - i - V (doom metal)</option>
+            <option value="i - bII - i - bVII">i - bII - i - bVII (phrygian metal)</option>
+          </optgroup>
+          <optgroup label="Ambient / Experimental">
+            <option value="Imaj7 - IVmaj7">Imaj7 - IVmaj7 (floating two-chord)</option>
+            <option value="i - bVII">i - bVII (dark ambient drone)</option>
+            <option value="I - II">I - II (lydian float)</option>
+            <option value="i - bII - bVII - i">i - bII - bVII - i (modal mystery)</option>
+          </optgroup>
+        </select>
         <input type="text" id="style-chords" placeholder="e.g. Am - F - C - G  or  i - VI - III - VII"
           title="Chord progression to guide the harmonic structure. Use note names, Roman numerals, or Nashville numbers.">
       </div>
@@ -797,6 +859,6 @@
 
 </div>
 
-<script src="/static/app.js?v=21"></script>
+<script src="/static/app.js?v=24"></script>
 </body>
 </html>

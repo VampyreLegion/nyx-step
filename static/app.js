@@ -15,6 +15,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.classList.add("active");
     document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
     if (btn.dataset.tab === "overview") syncOverviewFromState();
+    if (btn.dataset.tab === "lyrics") document.getElementById("lyrics-editor").value = mwState.lyrics;
     if (btn.dataset.tab === "lint") updateLintStatePreview();
   });
 });
@@ -52,6 +53,13 @@ bind("style-scale", "scale");
 bind("style-mode", "mode");
 bind("style-timesig", "time_sig");
 bind("style-chords", "chords");
+document.getElementById("style-chords-preset").addEventListener("change", e => {
+  if (!e.target.value) return;
+  document.getElementById("style-chords").value = e.target.value;
+  mwState.chords = e.target.value;
+  e.target.value = "";
+  updatePayloadPreview();
+});
 bind("style-notes", "notes");
 bind("param-steps", "steps", v => parseInt(v) || 8);
 bind("param-cfg", "cfg_scale", v => parseFloat(v) || 2.0);
@@ -77,6 +85,11 @@ document.getElementById("btn-random-seed").addEventListener("click", () => {
 document.getElementById("lyrics-editor").addEventListener("input", e => {
   mwState.lyrics = e.target.value;
   updatePayloadPreview();
+});
+
+// Keep overview-lyrics in sync with mwState so tab switches don't lose edits
+document.getElementById("overview-lyrics").addEventListener("input", e => {
+  mwState.lyrics = e.target.value;
 });
 
 // ── Tagging tab — staging buffer ─────────────────────────────────────────────
@@ -343,6 +356,13 @@ function buildCaption() {
 
 function syncParamsFromDOM() {
   const fields = [
+    ["style-bpm",      "bpm",         v => parseInt(v)   || 120],
+    ["style-key",      "key",         v => v || "C"],
+    ["style-scale",    "scale",       v => v || "Major"],
+    ["style-mode",     "mode",        v => v],
+    ["style-timesig",  "time_sig",    v => v || "4/4"],
+    ["style-chords",   "chords",      v => v],
+    ["style-notes",    "notes",       v => v],
     ["param-steps",    "steps",       v => parseInt(v)   || 8],
     ["param-cfg",      "cfg_scale",   v => parseFloat(v) || 2.0],
     ["param-duration", "duration",    v => parseFloat(v) || 30],
