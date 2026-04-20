@@ -1008,7 +1008,7 @@ function loadGuideSection(sectionId, btn) {
     });
 }
 // Load summary on first visit
-loadGuideSection("summary", null);
+loadGuideSection("starthere", null);
 
 // ── Lint tab ──────────────────────────────────────────────────────────────────
 document.getElementById("btn-lint-state").addEventListener("click", () => {

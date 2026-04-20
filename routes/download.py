@@ -10,7 +10,7 @@ from musicweb import tracker, get_user_email
 
 router = APIRouter()
 
-_CHAPTER_IDS = ["summary", "flowcharts", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
+_CHAPTER_IDS = ["starthere", "summary", "flowcharts", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
 
 _STYLE = (
     "<style>"
@@ -50,8 +50,22 @@ _FLOWCHARTS_HTML = (
 )
 
 
+_START_HERE_HTML = (
+    f"<html><head>{_STYLE}</head><body>"
+    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">Start Here</h2>'
+    '<div style="text-align:center">'
+    '<img src="/static/images/nyx-start-here.png" '
+    'alt="From Blank Slate to Beatmaker: A Musical Journey with Nyx AI" '
+    'style="max-width:100%;border-radius:8px;border:1px solid #2d3041">'
+    '</div>'
+    "</body></html>"
+)
+
+
 def _parse_chapter(section_id: str) -> str:
     """Extract one <h2 id="section_id">...</h2> section from Aceuser.html."""
+    if section_id == "starthere":
+        return _START_HERE_HTML
     if section_id == "flowcharts":
         return _FLOWCHARTS_HTML
     if not config.ACEUSER_HTML.exists():
