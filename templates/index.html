@@ -777,24 +777,27 @@
           <li>Editable lyrics textarea — bidirectionally synced with the Tagging tab editor</li>
           <li>Live payload preview showing exactly what gets sent to Nyx-Step (tags, lyrics, BPM, key, steps, CFG, duration, seed, etc.)</li>
           <li>↺ Sync from tabs button rebuilds tags from current state at any time</li>
-          <li>🎵 Generate Music Idea — submits job to ComfyUI with real-time progress bar and SSE status updates</li>
-          <li>Job cards with shimmer progress bars; completed jobs include a download link</li>
+          <li>🎵 Generate Music Idea — submits job to ComfyUI with real-time progress bar and SSE status updates; job card appears immediately on submit</li>
+          <li>Job cards with shimmer progress bars; completed jobs include a download link and 🔀 Remix button</li>
+          <li>🔀 Remix — inline panel per job: Variation (re-generate with denoise control) or Extend (seed from last N seconds and grow the track)</li>
+          <li>🗑 Clear list — removes all job cards from the display</li>
           <li>💾 Save / 📂 Load — server-side preset modal; type a name to save, click any entry to load, 🗑 to delete</li>
           <li>🗑 Clear — resets all fields, chips, and state to defaults with confirmation</li>
-          <li>All tab changes (Style, Instruments, Vocals, Parameters, Tagging) are reflected when switching to Overview</li>
+          <li>All tab changes (Style, Instruments, Vocals, Parameters, Tagging) are reflected live in Overview tags and payload preview</li>
         </ul>
       </div>
 
       <div class="about-section">
-        <h3>Easy Tab</h3>
+        <h3>Legion's BioInfusor</h3>
         <ul>
           <li>Topic / Prompt, Mood, Subject / Character, and name-override fields feed Ollama lyrics generation</li>
           <li>Style dropdown — 150+ genres grouped by category, auto-sets BPM / key / instruments</li>
           <li>Song structure selector (Verse-Chorus, EDM, Intro-Verse-Chorus-Outro, etc.) and Ollama model selector</li>
           <li>Instrumental only checkbox — generates an arrangement outline instead of sung lyrics</li>
-          <li>Artist / Band lookup — queries Ollama (optionally grounded with Brave Search) for instruments and lyric writing style</li>
-          <li>Vocal Artist lookup — queries Ollama / Brave Search for vocal style and range</li>
-          <li>Results displayed as Nyx-Step formatted tags; Apply to state pushes them into generation state</li>
+          <li>Artist / Band lookup — queries Ollama (optionally grounded with Brave Search) for genre, instruments, lyric style, lyric themes, and vocal characteristics</li>
+          <li>Vocal Artist lookup — queries Ollama / Brave Search for vocal style, range, and typical vocal key (e.g. "a3-d5, often in g major / e minor")</li>
+          <li>Results displayed as Nyx-Step formatted tags including vocal key; Apply to state pushes them into generation state</li>
+          <li>Only one Apply button (Artist or Vocal) active at a time — selecting one clears the other</li>
           <li>Live token counter during generation; streaming output directly in the tab</li>
         </ul>
       </div>
@@ -803,9 +806,10 @@
         <h3>Style Tab</h3>
         <ul>
           <li>Genre browser with 150+ genres across 17 categories — category sidebar, chip grid, live search</li>
-          <li>Selecting a genre auto-fills BPM, key, scale, mode, time signature and immediately updates Overview tags</li>
+          <li>Selecting a genre auto-fills BPM, key, scale, mode, time signature and immediately updates Overview tags live</li>
           <li>Genre info panel shows description and typical instruments</li>
-          <li>BPM, Key, Scale, Mode, Time Signature controls — all reflected live in Overview payload preview</li>
+          <li>BPM, Key, Scale, Mode, Time Signature controls — all changes sync to Overview tags and payload preview in real time</li>
+          <li>Non-standard scales (pentatonic, harmonic minor, etc.) automatically map to the nearest valid Nyx-Step keyscale and append the scale name to tags</li>
           <li>Chord Progression field with 44-preset dropdown (Pop, Rock, Electronic, R&amp;B, Jazz, Film, Metal, Ambient)</li>
           <li>Notes / Melody Hint field for guiding harmonic and melodic structure</li>
         </ul>
@@ -824,7 +828,7 @@
       <div class="about-section">
         <h3>Tagging Tab</h3>
         <ul>
-          <li>Full lyrics editor, synced bidirectionally with the Overview lyrics field</li>
+          <li>Full lyrics editor (expanded to 480px, vertically resizable), synced bidirectionally with the Overview lyrics field</li>
           <li>Song structure templates: Verse-Chorus, Verse-Chorus-Bridge, Intro-Verse-Chorus-Outro, EDM Structure, Minimal</li>
           <li>10 collapsible tag categories — all tags clickable; plain-text tags stage in a buffer and insert as a (group)</li>
           <li>Structural Brackets: [Verse], [Chorus], [Drop], [Build], [Outro] etc.</li>
