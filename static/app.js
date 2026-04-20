@@ -388,6 +388,7 @@ function addJobCard(promptId, songName, status, files) {
   card.innerHTML = `
     <div style="font-weight:600">${songName}</div>
     <div class="status ${status}">${statusLabel(status)}</div>
+    <div class="job-progress"><div class="job-progress-bar ${status}"></div></div>
     <div class="job-files" style="margin-top:6px"></div>
   `;
   if (files && files.length) addDownloadLinks(card.querySelector(".job-files"), files);
@@ -399,6 +400,8 @@ function updateJobCard(promptId, status, files) {
   if (!card) return;
   card.querySelector(".status").className = "status " + status;
   card.querySelector(".status").textContent = statusLabel(status);
+  const bar = card.querySelector(".job-progress-bar");
+  if (bar) bar.className = "job-progress-bar " + status;
   if (files && files.length) addDownloadLinks(card.querySelector(".job-files"), files);
 }
 
@@ -419,6 +422,11 @@ function statusLabel(s) {
 }
 
 // ── Easy tab — Ollama ─────────────────────────────────────────────────────────
+const _easyArtistState = {};
+const _easyVocalState = {};
+let _easyStyleInstruments = [];
+let _genreMap = {};
+
 fetch("/ollama/models").then(r => r.json()).then(data => {
   const sel = document.getElementById("easy-model");
   sel.innerHTML = "";
@@ -430,6 +438,112 @@ fetch("/ollama/models").then(r => r.json()).then(data => {
   if (data.models.includes("gemma4:latest")) sel.value = "gemma4:latest";
 });
 
+fetch("/api/genres").then(r => r.json()).then(data => {
+  const genres = data.genres || [];
+  genres.forEach(g => { _genreMap[g.name] = g; });
+  const sel = document.getElementById("easy-style");
+  const byParent = {};
+  genres.forEach(g => {
+    if (!byParent[g.parent]) byParent[g.parent] = [];
+    byParent[g.parent].push(g);
+  });
+  Object.keys(byParent).sort().forEach(cat => {
+    const og = document.createElement("optgroup");
+    og.label = cat;
+    byParent[cat].forEach(g => {
+      const opt = document.createElement("option");
+      opt.value = g.name;
+      opt.textContent = g.name;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+});
+
+document.getElementById("easy-style").addEventListener("change", e => {
+  const val = e.target.value;
+  const infoEl = document.getElementById("easy-style-info");
+  if (!val) { infoEl.style.display = "none"; _easyStyleInstruments = []; return; }
+  const g = _genreMap[val];
+  if (!g) return;
+  mwState.genre = g.name;
+  mwState.bpm = Math.round((g.bpm_min + g.bpm_max) / 2);
+  mwState.key = g.default_key || "C";
+  mwState.scale = g.default_scale || "Major";
+  _easyStyleInstruments = g.typical_instruments || [];
+  let html = `<strong style="color:var(--accent)">${g.name}</strong>`;
+  if (g.description) html += ` — ${g.description}`;
+  if (_easyStyleInstruments.length) html += `<br>Instruments: ${_easyStyleInstruments.join(", ")}`;
+  infoEl.innerHTML = html;
+  infoEl.style.display = "block";
+  updatePayloadPreview();
+});
+
+async function _doArtistLookup(artist, infoEl, stateObj, useWeb = false) {
+  infoEl.textContent = useWeb ? "Searching web + looking up…" : "Looking up…";
+  try {
+    const resp = await fetch("/ollama/artist-info", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({artist, model: document.getElementById("easy-model").value, use_web: useWeb}),
+    });
+    const data = await resp.json();
+    if (data.error) { infoEl.textContent = "Error: " + data.error; return; }
+    Object.assign(stateObj, data);
+
+    const instrTags = data.instrument_tags || [];
+    const vocalTags = data.vocal_tags || [];
+    const styleTags = data.style_tags || [];
+    const genreTag = data.genre_tag || "";
+    const allAceTags = [genreTag, ...instrTags, ...vocalTags, ...styleTags].filter(Boolean);
+
+    let html = "";
+    if (allAceTags.length) {
+      html += `<div style="margin-bottom:4px"><span style="color:var(--muted)">ACE-Step tags:</span> `
+            + `<span style="color:var(--accent2)">${allAceTags.join(", ")}</span></div>`;
+    }
+    if (data.lyric_style) {
+      html += `<div style="margin-bottom:2px"><span style="color:var(--muted)">Style:</span> ${data.lyric_style}</div>`;
+    }
+    if (data.lyric_themes?.length) {
+      html += `<div style="margin-bottom:4px"><span style="color:var(--muted)">Themes:</span> ${data.lyric_themes.join(", ")}</div>`;
+    }
+    if (allAceTags.length) {
+      html += `<button class="secondary small" data-apply-state="${encodeURIComponent(JSON.stringify({instrTags, vocalTags}))}" style="margin-top:2px">Apply to state</button>`;
+    }
+    infoEl.innerHTML = html || "No info found";
+
+    infoEl.querySelector("[data-apply-state]")?.addEventListener("click", e => {
+      const {instrTags, vocalTags} = JSON.parse(decodeURIComponent(e.target.dataset.applyState));
+      instrTags.forEach(t => { if (!mwState.instruments.includes(t)) mwState.instruments.push(t); });
+      vocalTags.forEach(t => { if (!mwState.vocal_tags.includes(t)) mwState.vocal_tags.push(t); });
+      document.getElementById("instrument-selected").textContent = mwState.instruments.join(", ") || "(none)";
+      document.getElementById("vocal-selected").textContent = mwState.vocal_tags.join(", ") || "(none)";
+      updatePayloadPreview();
+      e.target.textContent = "Applied ✓";
+      e.target.disabled = true;
+    });
+  } catch(err) {
+    infoEl.textContent = "Lookup failed: " + err.message;
+  }
+}
+
+document.getElementById("btn-easy-artist-lookup").addEventListener("click", () => {
+  const artist = document.getElementById("easy-artist").value.trim();
+  const infoEl = document.getElementById("easy-artist-info");
+  if (!artist) { infoEl.textContent = "Enter an artist name."; return; }
+  const useWeb = document.getElementById("easy-artist-web").checked;
+  _doArtistLookup(artist, infoEl, _easyArtistState, useWeb);
+});
+
+document.getElementById("btn-easy-vocal-lookup").addEventListener("click", () => {
+  const artist = document.getElementById("easy-vocal-artist").value.trim();
+  const infoEl = document.getElementById("easy-vocal-info");
+  if (!artist) { infoEl.textContent = "Enter an artist name."; return; }
+  const useWeb = document.getElementById("easy-vocal-web").checked;
+  _doArtistLookup(artist, infoEl, _easyVocalState, useWeb);
+});
+
 document.getElementById("btn-easy-gen").addEventListener("click", () => {
   const log = document.getElementById("easy-log");
   log.style.display = "block";
@@ -438,15 +552,33 @@ document.getElementById("btn-easy-gen").addEventListener("click", () => {
   editor.value = "";
   mwState.lyrics = "";
 
+  const instrumental = document.getElementById("easy-instrumental").checked;
+  const instrSet = new Set([
+    ..._easyStyleInstruments,
+    ...(_easyArtistState.instrument_tags || []),
+  ]);
+  const instrumentsHint = [...instrSet].join(", ");
+  const vocalTags = [
+    ...(_easyVocalState.vocal_tags || []),
+    ...(_easyArtistState.vocal_tags || []),
+  ];
+  const vocalStyle = [...new Set(vocalTags)].join(", ");
+
   const params = new URLSearchParams({
     topic: document.getElementById("easy-topic").value,
-    genre: mwState.genre || "electronic",
+    genre: mwState.genre || document.getElementById("easy-style").value || "electronic",
     key: mwState.key,
     mood: document.getElementById("easy-mood").value,
     structure: document.getElementById("easy-structure").value,
     subject: document.getElementById("easy-subject").value,
     name_override: document.getElementById("easy-name-override").value,
     model: document.getElementById("easy-model").value,
+    artist: document.getElementById("easy-artist").value.trim(),
+    lyric_style: _easyArtistState.lyric_style || "",
+    lyric_themes: (_easyArtistState.lyric_themes || []).join(", "),
+    vocal_style: vocalStyle,
+    instruments_hint: instrumentsHint,
+    instrumental: instrumental ? "true" : "false",
   });
 
   const es = new EventSource("/ollama/stream?" + params.toString());

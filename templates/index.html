@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Nyx's ai Music Studio by Legion</title>
-  <link rel="stylesheet" href="/static/style.css?v=4">
+  <link rel="stylesheet" href="/static/style.css?v=8">
 </head>
 <body>
 
@@ -22,9 +22,9 @@
   <button class="tab-btn" data-tab="vocals">Vocals</button>
   <button class="tab-btn" data-tab="lyrics">Lyrics</button>
   <button class="tab-btn" data-tab="parameters">Parameters</button>
+  <button class="tab-btn" data-tab="lint">Lint</button>
   <button class="tab-btn" data-tab="stems">Stems</button>
   <button class="tab-btn" data-tab="guide">Guide</button>
-  <button class="tab-btn" data-tab="lint">Lint</button>
   <button class="tab-btn" data-tab="about">About</button>
 </div>
 
@@ -82,6 +82,10 @@
     </div>
     <div class="row">
       <div class="field-group">
+        <label>Style</label>
+        <select id="easy-style"><option value="">-- select style --</option></select>
+      </div>
+      <div class="field-group">
         <label>Structure</label>
         <select id="easy-structure">
           <option>Verse-Chorus</option>
@@ -94,6 +98,36 @@
       <div class="field-group">
         <label>Model</label>
         <select id="easy-model"><option>Loading…</option></select>
+      </div>
+    </div>
+    <div id="easy-style-info" style="font-size:12px;color:var(--muted);margin-bottom:8px;display:none"></div>
+    <div class="field-group" style="margin-bottom:12px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:normal">
+        <input type="checkbox" id="easy-instrumental"> Instrumental only (no vocals)
+      </label>
+    </div>
+    <div class="row">
+      <div class="field-group">
+        <label>Artist / Band <span style="font-size:11px;color:var(--muted)">(instruments &amp; lyric style)</span></label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="easy-artist" placeholder="e.g. Pink Floyd, Billie Eilish" style="flex:1">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap;cursor:pointer;font-weight:normal">
+            <input type="checkbox" id="easy-artist-web"> Web
+          </label>
+          <button class="secondary small" id="btn-easy-artist-lookup">Look up</button>
+        </div>
+        <div id="easy-artist-info" style="font-size:12px;color:var(--muted);margin-top:4px;min-height:0"></div>
+      </div>
+      <div class="field-group">
+        <label>Vocal Artist <span style="font-size:11px;color:var(--muted)">(vocal style &amp; range)</span></label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="easy-vocal-artist" placeholder="e.g. David Bowie, Adele" style="flex:1">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap;cursor:pointer;font-weight:normal">
+            <input type="checkbox" id="easy-vocal-web"> Web
+          </label>
+          <button class="secondary small" id="btn-easy-vocal-lookup">Look up</button>
+        </div>
+        <div id="easy-vocal-info" style="font-size:12px;color:var(--muted);margin-top:4px;min-height:0"></div>
       </div>
     </div>
     <button id="btn-easy-gen">✨ Generate Lyrics via Ollama</button>
@@ -317,17 +351,111 @@
 
   <!-- ABOUT -->
   <div class="tab-panel" id="tab-about">
-    <div style="max-width:500px;margin:40px auto;text-align:center">
-      <div style="font-size:48px;margin-bottom:16px">🎛</div>
-      <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:8px">Nyx's Music Studio</h2>
-      <div style="color:var(--muted);font-size:14px;margin-bottom:4px">Version 1.5</div>
-      <div style="color:var(--muted);font-size:14px;margin-bottom:4px">by Legion</div>
-      <div style="color:var(--muted);font-size:14px">April 2026</div>
+    <div style="max-width:700px;margin:0 auto;padding-top:16px">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:48px;margin-bottom:12px">🎛</div>
+        <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Nyx's ai Music Studio</h2>
+        <div style="color:var(--muted);font-size:13px">Version 1.5 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
+        <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>Overview Tab</h3>
+        <ul>
+          <li>Editable tags textarea — overrides Style / Instruments / Vocals tabs</li>
+          <li>Editable lyrics textarea — synced from Lyrics tab</li>
+          <li>Live payload preview showing exactly what gets sent to ACE-Step</li>
+          <li>Sync from tabs button to rebuild tags from current state</li>
+          <li>Generate button with real-time job progress bar and SSE status updates</li>
+          <li>Job cards with download links for completed audio files</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Easy Tab</h3>
+        <ul>
+          <li>Topic / Prompt, Mood, Subject / Character, and name-override fields</li>
+          <li>Style dropdown — 150+ genres grouped by category, auto-sets BPM / key / instruments</li>
+          <li>Song structure selector and Ollama model selector (defaults to gemma4:latest)</li>
+          <li>Instrumental only checkbox — switches to arrangement outline mode (no sung lyrics)</li>
+          <li>Artist / Band lookup — queries Ollama (optionally grounded with Brave Search) for instruments and lyric writing style</li>
+          <li>Vocal Artist lookup — queries Ollama / Brave Search for vocal style and range</li>
+          <li>Lookup results displayed as ACE-Step formatted tags (genre, instrument, vocal, style)</li>
+          <li>Apply to state button — pushes instrument and vocal tags into generation state</li>
+          <li>All fields feed into Ollama lyrics generation with streaming output</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Style Tab</h3>
+        <ul>
+          <li>Genre browser with 150+ genres across 17 categories</li>
+          <li>Category sidebar + chip grid with live search</li>
+          <li>Selecting a genre auto-fills BPM, key, scale, mode, time signature</li>
+          <li>Genre info panel shows description and typical instruments</li>
+          <li>BPM, Key, Scale, Mode, and Time Signature controls</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Instruments &amp; Vocals Tabs</h3>
+        <ul>
+          <li>Instruments: chip selector across all categories from AceTalk instruments database</li>
+          <li>Vocals: chip selectors for Tone, Style, Texture, and Gender tags</li>
+          <li>Selections feed into the Overview tags and ACE-Step generation prompt</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Lyrics Tab</h3>
+        <ul>
+          <li>Full lyrics editor with monospace font</li>
+          <li>One-click insertion of ACE-Step structural tags ([Verse], [Chorus], [Drop], etc.)</li>
+          <li>Song structure templates: Verse-Chorus, EDM Structure, Intro-Verse-Chorus-Outro, and more</li>
+          <li>Synced bidirectionally with the Overview lyrics field</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Parameters Tab</h3>
+        <ul>
+          <li>Steps, CFG Scale, Duration (seconds)</li>
+          <li>Temperature, Top-P, Top-K, Min-P sampling controls</li>
+          <li>Seed with lock toggle for reproducible generations</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Stems Tab</h3>
+        <ul>
+          <li>ACE-Step Extract — upload audio and send a stem-extraction job to ComfyUI</li>
+          <li>Demucs Separate — 4-stem (htdemucs) or 6-stem (htdemucs_6s) separation with live log stream</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Guide &amp; Lint Tabs</h3>
+        <ul>
+          <li>Guide: 8-section reference covering philosophy, tags, lyrics, DAW tips, hidden syntax, operations, examples, and troubleshooting</li>
+          <li>Lint: validates current state or pasted tags/lyrics — reports errors, warnings, and tips for ACE-Step compatibility</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Infrastructure</h3>
+        <ul>
+          <li>FastAPI + uvicorn on Nyx (192.168.1.236) port 8001</li>
+          <li>Server-Sent Events (SSE) for real-time job tracking and Ollama token streaming</li>
+          <li>Exposed via Cloudflare Tunnel at music-ai.nyxstudios.net</li>
+          <li>Protected by Cloudflare Access — Google OAuth (steve.j.petry@gmail.com only)</li>
+          <li>Brave Search API integration for real web-grounded artist lookups</li>
+        </ul>
+      </div>
     </div>
   </div>
 
 </div>
 
-<script src="/static/app.js?v=4"></script>
+<script src="/static/app.js?v=9"></script>
 </body>
 </html>

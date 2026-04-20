@@ -70,3 +70,25 @@ button.small { padding: 4px 10px; font-size: 12px; }
                min-height: 48px; white-space: pre-wrap; word-break: break-word; }
 .section-title { color: var(--accent2); font-size: 12px; font-weight: 600;
                  margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.job-progress { height: 3px; background: var(--border); border-radius: 2px;
+                margin-top: 8px; overflow: hidden; }
+.job-progress-bar { height: 100%; width: 0; border-radius: 2px;
+                    transition: width 0.5s ease, background-color 0.3s; }
+.job-progress-bar.queued { width: 12%; background: var(--warning); }
+.job-progress-bar.running { width: 100%; background: linear-gradient(90deg,
+    var(--accent) 0%, var(--accent2) 40%, var(--accent) 60%);
+    background-size: 200% 100%; animation: job-shimmer 1.4s linear infinite; }
+.job-progress-bar.done { width: 100%; background: var(--success); }
+.job-progress-bar.error { width: 100%; background: var(--error); }
+@keyframes job-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+.about-section { margin-bottom: 20px; }
+.about-section h3 { color: var(--accent); font-size: 13px; margin-bottom: 8px;
+                    border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.about-section ul { list-style: none; padding: 0; }
+.about-section ul li { color: var(--muted); font-size: 13px; padding: 2px 0 2px 14px;
+                        position: relative; }
+.about-section ul li::before { content: "·"; position: absolute; left: 0;
+                                color: var(--accent2); }

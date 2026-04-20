@@ -2,6 +2,7 @@ import pathlib
 
 COMFYUI_URL = "http://127.0.0.1:8188"
 OLLAMA_URL = "http://localhost:11434"
+BRAVE_API_KEY = "REDACTED-BRAVE-KEY"
 
 _ACETALK = pathlib.Path("/home/legion/legionprojects/ComfyUI/AceUser")
 _COMFYUI = pathlib.Path("/home/legion/legionprojects/ComfyUI")
