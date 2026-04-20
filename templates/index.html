@@ -686,18 +686,23 @@
       <div id="stems-extract-status" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
     </div>
     <div class="inner-panel" id="stems-demucs">
-      <div class="row">
-        <div class="field-group">
-          <label>Output File (MP3 filename)</label>
-          <input type="text" id="demucs-filename" placeholder="e.g. ComfyUI_00001_.mp3">
+      <div class="field-group">
+        <label>Audio File</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="demucs-filename" placeholder="e.g. ComfyUI_00001_.mp3" style="flex:1;min-width:180px">
+          <button class="secondary small" id="btn-demucs-browse-server" title="Browse ComfyUI output files on server">🖥 Server Files</button>
+          <button class="secondary small" id="btn-demucs-browse-local" title="Upload a file from your computer">📁 Browse…</button>
+          <input type="file" id="demucs-local-file" accept="audio/*" style="display:none">
         </div>
-        <div class="field-group">
-          <label>Model</label>
-          <select id="demucs-model">
-            <option value="htdemucs">4-stem (htdemucs)</option>
-            <option value="htdemucs_6s">6-stem (htdemucs_6s)</option>
-          </select>
-        </div>
+        <div id="demucs-server-list" style="display:none;margin-top:6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;max-height:160px;overflow-y:auto"></div>
+        <div id="demucs-upload-status" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+      </div>
+      <div class="field-group">
+        <label>Model</label>
+        <select id="demucs-model">
+          <option value="htdemucs">4-stem (htdemucs)</option>
+          <option value="htdemucs_6s">6-stem (htdemucs_6s)</option>
+        </select>
       </div>
       <button id="btn-demucs-run">Separate</button>
       <div id="demucs-log" class="log-panel" style="margin-top:12px"></div>
@@ -894,6 +899,6 @@
   </div>
 </div>
 
-<script src="/static/app.js?v=27"></script>
+<script src="/static/app.js?v=28"></script>
 </body>
 </html>

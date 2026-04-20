@@ -1125,6 +1125,64 @@ document.getElementById("btn-stems-extract").addEventListener("click", async () 
   } catch(e) { status.textContent = "Error: " + e.message; }
 });
 
+// ── Demucs file browser ───────────────────────────────────────────────────────
+document.getElementById("btn-demucs-browse-server").addEventListener("click", async () => {
+  const panel = document.getElementById("demucs-server-list");
+  if (panel.style.display !== "none") { panel.style.display = "none"; return; }
+  panel.style.display = "block";
+  panel.innerHTML = "<div style='padding:8px;font-size:12px;color:var(--muted)'>Loading…</div>";
+  try {
+    const data = await fetch("/stems/audio-files").then(r => r.json());
+    if (!data.files.length) {
+      panel.innerHTML = "<div style='padding:8px;font-size:12px;color:var(--muted)'>(no audio files found)</div>";
+      return;
+    }
+    panel.innerHTML = data.files.map(f =>
+      `<div style="padding:6px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" data-file="${f}">${f}</div>`
+    ).join("");
+    panel.querySelectorAll("[data-file]").forEach(el => {
+      el.addEventListener("mouseenter", () => el.style.background = "var(--surface)");
+      el.addEventListener("mouseleave", () => el.style.background = "");
+      el.addEventListener("click", () => {
+        document.getElementById("demucs-filename").value = el.dataset.file;
+        panel.style.display = "none";
+      });
+    });
+  } catch {
+    panel.innerHTML = "<div style='padding:8px;font-size:12px;color:var(--error)'>Failed to load file list</div>";
+  }
+});
+
+document.getElementById("btn-demucs-browse-local").addEventListener("click", () => {
+  document.getElementById("demucs-local-file").click();
+});
+
+document.getElementById("demucs-local-file").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById("demucs-upload-status");
+  status.textContent = "Uploading…";
+  status.style.color = "var(--muted)";
+  const form = new FormData();
+  form.append("audio", file);
+  try {
+    const resp = await fetch("/stems/demucs/upload", {method: "POST", body: form});
+    const data = await resp.json();
+    if (data.filename) {
+      document.getElementById("demucs-filename").value = data.filename;
+      status.textContent = `Uploaded: ${data.filename}`;
+      status.style.color = "var(--accent2)";
+    } else {
+      status.textContent = "Upload failed";
+      status.style.color = "var(--error)";
+    }
+  } catch {
+    status.textContent = "Upload failed";
+    status.style.color = "var(--error)";
+  }
+  e.target.value = "";
+});
+
 document.getElementById("btn-demucs-run").addEventListener("click", () => {
   const filename = document.getElementById("demucs-filename").value.trim();
   const model = document.getElementById("demucs-model").value;

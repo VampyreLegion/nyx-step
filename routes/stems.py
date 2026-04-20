@@ -53,6 +53,26 @@ async def stems_extract(
     return {"prompt_id": prompt_id}
 
 
+@router.get("/audio-files")
+async def list_audio_files():
+    exts = {".mp3", ".wav", ".flac", ".ogg", ".m4a"}
+    files = sorted(
+        (f for f in config.COMFYUI_OUTPUT_DIR.iterdir() if f.suffix.lower() in exts and f.is_file()),
+        key=lambda f: f.stat().st_mtime,
+        reverse=True,
+    )
+    return {"files": [f.name for f in files[:100]]}
+
+
+@router.post("/demucs/upload")
+async def demucs_upload(audio: UploadFile = File(...)):
+    """Upload a local file into COMFYUI_OUTPUT_DIR for demucs processing."""
+    safe_name = Path(audio.filename).name
+    dest = config.COMFYUI_OUTPUT_DIR / safe_name
+    dest.write_bytes(await audio.read())
+    return {"filename": safe_name}
+
+
 @router.get("/demucs/stream")
 async def demucs_stream(
     request: Request,
