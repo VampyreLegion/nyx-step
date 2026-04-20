@@ -31,10 +31,20 @@ def _parse_chapter(section_id: str) -> str:
         "pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}"
         "</style>"
     )
+    keyword_img = (
+        '<div style="margin-bottom:16px;text-align:center">'
+        '<img src="/static/images/nyx-keyword-library.png" '
+        'alt="Nyx AI Music Keyword &amp; Tag Library" '
+        'style="max-width:100%;border-radius:8px;border:1px solid #2d3041">'
+        '</div>'
+    )
     for chunk in chunks:
         m = re.search(r'<h2[^>]*id="([^"]+)"', chunk)
         if m and m.group(1) == section_id:
-            return f"<html><head>{style}</head><body>{chunk}</body></html>"
+            body = keyword_img + chunk if section_id == "summary" else chunk
+            return f"<html><head>{style}</head><body>{body}</body></html>"
+    if section_id == "summary":
+        return f"<html><head>{style}</head><body>{keyword_img}</body></html>"
     return f"<p>Section '{section_id}' not found.</p>"
 
 
