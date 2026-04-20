@@ -56,7 +56,7 @@ async def generate(req: GenerateRequest, request: Request):
 
     send_result = _client.send_workflow(result["workflow"])
     if "error" in send_result:
-        return JSONResponse({"error": send_result["error"]}, status_code=502)
+        return JSONResponse({"error": "ComfyUI unreachable: " + send_result["error"]}, status_code=400)
 
     prompt_id = send_result.get("prompt_id", "")
     tracker.register(prompt_id, user_email, req.song_name, seed=result.get("seed", 0))

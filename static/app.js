@@ -1,7 +1,8 @@
 // ── State ─────────────────────────────────────────────────────────────────────
 const mwState = {
   genre: "", bpm: 120, key: "C", scale: "Major", mode: "",
-  time_sig: "4/4", instruments: [], vocal_tags: [], lyrics: "",
+  time_sig: "4/4", chords: "", notes: "",
+  instruments: [], vocal_tags: [], lyrics: "",
   steps: 8, cfg_scale: 2.0, duration: 30.0, seed: 0, lock_seed: false,
   temperature: 0.85, top_p: 0.9, top_k: 0, min_p: 0.0,
 };
@@ -48,6 +49,8 @@ bind("style-key", "key");
 bind("style-scale", "scale");
 bind("style-mode", "mode");
 bind("style-timesig", "time_sig");
+bind("style-chords", "chords");
+bind("style-notes", "notes");
 bind("param-steps", "steps", v => parseInt(v) || 8);
 bind("param-cfg", "cfg_scale", v => parseFloat(v) || 2.0);
 bind("param-duration", "duration", v => parseFloat(v) || 30);
@@ -329,6 +332,8 @@ function buildCaption() {
     parts.push(s.scale ? s.key + " " + s.scale : s.key);
   if (s.mode) parts.push(s.mode + " mode");
   if (s.time_sig && (s.genre || s.time_sig !== "4/4")) parts.push(s.time_sig + " time");
+  if (s.chords) parts.push(s.chords);
+  if (s.notes) parts.push(s.notes);
   parts.push(...s.instruments);
   parts.push(...s.vocal_tags);
   return parts.join(", ");
@@ -411,13 +416,24 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(payload),
     });
-    const data = await resp.json();
-    if (!resp.ok) {
-      status.textContent = "Error: " + (data.error || resp.statusText);
+    let data = {};
+    try { data = await resp.json(); } catch (_) {
+      const text = await resp.text().catch(() => resp.statusText);
+      const msg = resp.status === 502 ? "ComfyUI is offline or unreachable" : (text.slice(0, 120) || resp.statusText);
+      status.textContent = "Error: " + msg;
       status.style.color = "var(--error)";
-      setGenProgress("error", "Submission failed: " + (data.error || resp.statusText));
+      setGenProgress("error", "Error: " + msg);
       btn.disabled = false;
-      btn.textContent = "🎵 Generate";
+      btn.textContent = "🎵 Generate Music Idea";
+      return;
+    }
+    if (!resp.ok) {
+      const msg = data.error || resp.statusText;
+      status.textContent = "Error: " + msg;
+      status.style.color = "var(--error)";
+      setGenProgress("error", "Error: " + msg);
+      btn.disabled = false;
+      btn.textContent = "🎵 Generate Music Idea";
       return;
     }
     _activeGenPromptId = data.prompt_id;
@@ -425,13 +441,14 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
     status.style.color = "var(--muted)";
     setGenProgress("queued", "Queued — waiting for ComfyUI to start…");
     btn.disabled = false;
-    btn.textContent = "🎵 Generate";
+    btn.textContent = "🎵 Generate Music Idea";
   } catch (e) {
-    status.textContent = "Network error: " + e.message;
+    const msg = e.message.includes("JSON") ? "ComfyUI is offline or unreachable" : e.message;
+    status.textContent = "Error: " + msg;
     status.style.color = "var(--error)";
-    setGenProgress("error", "Network error: " + e.message);
+    setGenProgress("error", "Error: " + msg);
     btn.disabled = false;
-    btn.textContent = "🎵 Generate";
+    btn.textContent = "🎵 Generate Music Idea";
   }
 });
 
@@ -694,14 +711,14 @@ document.getElementById("btn-easy-gen").addEventListener("click", () => {
     es.close();
     log.textContent += "\n[done]";
     btn.disabled = false;
-    btn.textContent = "✨ Generate Lyrics via Ollama";
+    btn.textContent = "✨ Generate Music Idea";
     syncOverviewFromState();
   });
   es.onerror = () => {
     es.close();
     log.textContent += "\n[error]";
     btn.disabled = false;
-    btn.textContent = "✨ Generate Lyrics via Ollama";
+    btn.textContent = "✨ Generate Music Idea";
   };
 });
 

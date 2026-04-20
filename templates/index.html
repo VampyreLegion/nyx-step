@@ -52,7 +52,7 @@
       <div class="preview-box" id="payload-preview" style="font-size:11px;line-height:1.8;color:var(--text)"></div>
     </div>
     <div style="margin:14px 0">
-      <button id="btn-generate">🎵 Generate</button>
+      <button id="btn-generate">🎵 Generate Music Idea</button>
       <span id="generate-status" style="margin-left:12px;font-size:12px;color:var(--muted)"></span>
     </div>
     <div id="gen-progress-wrap" style="display:none;margin-bottom:14px">
@@ -136,7 +136,7 @@
         <div id="easy-vocal-info" style="font-size:12px;color:var(--muted);margin-top:4px;min-height:0"></div>
       </div>
     </div>
-    <button id="btn-easy-gen">✨ Generate Lyrics via Ollama</button>
+    <button id="btn-easy-gen">✨ Generate Music Idea</button>
     <div id="easy-log" class="log-panel" style="margin-top:12px;display:none"></div>
   </div>
 
@@ -183,6 +183,18 @@
           <option>4/4</option><option>3/4</option><option>6/8</option>
           <option>5/4</option><option>7/8</option><option>2/4</option>
         </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field-group">
+        <label title="Chord progression using Roman numerals, note names, or Nashville notation. e.g. Am - F - C - G  or  i - VI - III - VII  or  1 - 4 - 5. Appended to the generation tags.">Chord Progression <span style="font-size:11px;color:var(--muted)">(optional)</span></label>
+        <input type="text" id="style-chords" placeholder="e.g. Am - F - C - G  or  i - VI - III - VII"
+          title="Chord progression to guide the harmonic structure. Use note names, Roman numerals, or Nashville numbers.">
+      </div>
+      <div class="field-group">
+        <label title="Key notes, melodic phrases, or scale degrees to emphasise. e.g. 'root on A2, emphasise 5th and minor 7th' or 'pentatonic run on E'. Appended to tags.">Notes / Melody Hint <span style="font-size:11px;color:var(--muted)">(optional)</span></label>
+        <input type="text" id="style-notes" placeholder="e.g. root on A2, emphasise 5th and minor 7th"
+          title="Specific notes, intervals, or melodic hints to guide the model. Appended to generation tags.">
       </div>
     </div>
   </div>
@@ -785,6 +797,6 @@
 
 </div>
 
-<script src="/static/app.js?v=15"></script>
+<script src="/static/app.js?v=19"></script>
 </body>
 </html>
