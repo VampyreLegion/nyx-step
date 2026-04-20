@@ -3,3 +3,4 @@ __pycache__/
 *.pyo
 .env
 last_sent.json
+presets/
