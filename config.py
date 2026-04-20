@@ -9,6 +9,7 @@ _COMFYUI = pathlib.Path("/home/legion/legionprojects/ComfyUI")
 
 WORKFLOW_TEMPLATE          = _ACETALK / "workflow_template.json"
 WORKFLOW_EXTRACT_TEMPLATE  = _ACETALK / "workflow_extract_template.json"
+WORKFLOW_REMIX_TEMPLATE    = _ACETALK / "workflow_remix_template.json"
 ACEUSER_HTML               = _ACETALK / "Aceuser.html"
 ACETALK_INSTRUMENTS        = _ACETALK / "acetalk" / "data" / "instruments.json"
 ACETALK_TEMPLATES          = _ACETALK / "acetalk" / "data" / "templates.json"

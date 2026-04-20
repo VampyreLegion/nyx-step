@@ -114,6 +114,85 @@ class ComfyUIClient:
 
         return {"workflow": workflow, "seed": seed}
 
+    def build_remix_workflow(
+        self,
+        source_filename: str,
+        caption: str,
+        lyrics: str,
+        state: dict,
+        mode: str = "variation",
+        denoise: float = 0.5,
+        seed_seconds: float = 10.0,
+    ) -> dict:
+        if not config.WORKFLOW_REMIX_TEMPLATE.exists():
+            return {"error": f"Remix template not found: {config.WORKFLOW_REMIX_TEMPLATE}"}
+
+        source_path = config.COMFYUI_OUTPUT_DIR / source_filename
+        if not source_path.exists():
+            return {"error": f"Source file not found: {source_filename}"}
+
+        if mode == "extend":
+            input_name = self._trim_for_extend(source_path, seed_seconds)
+            if input_name is None:
+                input_name = self.copy_to_input(source_path)
+        else:
+            input_name = self.copy_to_input(source_path)
+
+        with open(config.WORKFLOW_REMIX_TEMPLATE) as f:
+            workflow = json.load(f)
+
+        for node in workflow.values():
+            if not isinstance(node, dict):
+                continue
+            if node.get("class_type") == "LoadAudio":
+                node["inputs"]["audio"] = input_name
+
+        _scale_map = {
+            "major": "major", "minor": "minor",
+            "harmonic minor": "minor", "melodic minor": "minor",
+            "pentatonic major": "major", "pentatonic minor": "minor",
+        }
+        for node in workflow.values():
+            if not isinstance(node, dict):
+                continue
+            if node.get("class_type") == "TextEncodeAceStepAudio1.5":
+                inputs = node.setdefault("inputs", {})
+                inputs["tags"] = caption
+                inputs["lyrics"] = lyrics
+                inputs["bpm"] = state.get("bpm", 120)
+                inputs["duration"] = float(state.get("duration", 30))
+                inputs["cfg_scale"] = state.get("cfg_scale", 2.0)
+                inputs["temperature"] = state.get("temperature", 0.85)
+                inputs["top_p"] = state.get("top_p", 0.9)
+                inputs["top_k"] = state.get("top_k", 0)
+                inputs["min_p"] = state.get("min_p", 0.0)
+                key = state.get("key", "")
+                scale = state.get("scale", "")
+                if key and scale:
+                    mapped = _scale_map.get(scale.lower())
+                    if mapped:
+                        inputs["keyscale"] = f"{key} {mapped}"
+                    if scale.lower() not in ("major", "minor"):
+                        inputs["tags"] = f"{inputs['tags']}, {scale.lower()} scale"
+                time_sig = state.get("time_sig", "4/4")
+                if time_sig:
+                    inputs["timesignature"] = time_sig.split("/")[0]
+
+        seed = state.get("seed", 0)
+        if not state.get("lock_seed", False) or seed == 0:
+            seed = random.randint(0, 2**32 - 1)
+        for node in workflow.values():
+            if isinstance(node, dict) and node.get("class_type") == "KSampler":
+                inputs = node.setdefault("inputs", {})
+                inputs["steps"] = state.get("steps", 8)
+                inputs["denoise"] = float(denoise)
+                inputs["seed"] = seed
+        for node in workflow.values():
+            if isinstance(node, dict) and node.get("class_type") == "TextEncodeAceStepAudio1.5":
+                node.setdefault("inputs", {})["seed"] = seed
+
+        return {"workflow": workflow, "seed": seed}
+
     def send_workflow(self, workflow: dict) -> dict:
         try:
             resp = requests.post(
@@ -128,6 +207,23 @@ class ComfyUIClient:
             return resp.json()
         except Exception as exc:
             return {"error": str(exc)}
+
+    def _trim_for_extend(self, source_path: pathlib.Path, seed_seconds: float) -> str | None:
+        import subprocess
+        try:
+            from mutagen.mp3 import MP3
+            duration = MP3(source_path).info.length
+            start = max(0.0, duration - seed_seconds)
+            out_name = f"extend_seed_{source_path.stem}.mp3"
+            out_path = config.COMFYUI_INPUT_DIR / out_name
+            subprocess.run(
+                ["ffmpeg", "-y", "-ss", str(start), "-i", str(source_path), "-c", "copy", str(out_path)],
+                check=True, capture_output=True,
+            )
+            return out_name
+        except Exception as exc:
+            logger.warning("Trim for extend failed: %s", exc)
+            return None
 
     def copy_to_input(self, src_path: pathlib.Path) -> str:
         dest = config.COMFYUI_INPUT_DIR / src_path.name
