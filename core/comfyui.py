@@ -230,6 +230,44 @@ class ComfyUIClient:
         shutil.copy2(src_path, dest)
         return src_path.name
 
+    def find_cached_output_files(self, history: dict, prompt_id: str) -> list[str]:
+        """When a job was fully cached (empty outputs), find files from the original run."""
+        entry = history.get(prompt_id, {})
+        messages = entry.get("status", {}).get("messages", [])
+        all_cached = messages and all(m[0] in ("execution_cached", "execution_start") for m in messages)
+        if not all_cached:
+            return []
+
+        prompt_data = entry.get("prompt", [])
+        wf = prompt_data[2] if len(prompt_data) > 2 else {}
+        seed = None
+        for node in wf.values():
+            if isinstance(node, dict) and node.get("class_type") == "KSampler":
+                seed = node.get("inputs", {}).get("seed")
+                break
+        if seed is None:
+            return []
+
+        try:
+            full_history = requests.get(f"{self.base_url}/history", timeout=5).json()
+        except Exception:
+            return []
+
+        for other_pid, other_entry in full_history.items():
+            if other_pid == prompt_id:
+                continue
+            files = self.extract_output_files(full_history, other_pid)
+            if not files:
+                continue
+            other_prompt = other_entry.get("prompt", [])
+            other_wf = other_prompt[2] if len(other_prompt) > 2 else {}
+            for node in other_wf.values():
+                if isinstance(node, dict) and node.get("class_type") == "KSampler":
+                    if node.get("inputs", {}).get("seed") == seed:
+                        logger.info("Cache hit for %s → reusing files from %s", prompt_id[:8], other_pid[:8])
+                        return files
+        return []
+
     def extract_output_files(self, history: dict, prompt_id: str) -> list[str]:
         entry = history.get(prompt_id, {})
         outputs = entry.get("outputs", {})

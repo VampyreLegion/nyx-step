@@ -106,6 +106,8 @@ class JobTracker:
                 history = self._client.get_history(pid)
                 if history:
                     files = self._client.extract_output_files(history, pid)
+                    if not files:
+                        files = self._client.find_cached_output_files(history, pid)
                     if files:
                         self.update(pid, status="done", output_files=files)
                     else:
