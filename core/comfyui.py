@@ -75,8 +75,17 @@ class ComfyUIClient:
                 inputs["min_p"] = state.get("min_p", 0.0)
                 key = state.get("key", "")
                 scale = state.get("scale", "")
+                _scale_map = {
+                    "major": "major", "minor": "minor",
+                    "harmonic minor": "minor", "melodic minor": "minor",
+                    "pentatonic major": "major", "pentatonic minor": "minor",
+                }
                 if key and scale:
-                    inputs["keyscale"] = f"{key} {scale.lower()}"
+                    mapped = _scale_map.get(scale.lower())
+                    if mapped:
+                        inputs["keyscale"] = f"{key} {mapped}"
+                    if scale.lower() not in ("major", "minor"):
+                        inputs["tags"] = f"{inputs['tags']}, {scale.lower()} scale"
                 time_sig = state.get("time_sig", "4/4")
                 if time_sig:
                     inputs["timesignature"] = time_sig.split("/")[0]
@@ -112,7 +121,10 @@ class ComfyUIClient:
                 json={"prompt": workflow},
                 timeout=10,
             )
-            resp.raise_for_status()
+            if not resp.ok:
+                body = resp.text[:500]
+                logger.error("ComfyUI /prompt %s: %s", resp.status_code, body)
+                return {"error": f"{resp.status_code} {resp.reason}: {body}"}
             return resp.json()
         except Exception as exc:
             return {"error": str(exc)}
