@@ -73,8 +73,10 @@ document.querySelectorAll(".tag-btn").forEach(btn => {
     const pos = editor.selectionStart;
     const before = editor.value.substring(0, pos);
     const after = editor.value.substring(pos);
-    editor.value = before + "\n" + tag + "\n" + after;
-    editor.selectionStart = editor.selectionEnd = pos + tag.length + 2;
+    const isStructural = tag.startsWith("[") && !tag.startsWith("[Vocal:") && !tag.match(/^\[[a-z]{2}\]$/);
+    const insert = isStructural ? "\n" + tag + "\n" : tag;
+    editor.value = before + insert + after;
+    editor.selectionStart = editor.selectionEnd = pos + insert.length;
     editor.focus();
     mwState.lyrics = editor.value;
     updatePayloadPreview();
