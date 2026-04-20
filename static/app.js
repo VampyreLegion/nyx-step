@@ -996,6 +996,9 @@ async function _doArtistLookup(artist, infoEl, stateObj, useWeb = false, applyTy
       html += `<div style="margin-bottom:4px"><span style="color:var(--muted)">Nyx-Step tags:</span> `
             + `<span style="color:var(--accent2)">${allAceTags.join(", ")}</span></div>`;
     }
+    if (data.vocal_key) {
+      html += `<div style="margin-bottom:2px"><span style="color:var(--muted)">Vocal key:</span> <span style="color:var(--accent)">${data.vocal_key}</span></div>`;
+    }
     if (data.lyric_style) {
       html += `<div style="margin-bottom:2px"><span style="color:var(--muted)">Style:</span> ${data.lyric_style}</div>`;
     }

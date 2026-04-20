@@ -32,6 +32,7 @@ def lookup_artist(artist: str, model: str = "gemma4:latest", use_web: bool = Fal
     example = (
         '{"genre_tag":"hip hop","instrument_tags":["drum machine","synthesizer","bass"],'
         '"vocal_tags":["female vocal","powerful","rhythmic"],'
+        '"vocal_key":"a3-e5, typically sings in f major / d minor",'
         '"style_tags":["energetic","urban","bold","playful"],'
         '"lyric_style":"Witty and confident with rapid-fire wordplay and self-empowerment themes.",'
         '"lyric_themes":["confidence","dance","empowerment","fun"]}'
@@ -43,6 +44,7 @@ def lookup_artist(artist: str, model: str = "gemma4:latest", use_web: bool = Fal
         "  genre_tag (string): primary genre\n"
         "  instrument_tags (array of strings): instruments used\n"
         "  vocal_tags (array of strings): vocal style descriptors e.g. 'female vocal', 'raspy', 'falsetto'\n"
+        "  vocal_key (string): typical vocal range and keys the artist sings in, e.g. 'a3-d5, often in g major / e minor'\n"
         "  style_tags (array of strings): mood/texture/production style\n"
         "  lyric_style (string): one sentence on their songwriting approach\n"
         "  lyric_themes (array of strings): 3-5 common lyric themes\n\n"
