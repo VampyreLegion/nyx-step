@@ -864,7 +864,15 @@ document.getElementById("easy-style").addEventListener("change", e => {
   updatePayloadPreview();
 });
 
-async function _doArtistLookup(artist, infoEl, stateObj, useWeb = false) {
+function _resetOtherApply(otherInfoId) {
+  const other = document.querySelector(`#${otherInfoId} [data-apply-state]`);
+  if (other && other.disabled) {
+    other.textContent = "Apply to state";
+    other.disabled = false;
+  }
+}
+
+async function _doArtistLookup(artist, infoEl, stateObj, useWeb = false, applyType = "artist") {
   infoEl.textContent = useWeb ? "Searching web + looking up…" : "Looking up…";
   try {
     const resp = await fetch("/ollama/artist-info", {
@@ -894,16 +902,27 @@ async function _doArtistLookup(artist, infoEl, stateObj, useWeb = false) {
       html += `<div style="margin-bottom:4px"><span style="color:var(--muted)">Themes:</span> ${data.lyric_themes.join(", ")}</div>`;
     }
     if (allAceTags.length) {
-      html += `<button class="secondary small" data-apply-state="${encodeURIComponent(JSON.stringify({instrTags, vocalTags}))}" style="margin-top:2px">Apply to state</button>`;
+      html += `<button class="secondary small" data-apply-state="${encodeURIComponent(JSON.stringify({instrTags, vocalTags}))}" data-apply-type="${applyType}" style="margin-top:2px">Apply to state</button>`;
     }
     infoEl.innerHTML = html || "No info found";
 
     infoEl.querySelector("[data-apply-state]")?.addEventListener("click", e => {
       const {instrTags, vocalTags} = JSON.parse(decodeURIComponent(e.target.dataset.applyState));
-      instrTags.forEach(t => { if (!mwState.instruments.includes(t)) mwState.instruments.push(t); });
-      vocalTags.forEach(t => { if (!mwState.vocal_tags.includes(t)) mwState.vocal_tags.push(t); });
+      const type = e.target.dataset.applyType;
+
+      if (type === "artist") {
+        _resetOtherApply("easy-vocal-info");
+        mwState.instruments = [...instrTags];
+        mwState.vocal_tags = [...vocalTags];
+      } else {
+        _resetOtherApply("easy-artist-info");
+        mwState.instruments = [];
+        mwState.vocal_tags = [...vocalTags];
+      }
+
       document.getElementById("instrument-selected").value = mwState.instruments.join(", ");
       document.getElementById("vocal-selected").value = mwState.vocal_tags.join(", ");
+      document.getElementById("overview-tags").value = buildCaption();
       updatePayloadPreview();
       e.target.textContent = "Applied ✓";
       e.target.disabled = true;
@@ -918,7 +937,7 @@ document.getElementById("btn-easy-artist-lookup").addEventListener("click", () =
   const infoEl = document.getElementById("easy-artist-info");
   if (!artist) { infoEl.textContent = "Enter an artist name."; return; }
   const useWeb = document.getElementById("easy-artist-web").checked;
-  _doArtistLookup(artist, infoEl, _easyArtistState, useWeb);
+  _doArtistLookup(artist, infoEl, _easyArtistState, useWeb, "artist");
 });
 
 document.getElementById("btn-easy-vocal-lookup").addEventListener("click", () => {
@@ -926,7 +945,7 @@ document.getElementById("btn-easy-vocal-lookup").addEventListener("click", () =>
   const infoEl = document.getElementById("easy-vocal-info");
   if (!artist) { infoEl.textContent = "Enter an artist name."; return; }
   const useWeb = document.getElementById("easy-vocal-web").checked;
-  _doArtistLookup(artist, infoEl, _easyVocalState, useWeb);
+  _doArtistLookup(artist, infoEl, _easyVocalState, useWeb, "vocal");
 });
 
 document.getElementById("btn-easy-gen").addEventListener("click", () => {
