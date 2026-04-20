@@ -55,6 +55,12 @@
       <button id="btn-generate">🎵 Generate</button>
       <span id="generate-status" style="margin-left:12px;font-size:12px;color:var(--muted)"></span>
     </div>
+    <div id="gen-progress-wrap" style="display:none;margin-bottom:14px">
+      <div class="job-progress" style="height:5px;border-radius:3px">
+        <div id="gen-progress-bar" class="job-progress-bar"></div>
+      </div>
+      <div id="gen-progress-label" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+    </div>
     <div id="jobs-list"></div>
   </div>
 
@@ -511,6 +517,13 @@
 
     </div><!-- end .tag-reference -->
 
+    <div id="tag-staging-bar" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="color:var(--muted);font-size:11px;font-weight:600;white-space:nowrap">STAGE:</span>
+      <div id="tag-staging-list" style="flex:1;font-size:12px;color:var(--muted);min-width:100px">(click plain-text tags to stage, then insert as a group)</div>
+      <button class="secondary small" id="btn-insert-parens" disabled title="Insert staged tags as (tag1, tag2, …) at cursor position">Insert ( )</button>
+      <button class="secondary small" id="btn-clear-staging" title="Clear all staged tags">✕ Clear</button>
+    </div>
+
     <div class="field-group" style="margin-top:10px">
       <label>Template</label>
       <select id="lyrics-template"><option value="">-- select template --</option></select>
@@ -522,52 +535,55 @@
   <div class="tab-panel" id="tab-parameters">
     <div class="row">
       <div class="field-group">
-        <label title="Number of diffusion steps. More steps = higher quality but slower. Default: 8. Range: 1–100.">Steps ⓘ</label>
+        <label title="How many diffusion sampling steps Nyx-Step runs. Each step refines the audio closer to your prompt. More steps = higher fidelity and detail but slower generation. 8 is fast for testing; 20–30 for quality results; 50+ for maximum quality. Diminishing returns above ~30. Default: 8. Range: 1–100.">Steps ⓘ</label>
         <input type="number" id="param-steps" value="8" min="1" max="100"
-          title="Number of diffusion steps. More steps = higher quality but slower. Default: 8">
+          title="Diffusion steps: each step refines the audio toward your prompt. 8 = fast preview. 20–30 = quality. 50+ = max quality (slow). Diminishing returns above ~30. Default: 8.">
       </div>
       <div class="field-group">
-        <label title="Classifier-Free Guidance scale. Higher = closer to the prompt but less creative. Lower = more varied. Default: 2.0. Range: 0.1–20.">CFG Scale ⓘ</label>
+        <label title="Classifier-Free Guidance (CFG) scale — controls how tightly the model follows your tags and prompt. Too low (below 1.0) = ignores prompt, sounds random. Too high (above 5.0) = over-saturated, mechanical, may introduce artifacts. Sweet spot: 1.5–3.0. Default: 2.0. Range: 0.1–20.">CFG Scale ⓘ</label>
         <input type="number" id="param-cfg" value="2.0" step="0.1" min="0.1" max="20"
-          title="CFG Scale: how strongly the model follows your prompt. Higher = more literal, lower = more creative. Default: 2.0">
+          title="CFG Scale: prompt adherence strength. &lt;1.0 = ignores prompt. 1.5–3.0 = balanced (recommended). 5.0+ = very literal, can sound over-processed. Default: 2.0.">
       </div>
       <div class="field-group">
-        <label title="Length of the generated audio in seconds. Default: 30. Range: 5–300.">Duration (s) ⓘ</label>
+        <label title="Length of the generated audio clip in seconds. Longer clips take more time and GPU memory proportionally. 30s is a good starting point for a song section. Nyx-Step supports up to ~5 minutes (300s). Default: 30. Range: 5–300.">Duration (s) ⓘ</label>
         <input type="number" id="param-duration" value="30" min="5" max="300"
-          title="Length of generated audio in seconds. Default: 30">
+          title="Audio length in seconds. Longer = more VRAM and time. 30s is good for a section; 60–180s for a full piece. Max ~300s. Default: 30.">
       </div>
     </div>
     <div class="row">
       <div class="field-group">
-        <label title="Sampling temperature. Higher = more random and creative. Lower = more predictable and safe. Default: 0.85. Range: 0–2.">Temperature ⓘ</label>
+        <label title="Sampling temperature controls how much randomness is applied when selecting audio tokens. 0.0 = fully deterministic (robotic, repetitive). 0.85 = natural variation with coherence (recommended). 1.5+ = highly experimental and unpredictable — may lose musical structure. Think of it as how much the model 'improvises'. Default: 0.85. Range: 0–2.">Temperature ⓘ</label>
         <input type="number" id="param-temp" value="0.85" step="0.01" min="0" max="2"
-          title="Sampling temperature. Higher = more creative/random, lower = more predictable. Default: 0.85">
+          title="Temperature: 0 = robotic/deterministic. 0.85 = natural and coherent (recommended). 1.5+ = very experimental, may lose structure. Controls how much the model improvises. Default: 0.85.">
       </div>
       <div class="field-group">
-        <label title="Top-P (nucleus sampling). Limits token selection to the top P probability mass. Lower = more focused. Default: 0.9. Set to 1 to disable.">Top-P ⓘ</label>
+        <label title="Top-P (nucleus sampling): at each generation step, only tokens whose cumulative probability adds up to P are considered. 0.9 = considers the most probable 90% of options. Lower (0.5) = safer, more conservative output. 1.0 = no filtering, all tokens eligible. Combine with Temperature for fine control. Default: 0.9.">Top-P ⓘ</label>
         <input type="number" id="param-topp" value="0.9" step="0.01" min="0" max="1"
-          title="Top-P nucleus sampling. Keeps only tokens whose cumulative probability ≤ P. Lower = more focused. Default: 0.9">
+          title="Top-P nucleus sampling: only tokens in the top P% of probability mass are sampled. 0.9 = broad but focused. 0.5 = very conservative. 1.0 = disabled. Default: 0.9.">
       </div>
       <div class="field-group">
-        <label title="Top-K sampling. Limits selection to the K most likely tokens. 0 = disabled. Lower K = more focused output. Default: 0.">Top-K ⓘ</label>
+        <label title="Top-K sampling: at each step, only the K most probable tokens are eligible for selection. 0 = disabled (no limit). 50 = only the 50 best options are considered. Lower K = more focused and predictable. Can be combined with Top-P. Usually leave at 0 for Nyx-Step. Default: 0.">Top-K ⓘ</label>
         <input type="number" id="param-topk" value="0" min="0"
-          title="Top-K sampling. Only sample from the K most probable tokens. 0 = disabled. Default: 0">
+          title="Top-K: limits sampling to the K most probable tokens. 0 = disabled. 50 = top 50 only. Lower = more focused. Leave at 0 unless you want to constrain output tightly. Default: 0.">
       </div>
       <div class="field-group">
-        <label title="Min-P sampling. Filters tokens below P × (probability of most likely token). 0 = disabled. Helps remove low-quality options. Default: 0.0.">Min-P ⓘ</label>
+        <label title="Min-P dynamically filters tokens whose probability falls below P × (probability of the best token). This removes low-quality outliers without being as rigid as Top-K. 0.0 = disabled. 0.05 = removes tokens less than 5% as likely as the top choice. Helps prevent incoherent output, especially at higher temperatures. Default: 0.0.">Min-P ⓘ</label>
         <input type="number" id="param-minp" value="0.0" step="0.01" min="0" max="1"
-          title="Min-P filtering. Removes tokens below this fraction of the top token's probability. 0 = disabled. Default: 0.0">
+          title="Min-P: removes tokens below P × top-token probability. 0 = disabled. 0.05 = filters out very unlikely tokens. Good pairing with higher Temperature to prevent gibberish. Default: 0.0.">
       </div>
     </div>
     <div class="row">
       <div class="field-group">
-        <label title="Random seed for generation. Same seed + same settings = same output. 0 = random each time unless locked. Default: 0.">Seed ⓘ</label>
-        <input type="number" id="param-seed" value="0"
-          title="Generation seed. Identical seed + settings = identical output. 0 = random. Default: 0">
+        <label title="The random seed that initialises Nyx-Step's generation. Same seed + same parameters = identical output every time — use this to reproduce a result or A/B test a single parameter change. 0 = always generate a new random seed (true random each run). IMPORTANT: Lock Seed must also be checked AND seed must be non-zero for a seed to be reused. Use the 🎲 button to pick and lock a random seed instantly. Default: 0 (always random).">Seed ⓘ</label>
+        <div style="display:flex;gap:6px">
+          <input type="number" id="param-seed" value="0" style="flex:1"
+            title="Seed: 0 = random every time. Non-zero + Lock Seed checked = reproducible. Same seed + same params = identical output. Use 🎲 to auto-generate and lock a seed.">
+          <button class="secondary small" id="btn-random-seed" title="Generate a random non-zero seed and enable Lock Seed">🎲</button>
+        </div>
       </div>
       <div class="field-group" style="display:flex;align-items:flex-end">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer"
-          title="When locked, the seed value above is reused on every generation for reproducible results.">
+          title="When checked AND seed is non-zero: the same seed is reused every generation for reproducible results. When unchecked OR seed is 0: a new random seed is generated each time. NOTE: seed=0 always randomises even if locked — use 🎲 to set a real seed first.">
           <input type="checkbox" id="param-lock-seed"> Lock seed
         </label>
       </div>
@@ -769,6 +785,6 @@
 
 </div>
 
-<script src="/static/app.js?v=11"></script>
+<script src="/static/app.js?v=15"></script>
 </body>
 </html>

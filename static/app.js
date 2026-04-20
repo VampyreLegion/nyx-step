@@ -59,6 +59,14 @@ bind("param-seed", "seed", v => parseInt(v) || 0);
 document.getElementById("param-lock-seed").addEventListener("change", e => {
   mwState.lock_seed = e.target.checked;
 });
+document.getElementById("btn-random-seed").addEventListener("click", () => {
+  const seed = Math.floor(Math.random() * (2 ** 32 - 1)) + 1;
+  document.getElementById("param-seed").value = seed;
+  document.getElementById("param-lock-seed").checked = true;
+  mwState.seed = seed;
+  mwState.lock_seed = true;
+  updatePayloadPreview();
+});
 
 // ── Lyrics tab ────────────────────────────────────────────────────────────────
 document.getElementById("lyrics-editor").addEventListener("input", e => {
@@ -66,21 +74,73 @@ document.getElementById("lyrics-editor").addEventListener("input", e => {
   updatePayloadPreview();
 });
 
+// ── Tagging tab — staging buffer ─────────────────────────────────────────────
+let _tagBuffer = [];
+
+function _insertAtCursor(text) {
+  const editor = document.getElementById("lyrics-editor");
+  const pos = editor.selectionStart;
+  const before = editor.value.substring(0, pos);
+  const after = editor.value.substring(pos);
+  editor.value = before + text + after;
+  editor.selectionStart = editor.selectionEnd = pos + text.length;
+  editor.focus();
+  mwState.lyrics = editor.value;
+  updatePayloadPreview();
+}
+
+function _updateStagingBar() {
+  const list = document.getElementById("tag-staging-list");
+  const btn = document.getElementById("btn-insert-parens");
+  if (_tagBuffer.length === 0) {
+    list.innerHTML = "<span style='color:var(--muted)'>(click plain-text tags to stage, then insert as a group)</span>";
+    btn.disabled = true;
+  } else {
+    list.innerHTML = _tagBuffer
+      .map(t => `<span style="background:var(--surface2);border:1px solid var(--accent);border-radius:10px;padding:1px 8px;margin:2px;display:inline-block;font-size:11px;color:var(--accent)">${t}</span>`)
+      .join("");
+    btn.disabled = false;
+  }
+}
+
 document.querySelectorAll(".tag-btn").forEach(btn => {
   btn.addEventListener("click", () => {
-    const editor = document.getElementById("lyrics-editor");
     const tag = btn.dataset.tag;
-    const pos = editor.selectionStart;
-    const before = editor.value.substring(0, pos);
-    const after = editor.value.substring(pos);
-    const isStructural = tag.startsWith("[") && !tag.startsWith("[Vocal:") && !tag.match(/^\[[a-z]{2}\]$/);
-    const insert = isStructural ? "\n" + tag + "\n" : tag;
-    editor.value = before + insert + after;
-    editor.selectionStart = editor.selectionEnd = pos + insert.length;
-    editor.focus();
-    mwState.lyrics = editor.value;
-    updatePayloadPreview();
+    // Tags already wrapped in [ ] or ( ) → insert directly
+    if (tag.startsWith("[") || tag.startsWith("(")) {
+      const isSectionTag = tag.startsWith("[") &&
+        !tag.startsWith("[Vocal:") &&
+        !tag.match(/^\[[a-z]{2}\]$/);
+      _insertAtCursor(isSectionTag ? "\n" + tag + "\n" : tag);
+      return;
+    }
+    // Plain text → toggle in staging buffer
+    const idx = _tagBuffer.indexOf(tag);
+    if (idx === -1) {
+      _tagBuffer.push(tag);
+      btn.style.borderColor = "var(--accent)";
+      btn.style.color = "var(--accent)";
+    } else {
+      _tagBuffer.splice(idx, 1);
+      btn.style.borderColor = "";
+      btn.style.color = "";
+    }
+    _updateStagingBar();
   });
+});
+
+document.getElementById("btn-insert-parens").addEventListener("click", () => {
+  if (!_tagBuffer.length) return;
+  _insertAtCursor(`(${_tagBuffer.join(", ")})`);
+  _tagBuffer = [];
+  document.querySelectorAll(".tag-btn").forEach(b => { b.style.borderColor = ""; b.style.color = ""; });
+  _updateStagingBar();
+});
+
+document.getElementById("btn-clear-staging").addEventListener("click", () => {
+  _tagBuffer = [];
+  document.querySelectorAll(".tag-btn").forEach(b => { b.style.borderColor = ""; b.style.color = ""; });
+  _updateStagingBar();
 });
 
 // Templates
@@ -286,7 +346,7 @@ function updatePayloadPreview() {
   const tags = document.getElementById("overview-tags").value;
   const lyrics = document.getElementById("overview-lyrics").value;
   const s = mwState;
-  const seedLabel = (s.lock_seed && s.seed !== 0) ? s.seed : "(random)";
+  const seedLabel = (s.lock_seed && s.seed !== 0) ? `${s.seed} (locked)` : "(random each run)";
   const lyricsLines = lyrics ? lyrics.split("\n").filter(l => l.trim()) : [];
   const lyricsSnippet = lyricsLines.length
     ? lyricsLines.slice(0, 3).join(" / ") + (lyricsLines.length > 3 ? " …" : "")
@@ -312,11 +372,31 @@ document.getElementById("overview-lyrics").addEventListener("input", updatePaylo
 document.getElementById("btn-sync-overview").addEventListener("click", syncOverviewFromState);
 
 // ── Generate ──────────────────────────────────────────────────────────────────
+let _activeGenPromptId = null;
+let _genProgressTimer = null;
+
+function setGenProgress(state, label) {
+  const wrap = document.getElementById("gen-progress-wrap");
+  const bar = document.getElementById("gen-progress-bar");
+  const lbl = document.getElementById("gen-progress-label");
+  clearTimeout(_genProgressTimer);
+  wrap.style.display = "block";
+  bar.className = "job-progress-bar " + state;
+  lbl.textContent = label;
+  if (state === "done" || state === "error") {
+    _genProgressTimer = setTimeout(() => { wrap.style.display = "none"; }, 5000);
+  }
+}
+
 document.getElementById("btn-generate").addEventListener("click", async () => {
+  const btn = document.getElementById("btn-generate");
   const songName = document.getElementById("song-name").value.trim() || "Untitled";
   const status = document.getElementById("generate-status");
-  status.textContent = "Submitting\u2026";
-  status.style.color = "var(--warning)";
+
+  btn.disabled = true;
+  btn.textContent = "🎵 Submitting…";
+  setGenProgress("queued", "Submitting to ComfyUI…");
+  status.textContent = "";
 
   const payload = {
     ...mwState,
@@ -335,13 +415,23 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
     if (!resp.ok) {
       status.textContent = "Error: " + (data.error || resp.statusText);
       status.style.color = "var(--error)";
+      setGenProgress("error", "Submission failed: " + (data.error || resp.statusText));
+      btn.disabled = false;
+      btn.textContent = "🎵 Generate";
       return;
     }
-    status.textContent = `Queued \u2014 prompt_id: ${data.prompt_id}`;
-    status.style.color = "var(--success)";
+    _activeGenPromptId = data.prompt_id;
+    status.textContent = `Queued \u2014 ${data.prompt_id}`;
+    status.style.color = "var(--muted)";
+    setGenProgress("queued", "Queued — waiting for ComfyUI to start…");
+    btn.disabled = false;
+    btn.textContent = "🎵 Generate";
   } catch (e) {
     status.textContent = "Network error: " + e.message;
     status.style.color = "var(--error)";
+    setGenProgress("error", "Network error: " + e.message);
+    btn.disabled = false;
+    btn.textContent = "🎵 Generate";
   }
 });
 
@@ -352,14 +442,17 @@ function connectSSE() {
   es.addEventListener("job_done", e => {
     const data = JSON.parse(e.data);
     addJobCard(data.prompt_id, data.song_name || "Song", "done", data.files);
+    if (data.prompt_id === _activeGenPromptId) setGenProgress("done", "✓ Done — audio ready");
   });
   es.addEventListener("job_running", e => {
     const data = JSON.parse(e.data);
     updateJobCard(data.prompt_id, "running");
+    if (data.prompt_id === _activeGenPromptId) setGenProgress("running", "Generating audio…");
   });
   es.addEventListener("job_error", e => {
     const data = JSON.parse(e.data);
     updateJobCard(data.prompt_id, "error");
+    if (data.prompt_id === _activeGenPromptId) setGenProgress("error", "Generation failed");
   });
   es.addEventListener("queue_update", e => {
     const data = JSON.parse(e.data);
@@ -501,7 +594,7 @@ async function _doArtistLookup(artist, infoEl, stateObj, useWeb = false) {
 
     let html = "";
     if (allAceTags.length) {
-      html += `<div style="margin-bottom:4px"><span style="color:var(--muted)">ACE-Step tags:</span> `
+      html += `<div style="margin-bottom:4px"><span style="color:var(--muted)">Nyx-Step tags:</span> `
             + `<span style="color:var(--accent2)">${allAceTags.join(", ")}</span></div>`;
     }
     if (data.lyric_style) {
@@ -547,12 +640,16 @@ document.getElementById("btn-easy-vocal-lookup").addEventListener("click", () =>
 });
 
 document.getElementById("btn-easy-gen").addEventListener("click", () => {
+  const btn = document.getElementById("btn-easy-gen");
   const log = document.getElementById("easy-log");
   log.style.display = "block";
   log.textContent = "";
   const editor = document.getElementById("lyrics-editor");
   editor.value = "";
   mwState.lyrics = "";
+  btn.disabled = true;
+  btn.textContent = "✨ Generating…";
+  let tokenCount = 0;
 
   const instrumental = document.getElementById("easy-instrumental").checked;
   const instrSet = new Set([
@@ -590,13 +687,22 @@ document.getElementById("btn-easy-gen").addEventListener("click", () => {
     mwState.lyrics = editor.value;
     log.textContent += token;
     log.scrollTop = log.scrollHeight;
+    tokenCount++;
+    btn.textContent = `✨ Generating… (${tokenCount} tokens)`;
   });
   es.addEventListener("done", () => {
     es.close();
     log.textContent += "\n[done]";
+    btn.disabled = false;
+    btn.textContent = "✨ Generate Lyrics via Ollama";
     syncOverviewFromState();
   });
-  es.onerror = () => { es.close(); log.textContent += "\n[error]"; };
+  es.onerror = () => {
+    es.close();
+    log.textContent += "\n[error]";
+    btn.disabled = false;
+    btn.textContent = "✨ Generate Lyrics via Ollama";
+  };
 });
 
 // ── Guide tab ─────────────────────────────────────────────────────────────────
