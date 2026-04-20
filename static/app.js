@@ -707,6 +707,7 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
       return;
     }
     _activeGenPromptId = data.prompt_id;
+    addJobCard(data.prompt_id, songName, "queued", []);
     status.textContent = `Queued \u2014 ${data.prompt_id}`;
     status.style.color = "var(--muted)";
     setGenProgress("queued", "Queued — waiting for ComfyUI to start…");
@@ -733,7 +734,7 @@ function connectSSE() {
   });
   es.addEventListener("job_running", e => {
     const data = JSON.parse(e.data);
-    updateJobCard(data.prompt_id, "running");
+    addJobCard(data.prompt_id, data.song_name || "Song", "running", []);
     if (data.prompt_id === _activeGenPromptId) setGenProgress("running", "Generating audio…");
   });
   es.addEventListener("job_error", e => {

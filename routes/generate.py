@@ -90,7 +90,7 @@ async def events(request: Request):
                             }),
                         }
                     elif job.status == "running":
-                        yield {"event": "job_running", "data": json.dumps({"prompt_id": job.prompt_id})}
+                        yield {"event": "job_running", "data": json.dumps({"prompt_id": job.prompt_id, "song_name": job.song_name})}
                     elif job.status == "error":
                         yield {"event": "job_error", "data": json.dumps({"prompt_id": job.prompt_id, "message": job.error_msg})}
 
