@@ -864,12 +864,11 @@ document.getElementById("easy-style").addEventListener("change", e => {
   updatePayloadPreview();
 });
 
+let _easyAppliedSource = null; // 'artist' | 'vocal' | null
+
 function _resetOtherApply(otherInfoId) {
   const other = document.querySelector(`#${otherInfoId} [data-apply-state]`);
-  if (other && other.disabled) {
-    other.textContent = "Apply to state";
-    other.disabled = false;
-  }
+  if (other) { other.textContent = "Apply to state"; other.disabled = false; }
 }
 
 async function _doArtistLookup(artist, infoEl, stateObj, useWeb = false, applyType = "artist") {
@@ -919,6 +918,7 @@ async function _doArtistLookup(artist, infoEl, stateObj, useWeb = false, applyTy
         mwState.instruments = [];
         mwState.vocal_tags = [...vocalTags];
       }
+      _easyAppliedSource = type;
 
       document.getElementById("instrument-selected").value = mwState.instruments.join(", ");
       document.getElementById("vocal-selected").value = mwState.vocal_tags.join(", ");
