@@ -102,5 +102,9 @@ async def download(filename: str, request: Request):
     return FileResponse(
         path=str(file_path),
         media_type="audio/mpeg",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "Pragma": "no-cache",
+        },
     )

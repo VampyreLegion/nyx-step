@@ -789,9 +789,10 @@ function updateJobCard(promptId, status, files) {
 
 function addDownloadLinks(container, files) {
   container.innerHTML = "";
+  const bust = "?t=" + Date.now();
   files.forEach(f => {
     const a = document.createElement("a");
-    a.href = "/download/" + encodeURIComponent(f);
+    a.href = "/download/" + encodeURIComponent(f) + bust;
     a.download = f;
     a.textContent = "\u2b07 " + f;
     a.style.cssText = "display:block;color:var(--accent2);font-size:12px;margin-top:4px;";
