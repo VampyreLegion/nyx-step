@@ -27,7 +27,7 @@ def lookup_artist(artist: str, model: str = "gemma4:latest", use_web: bool = Fal
     web_context = ""
     if use_web:
         from core.brave_search import search_artist
-        web_context = search_artist(artist)
+        web_context = search_artist(artist)[:1500]
 
     example = (
         '{"genre_tag":"hip hop","instrument_tags":["drum machine","synthesizer","bass"],'
@@ -55,7 +55,7 @@ def lookup_artist(artist: str, model: str = "gemma4:latest", use_web: bool = Fal
 
     payload = {"model": model, "prompt": "\n".join(prompt_parts), "stream": False}
     try:
-        resp = requests.post(f"{config.OLLAMA_URL}/api/generate", json=payload, timeout=60)
+        resp = requests.post(f"{config.OLLAMA_URL}/api/generate", json=payload, timeout=120)
         resp.raise_for_status()
         text = resp.json().get("response", "").strip()
         logger.info("Artist lookup raw response for %r: %s", artist, text[:300])
