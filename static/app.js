@@ -41,6 +41,7 @@ const bind = (id, key, transform) => {
   if (!el) return;
   const handler = () => {
     mwState[key] = transform ? transform(el.value) : el.value;
+    document.getElementById("overview-tags").value = buildCaption();
     updatePayloadPreview();
   };
   el.addEventListener("input", handler);
