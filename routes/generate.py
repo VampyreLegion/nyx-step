@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from core.comfyui import ComfyUIClient
-from core.prompt_builder import build_prompt
 from musicweb import tracker, get_user_email
 
 router = APIRouter()
@@ -44,11 +43,8 @@ async def generate(req: GenerateRequest, request: Request):
     user_email = get_user_email(request)
 
     state = req.model_dump()
-    if req.tags.strip():
-        caption = req.tags.strip()
-        lyrics = req.lyrics
-    else:
-        caption, lyrics = build_prompt(state)
+    caption = req.tags.strip()
+    lyrics = req.lyrics
 
     result = _client.build_workflow(caption, lyrics, state)
     if "error" in result:

@@ -1,0 +1,26 @@
+// ── Tab switching ─────────────────────────────────────────────────────────────
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    if (btn.dataset.tab === "overview") syncOverviewFromState();
+    if (btn.dataset.tab === "lyrics") document.getElementById("lyrics-editor").value = mwState.lyrics;
+    if (btn.dataset.tab === "lint") updateLintStatePreview();
+  });
+});
+
+document.querySelectorAll(".inner-tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const parent = btn.closest(".tab-panel") || btn.parentElement.parentElement;
+    parent.querySelectorAll(".inner-tab-btn").forEach(b => b.classList.remove("active"));
+    parent.querySelectorAll(".inner-panel").forEach(p => p.classList.remove("active"));
+    if (btn.dataset.inner) {
+      const panel = document.getElementById(btn.dataset.inner);
+      if (panel) panel.classList.add("active");
+    }
+    if (btn.dataset.guide) loadGuideSection(btn.dataset.guide, btn);
+    btn.classList.add("active");
+  });
+});
