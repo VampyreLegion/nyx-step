@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import AsyncGenerator
 
 from fastapi import APIRouter, Request, UploadFile, File, Form
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sse_starlette.sse import EventSourceResponse
 
 import config
@@ -99,3 +99,30 @@ async def demucs_stream(
         yield {"event": "done", "data": "{}"}
 
     return EventSourceResponse(log_gen())
+
+
+@router.get("/demucs/files")
+async def demucs_files(filename: str, model: str = "htdemucs"):
+    """List separated stem files for a given source filename and model."""
+    track_name = Path(filename).stem
+    stem_dir = config.DEMUCS_OUTPUT_DIR / model / track_name
+    if not stem_dir.exists():
+        return {"stems": []}
+    stems = sorted(stem_dir.glob("*.mp3")) + sorted(stem_dir.glob("*.wav"))
+    return {"stems": [f.name for f in stems], "model": model, "track": track_name}
+
+
+@router.get("/demucs/download/{model}/{track}/{stem_file}")
+async def demucs_download(model: str, track: str, stem_file: str):
+    """Download an individual separated stem file."""
+    safe_model = Path(model).name
+    safe_track = Path(track).name
+    safe_stem = Path(stem_file).name
+    file_path = config.DEMUCS_OUTPUT_DIR / safe_model / safe_track / safe_stem
+    if not file_path.exists():
+        return JSONResponse({"error": "Stem file not found"}, status_code=404)
+    return FileResponse(
+        path=str(file_path),
+        media_type="audio/mpeg",
+        headers={"Content-Disposition": f'attachment; filename="{safe_stem}"'},
+    )

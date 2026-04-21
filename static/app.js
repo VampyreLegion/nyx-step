@@ -1319,6 +1319,8 @@ document.getElementById("btn-demucs-run").addEventListener("click", () => {
   log.textContent = "";
   btn.textContent = "Busy Separating…";
   btn.disabled = true;
+  const stemLinks = document.getElementById("demucs-stem-links");
+  if (stemLinks) stemLinks.innerHTML = "";
   const params = new URLSearchParams({filename, model});
   const es = new EventSource("/stems/demucs/stream?" + params.toString());
   es.addEventListener("log", e => {
@@ -1326,11 +1328,21 @@ document.getElementById("btn-demucs-run").addEventListener("click", () => {
     log.textContent += line + "\n";
     log.scrollTop = log.scrollHeight;
   });
-  es.addEventListener("done", () => {
+  es.addEventListener("done", async () => {
     es.close();
     log.textContent += "[done]\n";
     btn.textContent = "Separate";
     btn.disabled = false;
+    try {
+      const r = await fetch(`/stems/demucs/files?filename=${encodeURIComponent(filename)}&model=${encodeURIComponent(model)}`);
+      const data = await r.json();
+      if (stemLinks && data.stems && data.stems.length) {
+        stemLinks.innerHTML = "<div style='font-size:12px;color:var(--muted);margin-bottom:6px'>Separated stems:</div>" +
+          data.stems.map(s =>
+            `<a href="/stems/demucs/download/${encodeURIComponent(data.model)}/${encodeURIComponent(data.track)}/${encodeURIComponent(s)}" download="${s}" style="display:inline-block;margin:3px 6px 3px 0;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--accent);font-size:12px;text-decoration:none">⬇ ${s}</a>`
+          ).join("");
+      }
+    } catch(_) {}
   });
   es.onerror = () => {
     es.close();
