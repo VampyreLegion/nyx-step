@@ -2,6 +2,16 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+# Load .env before config is imported
+_env_file = Path(__file__).parent / ".env"
+if _env_file.exists():
+    for _line in _env_file.read_text().splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            import os as _os
+            _k, _v = _line.split("=", 1)
+            _os.environ.setdefault(_k.strip(), _v.strip())
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse as _JSONResponse

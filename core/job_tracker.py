@@ -2,10 +2,12 @@ from __future__ import annotations
 import logging
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import config
 from core.comfyui import ComfyUIClient
+
+_JOB_TTL_DAYS = 7
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +81,18 @@ class JobTracker:
             "pending": len(q.get("queue_pending", [])),
         }
 
+    def purge_old_jobs(self):
+        cutoff = datetime.utcnow() - timedelta(days=_JOB_TTL_DAYS)
+        with self._lock:
+            old = [pid for pid, j in self._jobs.items() if j.submitted_at < cutoff]
+            for pid in old:
+                del self._jobs[pid]
+        if old:
+            logger.info("Purged %d jobs older than %d days", len(old), _JOB_TTL_DAYS)
+
     def _poll_loop(self):
         import time
+        self.purge_old_jobs()
         while True:
             try:
                 self._poll_once()

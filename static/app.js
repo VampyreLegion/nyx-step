@@ -36,6 +36,8 @@ document.querySelectorAll(".inner-tab-btn").forEach(btn => {
 });
 
 // ── Style tab ─────────────────────────────────────────────────────────────────
+const _debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+
 const bind = (id, key, transform) => {
   const el = document.getElementById(id);
   if (!el) return;
@@ -44,7 +46,8 @@ const bind = (id, key, transform) => {
     document.getElementById("overview-tags").value = buildCaption();
     updatePayloadPreview();
   };
-  el.addEventListener("input", handler);
+  const debounced = _debounce(handler, 150);
+  el.addEventListener("input", debounced);
   el.addEventListener("change", handler);
 };
 

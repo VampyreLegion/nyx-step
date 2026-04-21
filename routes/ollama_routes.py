@@ -11,6 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 from core.ollama import list_models, lookup_artist, stream_lyrics
 
 router = APIRouter(prefix="/ollama")
+_executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 
 @router.get("/models")
@@ -30,7 +31,7 @@ async def artist_info(req: ArtistInfoRequest):
         return {"error": "artist required"}
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(
-        concurrent.futures.ThreadPoolExecutor(max_workers=1),
+        _executor,
         lambda: lookup_artist(req.artist, req.model, req.use_web),
     )
     return result
@@ -56,7 +57,7 @@ async def ollama_stream(
 ):
     async def token_gen() -> AsyncGenerator[dict, None]:
         loop = asyncio.get_event_loop()
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        executor = _executor
 
         def _stream():
             return list(stream_lyrics(

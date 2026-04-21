@@ -1,6 +1,7 @@
 from __future__ import annotations
 import json
 import tempfile
+from contextlib import suppress
 from pathlib import Path
 from typing import AsyncGenerator
 
@@ -27,12 +28,15 @@ async def stems_extract(
     song_name: str = Form("Stem Extract"),
 ):
     user_email = get_user_email(request)
-    tmp = Path(tempfile.mktemp(suffix=Path(audio.filename).suffix))
-    tmp.write_bytes(await audio.read())
+    suffix = Path(audio.filename).suffix
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+        f.write(await audio.read())
+        tmp = Path(f.name)
     try:
         filename = _client.copy_to_input(tmp)
     finally:
-        tmp.unlink(missing_ok=True)
+        with suppress(FileNotFoundError):
+            tmp.unlink()
 
     state = {"steps": steps, "seed": seed, "duration": duration, "lock_seed": False}
     result = _client.build_workflow("", "", state, config.WORKFLOW_EXTRACT_TEMPLATE)

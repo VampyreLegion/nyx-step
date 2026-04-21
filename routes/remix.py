@@ -44,7 +44,6 @@ async def remix(req: RemixRequest, request: Request):
     user_email = get_user_email(request)
 
     state = req.model_dump()
-    state["mode"] = req.mode_scale
 
     if req.tags.strip():
         caption = req.tags.strip()
