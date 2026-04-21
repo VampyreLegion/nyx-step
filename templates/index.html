@@ -827,21 +827,6 @@
       </div>
 
       <div class="about-section">
-        <h3>Tagging Tab</h3>
-        <ul>
-          <li>Full lyrics editor (expanded to 480px, vertically resizable), synced bidirectionally with the Overview lyrics field</li>
-          <li>Song structure templates: Verse-Chorus, Verse-Chorus-Bridge, Intro-Verse-Chorus-Outro, EDM Structure, Minimal</li>
-          <li>10 collapsible tag categories — all tags clickable; plain-text tags stage in a buffer and insert as a (group)</li>
-          <li>Structural Brackets: [Verse], [Chorus], [Drop], [Build], [Outro] etc.</li>
-          <li>Section–Adjective Combos: [Chorus: Anthemic], [Verse: Whispered] etc.</li>
-          <li>Vocal Controls: [Vocal: Rasp], [Vocal: Falsetto], [Vocal: Breathless] etc.</li>
-          <li>Parenthetical markers: (echo), (harmony), (ad lib) for background vocal layers</li>
-          <li>Instrumentation, Performance Technique, Mood / Emotion, Production, Tempo &amp; Groove, Era / Style tags</li>
-          <li>Language Codes: [zh], [ko], [ja], [es], [fr], [de], [en] for multilingual phonetic enforcement</li>
-        </ul>
-      </div>
-
-      <div class="about-section">
         <h3>Parameters Tab</h3>
         <ul>
           <li>Steps (1–150), CFG Scale (0.1–20), Duration in seconds (5–300)</li>
@@ -870,10 +855,29 @@
       </div>
 
       <div class="about-section">
+        <h3>Tagging Tab</h3>
+        <ul>
+          <li>Full lyrics editor (480px min-height, vertically resizable), bidirectionally synced with the Overview lyrics field</li>
+          <li>Tag staging buffer persisted to localStorage — staged tags survive page refresh; chips re-highlighted on reload</li>
+          <li>Song structure templates: Verse-Chorus, Verse-Chorus-Bridge, Intro-Verse-Chorus-Outro, EDM Structure, Minimal</li>
+          <li>10 collapsible tag categories — all tags clickable; plain-text tags stage in a buffer and insert as a (group)</li>
+          <li>Structural Brackets: [Verse], [Chorus], [Drop], [Build], [Outro] etc.</li>
+          <li>Section–Adjective Combos: [Chorus: Anthemic], [Verse: Whispered] etc.</li>
+          <li>Vocal Controls: [Vocal: Rasp], [Vocal: Falsetto], [Vocal: Breathless] etc.</li>
+          <li>Parenthetical markers: (echo), (harmony), (ad lib) for background vocal layers</li>
+          <li>Instrumentation, Performance Technique, Mood / Emotion, Production, Tempo &amp; Groove, Era / Style tags</li>
+          <li>Language Codes: [zh], [ko], [ja], [es], [fr], [de], [en] for multilingual phonetic enforcement</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
         <h3>Stems Tab</h3>
         <ul>
           <li>Nyx-Step Extract — upload audio and send a stem-extraction job to ComfyUI</li>
           <li>Demucs Separate — 4-stem (htdemucs) or 6-stem (htdemucs_6s) separation with live log stream</li>
+          <li>Button shows "Busy Separating…" while running; re-enables on completion or error</li>
+          <li>After separation, per-stem download links appear inline (⬇ vocals.mp3, ⬇ drums.mp3, etc.)</li>
+          <li>Uploads capped at 100 MB; server returns a clear error if exceeded</li>
         </ul>
       </div>
 
@@ -884,9 +888,13 @@
           <li>Server-Sent Events (SSE) for real-time job tracking and Ollama token streaming</li>
           <li>Exposed via Cloudflare Tunnel at music-ai.nyxstudios.net</li>
           <li>Protected by Cloudflare Access — Google OAuth (steve.j.petry@gmail.com only)</li>
-          <li>Brave Search API for real web-grounded artist lookups</li>
+          <li>Brave Search API for real web-grounded artist lookups (httpx, key loaded from .env)</li>
           <li>Presets stored server-side in ~/legionprojects/musicweb/presets/ as .nyx JSON files</li>
           <li>ComfyUI on port 8188, Ollama on port 11434 (gemma4:latest default)</li>
+          <li>Rate limiting: 20 generate/remix requests per 60s per user (sliding window, configurable)</li>
+          <li>Generation history logged to history.jsonl — every completed job records caption, lyrics, seed, and output files; purges entries older than 7 days every 6 hours</li>
+          <li>API docs available at /api/docs (Swagger UI) and /api/redoc</li>
+          <li>Frontend split into 13 focused JS modules (state, utils, bindings, genres, chips, tags, presets, jobs, easy, lint, stems, tabs, init)</li>
         </ul>
       </div>
     </div>
