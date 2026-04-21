@@ -1314,8 +1314,11 @@ document.getElementById("btn-demucs-run").addEventListener("click", () => {
   const filename = document.getElementById("demucs-filename").value.trim();
   const model = document.getElementById("demucs-model").value;
   const log = document.getElementById("demucs-log");
+  const btn = document.getElementById("btn-demucs-run");
   if (!filename) { log.textContent = "Enter a filename."; return; }
   log.textContent = "";
+  btn.textContent = "Busy Separating…";
+  btn.disabled = true;
   const params = new URLSearchParams({filename, model});
   const es = new EventSource("/stems/demucs/stream?" + params.toString());
   es.addEventListener("log", e => {
@@ -1323,8 +1326,17 @@ document.getElementById("btn-demucs-run").addEventListener("click", () => {
     log.textContent += line + "\n";
     log.scrollTop = log.scrollHeight;
   });
-  es.addEventListener("done", () => { es.close(); log.textContent += "[done]\n"; });
-  es.onerror = () => { es.close(); };
+  es.addEventListener("done", () => {
+    es.close();
+    log.textContent += "[done]\n";
+    btn.textContent = "Separate";
+    btn.disabled = false;
+  });
+  es.onerror = () => {
+    es.close();
+    btn.textContent = "Separate";
+    btn.disabled = false;
+  };
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
