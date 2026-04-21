@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 import logging
 import threading
 from dataclasses import dataclass, field
@@ -8,6 +9,7 @@ import config
 from core.comfyui import ComfyUIClient
 
 _JOB_TTL_DAYS = 7
+_PURGE_INTERVAL = 6 * 3600  # purge every 6 hours
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,8 @@ class JobInfo:
     output_files: list[str] = field(default_factory=list)
     error_msg: str = ""
     seed: int = 0
+    caption: str = ""
+    lyrics: str = ""
 
 
 class JobTracker:
@@ -31,16 +35,27 @@ class JobTracker:
         self._lock = threading.Lock()
         self._client = ComfyUIClient()
         self._poll_interval = poll_interval
+        self._last_purge = 0.0
         self._thread = threading.Thread(target=self._poll_loop, daemon=True)
         self._thread.start()
 
-    def register(self, prompt_id: str, user_email: str, song_name: str, seed: int = 0):
+    def register(
+        self,
+        prompt_id: str,
+        user_email: str,
+        song_name: str,
+        seed: int = 0,
+        caption: str = "",
+        lyrics: str = "",
+    ):
         with self._lock:
             self._jobs[prompt_id] = JobInfo(
                 prompt_id=prompt_id,
                 user_email=user_email,
                 song_name=song_name,
                 seed=seed,
+                caption=caption,
+                lyrics=lyrics,
             )
 
     def get(self, prompt_id: str) -> JobInfo | None:
@@ -90,15 +105,37 @@ class JobTracker:
         if old:
             logger.info("Purged %d jobs older than %d days", len(old), _JOB_TTL_DAYS)
 
+    def _write_history(self, job: JobInfo):
+        try:
+            record = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "prompt_id": job.prompt_id,
+                "song_name": job.song_name,
+                "user_email": job.user_email,
+                "caption": job.caption,
+                "lyrics": job.lyrics,
+                "seed": job.seed,
+                "output_files": job.output_files,
+            }
+            with open(config.HISTORY_LOG, "a") as f:
+                f.write(json.dumps(record) + "\n")
+        except Exception as exc:
+            logger.warning("Failed to write history log: %s", exc)
+
     def _poll_loop(self):
         import time
         self.purge_old_jobs()
+        self._last_purge = time.time()
         while True:
             try:
                 self._poll_once()
             except Exception as exc:
                 logger.warning("Poll error: %s", exc)
             time.sleep(self._poll_interval)
+            now = time.time()
+            if now - self._last_purge >= _PURGE_INTERVAL:
+                self.purge_old_jobs()
+                self._last_purge = now
 
     def _poll_once(self):
         q = self._client.get_queue()
@@ -122,5 +159,9 @@ class JobTracker:
                         files = self._client.find_cached_output_files(history, pid)
                     if files:
                         self.update(pid, status="done", output_files=files)
+                        with self._lock:
+                            completed = self._jobs.get(pid)
+                        if completed:
+                            self._write_history(completed)
                     else:
                         self.update(pid, status="error", error_msg="No output files in history")

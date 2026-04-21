@@ -28,9 +28,12 @@ async def stems_extract(
     song_name: str = Form("Stem Extract"),
 ):
     user_email = get_user_email(request)
+    content = await audio.read()
+    if len(content) > config.MAX_UPLOAD_BYTES:
+        return JSONResponse({"error": f"File too large (max {config.MAX_UPLOAD_BYTES // 1024 // 1024} MB)"}, status_code=413)
     suffix = Path(audio.filename).suffix
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
-        f.write(await audio.read())
+        f.write(content)
         tmp = Path(f.name)
     try:
         filename = _client.copy_to_input(tmp)
@@ -71,9 +74,12 @@ async def list_audio_files():
 @router.post("/demucs/upload")
 async def demucs_upload(audio: UploadFile = File(...)):
     """Upload a local file into COMFYUI_OUTPUT_DIR for demucs processing."""
+    content = await audio.read()
+    if len(content) > config.MAX_UPLOAD_BYTES:
+        return JSONResponse({"error": f"File too large (max {config.MAX_UPLOAD_BYTES // 1024 // 1024} MB)"}, status_code=413)
     safe_name = Path(audio.filename).name
     dest = config.COMFYUI_OUTPUT_DIR / safe_name
-    dest.write_bytes(await audio.read())
+    dest.write_bytes(content)
     return {"filename": safe_name}
 
 

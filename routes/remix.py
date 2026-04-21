@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from core.comfyui import ComfyUIClient
+from core.rate_limit import check as rate_check
 from musicweb import tracker, get_user_email
 
 router = APIRouter()
@@ -42,6 +43,9 @@ class RemixRequest(BaseModel):
 async def remix(req: RemixRequest, request: Request):
     user_email = get_user_email(request)
 
+    if not rate_check(f"generate:{user_email}"):
+        return JSONResponse({"error": "Rate limit exceeded — slow down"}, status_code=429)
+
     state = req.model_dump()
     caption = req.tags.strip()
     lyrics = req.lyrics
@@ -63,7 +67,8 @@ async def remix(req: RemixRequest, request: Request):
         return JSONResponse({"error": "ComfyUI unreachable: " + send_result["error"]}, status_code=400)
 
     prompt_id = send_result.get("prompt_id", "")
-    tracker.register(prompt_id, user_email, req.song_name, seed=result.get("seed", 0))
+    tracker.register(prompt_id, user_email, req.song_name, seed=result.get("seed", 0),
+                     caption=caption, lyrics=lyrics)
 
     q = tracker.get_queue_counts()
     return {"prompt_id": prompt_id, "queue_position": q["pending"]}
