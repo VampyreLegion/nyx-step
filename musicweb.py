@@ -58,6 +58,7 @@ from routes.ollama_routes import router as ollama_router
 from routes.presets import router as presets_router
 from routes.remix import router as remix_router
 from routes.history import router as history_router
+from routes.analyze import router as analyze_router
 
 app.include_router(gen_router)
 app.include_router(queue_router)
@@ -67,6 +68,7 @@ app.include_router(dl_router)
 app.include_router(presets_router)
 app.include_router(remix_router)
 app.include_router(history_router)
+app.include_router(analyze_router)
 
 import json as _json
 from fastapi.responses import JSONResponse

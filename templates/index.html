@@ -34,6 +34,18 @@
 
   <!-- OVERVIEW -->
   <div class="tab-panel active" id="tab-overview">
+    <!-- Analyze Audio -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:.04em">ANALYZE AUDIO</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="file" id="analyze-file" accept="audio/*" style="flex:1;min-width:160px;font-size:12px" title="Upload an audio file to extract BPM, key, scale, duration, and lyrics">
+        <button class="secondary small" id="btn-analyze" title="Analyze the audio — BPM, key, scale, duration, Whisper transcription">🔍 Analyze</button>
+        <button class="secondary small" id="btn-analyze-apply" style="display:none" title="Apply detected BPM, key, scale, and lyrics to the current state">✓ Apply</button>
+      </div>
+      <div id="analyze-status" style="font-size:11px;color:var(--muted);margin-top:5px;min-height:14px"></div>
+      <div id="analyze-result" style="font-size:11px;margin-top:6px;display:none;background:var(--surface3,#1e1e1e);border-radius:4px;padding:8px;line-height:1.7"></div>
+    </div>
+
     <!-- Quick Generate (Simple Mode) -->
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:14px">
       <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:.04em">QUICK GENERATE</div>
@@ -1066,6 +1078,7 @@
 <script src="/static/presets.js?v=1"></script>
 <script src="/static/jobs.js?v=6"></script>
 <script src="/static/easy.js?v=1"></script>
+<script src="/static/analyze.js?v=1"></script>
 <script src="/static/quick.js?v=1"></script>
 <script src="/static/lint.js?v=1"></script>
 <script src="/static/stems.js?v=1"></script>

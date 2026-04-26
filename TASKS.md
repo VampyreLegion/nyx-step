@@ -46,7 +46,7 @@
 | 20 | Complete Mode — Generate Backing Track | ⏸ blocked | Same — no workflow template exists; needs ComfyUI workflow built and exported |
 | 21 | LoRA Browser + Loader | 🔲 todo | Browse community LoRAs (Chinese Rap, RapMachine, Lyric2Vocal, Text2Samples), load one, pass `lora_path` + `lora_scale` |
 | 22 | LoRA Training UI | 🔲 todo | Training wizard tab: drop audio files + metadata, configure LoRA rank/alpha/LR/epochs, monitor training via SSE; uses `/v1/training/start` |
-| 23 | Audio Understanding / Analyze | 🔲 todo | Feed audio → get back caption, BPM, key, time sig, lyrics with timestamps, vocal language; "Analyze Audio" button populates full state |
+| 23 | Audio Understanding / Analyze | ✅ done | POST /analyze; scipy onset detection → BPM, Krumhansl-Schmuckler chromagram → key/scale, faster-whisper → lyrics+language; Apply button populates BPM/key/scale/lyrics/language into state |
 | 24 | Repaint Timeline Picker | ✅ done | Canvas timeline in repaint panel: drag two handles to set start/end region; syncs with number inputs both ways; uses WaveSurfer duration if available |
 | 25 | Waveform Player | ✅ done | WaveSurfer.js v7 bundled locally; each job card shows waveform + ▶/⏸ button + live timestamp; falls back to `<audio>` if WaveSurfer unavailable |
 
