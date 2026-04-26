@@ -146,7 +146,14 @@ function addDownloadLinks(container, files) {
     remixBtn.title = "Create a variation, extension, or repaint of this clip";
     remixBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     remixBtn.addEventListener("click", () => toggleRemixPanel(container.closest(".job-card"), f));
+    const metaBtn = document.createElement("a");
+    metaBtn.href = "/meta/" + encodeURIComponent(f);
+    metaBtn.download = f.replace(/\.[^.]+$/, "") + "_meta.json";
+    metaBtn.textContent = "{}";
+    metaBtn.title = "Download generation metadata (parameters, seed, caption) as JSON";
+    metaBtn.style.cssText = "color:var(--muted);font-size:11px;font-family:monospace;text-decoration:none;padding:2px 4px;border:1px solid var(--border);border-radius:3px;";
     row.appendChild(a);
+    row.appendChild(metaBtn);
     row.appendChild(remixBtn);
     container.appendChild(row);
 

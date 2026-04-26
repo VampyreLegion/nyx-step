@@ -16,7 +16,7 @@
 | 4 | Audio Format Selection | ✅ done | Format dropdown (MP3/FLAC/Opus) + quality selector in Parameters; swaps ComfyUI save node in `build_workflow()`; quality options change per format |
 | 5 | Instrument Auto-Apply from Genre | ✅ done | `_selectGenre()` now sets `mwState.instruments`, updates textarea, and calls `_syncInstrumentChips()` |
 | 6 | Vocal Language Explicit Control | ✅ done | `vocal_language` dropdown in Parameters (auto/en/zh/ja/ko/es/fr/de/pt/it/ru/ar/hi); wired through state→request→workflow `language` field |
-| 7 | Output Metadata Download | 🔲 todo | Attach `.json` sidecar or ID3 tags to downloaded files with caption, lyrics, seed, parameters |
+| 7 | Output Metadata Download | ✅ done | `GET /meta/{filename}` endpoint; `{}` link per file downloads `_meta.json`; full params stored in `JobInfo.params` and `history.jsonl` |
 | 8 | Reset Parameters to Defaults | 🔲 todo | "Reset" button in Parameters tab restores all generation params to defaults |
 
 ---

@@ -62,8 +62,9 @@ async def generate(req: GenerateRequest, request: Request):
         return JSONResponse({"error": "ComfyUI unreachable: " + send_result["error"]}, status_code=400)
 
     prompt_id = send_result.get("prompt_id", "")
+    safe_params = {k: v for k, v in state.items() if k not in ("lyrics", "tags")}
     tracker.register(prompt_id, user_email, req.song_name, seed=result.get("seed", 0),
-                     caption=caption, lyrics=lyrics)
+                     caption=caption, lyrics=lyrics, params=safe_params)
 
     q = tracker.get_queue_counts()
     return {"prompt_id": prompt_id, "queue_position": q["pending"]}

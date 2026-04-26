@@ -26,6 +26,7 @@ class JobInfo:
     seed: int = 0
     caption: str = ""
     lyrics: str = ""
+    params: dict = field(default_factory=dict)
 
 
 class JobTracker:
@@ -47,6 +48,7 @@ class JobTracker:
         seed: int = 0,
         caption: str = "",
         lyrics: str = "",
+        params: dict = None,
     ):
         with self._lock:
             self._jobs[prompt_id] = JobInfo(
@@ -56,6 +58,7 @@ class JobTracker:
                 seed=seed,
                 caption=caption,
                 lyrics=lyrics,
+                params=params or {},
             )
 
     def get(self, prompt_id: str) -> JobInfo | None:
@@ -116,6 +119,7 @@ class JobTracker:
                 "lyrics": job.lyrics,
                 "seed": job.seed,
                 "output_files": job.output_files,
+                "params": job.params,
             }
             with open(config.HISTORY_LOG, "a") as f:
                 f.write(json.dumps(record) + "\n")

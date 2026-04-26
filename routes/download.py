@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 import re
 from pathlib import Path
 
@@ -86,6 +87,44 @@ async def guide_section(section_id: str):
     if section_id not in _CHAPTER_IDS:
         return HTMLResponse("<p>Invalid section.</p>", status_code=404)
     return HTMLResponse(_parse_chapter(section_id))
+
+
+@router.get("/meta/{filename}")
+async def meta(filename: str, request: Request):
+    user_email = get_user_email(request)
+    if not tracker.user_owns_file(user_email, filename):
+        return JSONResponse({"error": "File not found or access denied"}, status_code=404)
+
+    # Search history.jsonl for the record that contains this file
+    try:
+        if config.HISTORY_LOG.exists():
+            with open(config.HISTORY_LOG) as f:
+                for line in reversed(f.readlines()):
+                    try:
+                        record = json.loads(line)
+                        if filename in record.get("output_files", []):
+                            record.pop("user_email", None)
+                            return JSONResponse(record)
+                    except Exception:
+                        continue
+    except Exception:
+        pass
+
+    # Fall back to in-memory tracker if history doesn't have it yet
+    with tracker._lock:
+        for job in tracker._jobs.values():
+            if filename in job.output_files and job.user_email == user_email:
+                return JSONResponse({
+                    "prompt_id": job.prompt_id,
+                    "song_name": job.song_name,
+                    "caption": job.caption,
+                    "seed": job.seed,
+                    "params": job.params,
+                    "output_files": job.output_files,
+                    "timestamp": job.submitted_at.isoformat(),
+                })
+
+    return JSONResponse({"error": "Metadata not found"}, status_code=404)
 
 
 @router.get("/download/{filename}")
