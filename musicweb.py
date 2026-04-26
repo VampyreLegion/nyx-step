@@ -59,6 +59,7 @@ from routes.presets import router as presets_router
 from routes.remix import router as remix_router
 from routes.history import router as history_router
 from routes.analyze import router as analyze_router
+from routes.train import router as train_router
 
 app.include_router(gen_router)
 app.include_router(queue_router)
@@ -69,6 +70,7 @@ app.include_router(presets_router)
 app.include_router(remix_router)
 app.include_router(history_router)
 app.include_router(analyze_router)
+app.include_router(train_router)
 
 import json as _json
 from fastapi.responses import JSONResponse
@@ -108,8 +110,44 @@ async def api_genres():
 @app.get("/api/vocals")
 async def api_vocals():
     return {
-        "Tone": ["breathy", "raspy", "smooth", "nasal", "powerful", "clear"],
-        "Style": ["whispered", "belted", "falsetto", "spoken word", "operatic"],
-        "Texture": ["airy", "gritty", "warm", "bright", "vibrato", "melismatic"],
-        "Gender": ["male vocal", "female vocal", "androgynous vocal"],
+        "Tone": [
+            "breathy", "raspy", "smooth", "nasal", "powerful", "clear",
+            "husky", "gravelly", "velvety", "rich", "resonant", "mellow",
+            "dark", "bright tone", "thin", "piercing", "sharp", "airy tone",
+        ],
+        "Style": [
+            "whispered", "belted", "falsetto", "spoken word", "operatic",
+            "head voice", "chest voice", "mixed voice", "crooning", "soulful",
+            "gospel", "rap", "chanting", "yodeling", "scat", "staccato",
+            "legato", "melismatic", "conversational", "monotone", "ad-lib",
+        ],
+        "Texture & Technique": [
+            "vibrato", "tremolo", "vocal fry", "growl", "scream", "flutter",
+            "distorted vocal", "overdriven", "creaky", "gritty texture",
+            "warm texture", "wet reverb", "dry", "intimate", "layered",
+            "doubled vocal", "pitch-shifted",
+        ],
+        "Range": [
+            "soprano", "mezzo-soprano", "alto", "contralto",
+            "tenor", "baritone", "bass", "countertenor", "boy soprano",
+        ],
+        "Emotion": [
+            "passionate", "melancholic", "joyful", "angry", "tender",
+            "haunting", "longing", "playful", "intense", "nostalgic",
+            "ethereal", "dramatic", "serene", "raw", "vulnerable", "confident",
+        ],
+        "Arrangement": [
+            "lead vocal", "solo", "choir", "background vocals",
+            "vocal harmonies", "call and response", "unison", "a cappella",
+            "duet", "group vocal",
+        ],
+        "Voice Type": [
+            "male vocal", "female vocal", "androgynous vocal",
+            "male tenor", "male baritone", "male bass",
+            "female soprano", "female alto",
+        ],
+        "Production": [
+            "auto-tuned", "heavy reverb", "intimate mic", "processed vocal",
+            "lo-fi vocal", "telephone effect", "vocoder", "harmonizer",
+        ],
     }

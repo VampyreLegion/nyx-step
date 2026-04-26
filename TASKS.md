@@ -1,7 +1,7 @@
 # MusicWeb Feature Roadmap
 
 **Status legend:** 🔲 todo · 🔄 in progress · ✅ done  
-**Last updated:** 2026-04-26 (task #2 done)  
+**Last updated:** 2026-04-26 (task #22 done)  
 **Repo:** https://github.com/VampyreLegion/musicweb
 
 ---
@@ -45,11 +45,11 @@
 | 19 | Extract Mode — Single Stem Isolation | ⏸ blocked | Same — needs workflow template with ReferenceTimbreAudio node wired for diffusion-based extraction |
 | 20 | Complete Mode — Generate Backing Track | ⏸ blocked | Same — no workflow template exists; needs ComfyUI workflow built and exported |
 | 21 | LoRA Browser + Loader | ✅ done | LoRA section in Parameters; GET /loras from ComfyUI /models/loras; LoraLoader injected into workflow between UNETLoader/DualCLIPLoader and sampler nodes; scale control; refresh button |
-| 22 | LoRA Training UI | 🔲 todo | Complex — needs FL_AceStep_Train node wiring and full training pipeline UI |
+| 22 | LoRA Training UI | ✅ done | Train LoRA tab: dataset dir, hyperparams (rank/alpha/LR/epochs/batch/grad_accum), LLM labeling toggle; POST /train/start builds FL_AceStep workflow; GET /train/events SSE bridges ComfyUI WS `acestep.training.progress`; real-time loss canvas chart |
 | 27 | MIDI Extraction | ⏸ blocked | basic-pitch incompatible with Python 3.12 (pkgutil.ImpImporter removed); revisit when compat fix available or alternative found |
 | 28 | Continuous AI Radio | ⏸ blocked | Requires audio_codes chaining (same blocker as #14); needs ComfyUI node support |
 | 30 | Multi-Mask Repaint | ⏸ blocked | Requires custom ComfyUI workflow with multiple TrimAudio chains; no template exists |
-| 22 | LoRA Training UI | 🔲 todo | Training wizard tab: drop audio files + metadata, configure LoRA rank/alpha/LR/epochs, monitor training via SSE; uses `/v1/training/start` |
+| 22 | LoRA Training UI | ✅ done | See row above |
 | 23 | Audio Understanding / Analyze | ✅ done | POST /analyze; scipy onset detection → BPM, Krumhansl-Schmuckler chromagram → key/scale, faster-whisper → lyrics+language; Apply button populates BPM/key/scale/lyrics/language into state |
 | 24 | Repaint Timeline Picker | ✅ done | Canvas timeline in repaint panel: drag two handles to set start/end region; syncs with number inputs both ways; uses WaveSurfer duration if available |
 | 25 | Waveform Player | ✅ done | WaveSurfer.js v7 bundled locally; each job card shows waveform + ▶/⏸ button + live timestamp; falls back to `<audio>` if WaveSurfer unavailable |
@@ -95,3 +95,4 @@
 | 25 | WaveSurfer.js Waveform Player | 2026-04-26 | 7876786 |
 | 26 | Voice Recorder → Whisper Lyrics | 2026-04-26 | 2e77bb3 |
 | 29 | Quick Generate / Simple Mode | 2026-04-26 | 63e4964 |
+| 22 | LoRA Training UI | 2026-04-26 | — |

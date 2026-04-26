@@ -25,6 +25,7 @@
   <button class="tab-btn" data-tab="lint">Lint</button>
   <button class="tab-btn" data-tab="stems">Stems</button>
   <button class="tab-btn" data-tab="cover" title="Generate a stylistic cover of any reference audio track">Cover</button>
+  <button class="tab-btn" data-tab="train" title="Train a LoRA on your own audio dataset">Train LoRA</button>
   <button class="tab-btn" data-tab="history">History</button>
   <button class="tab-btn" data-tab="guide">Guide</button>
   <button class="tab-btn" data-tab="about">About</button>
@@ -882,6 +883,97 @@
     <div id="cover-result" style="margin-top:10px"></div>
   </div>
 
+  <!-- TRAIN LORA -->
+  <div class="tab-panel" id="tab-train">
+    <p style="font-size:12px;color:var(--muted);margin:0 0 14px">Train a LoRA adapter on your own audio dataset using FL-AceStep. Requires the <code>FL_AceStep_Train</code> ComfyUI plugin.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+      <!-- Dataset -->
+      <div class="field-group" style="grid-column:1/-1">
+        <label title="Absolute path to a folder containing .mp3, .wav, or .flac training files">Dataset Directory ⓘ</label>
+        <input type="text" id="train-dataset-dir" placeholder="/path/to/audio/dataset" style="width:100%;font-family:monospace;font-size:12px">
+      </div>
+      <div class="field-group">
+        <label title="Name for the output LoRA file (no extension)">LoRA Name</label>
+        <input type="text" id="train-lora-name" value="my_lora" style="width:100%">
+      </div>
+      <div class="field-group">
+        <label title="Where to save checkpoints. Defaults to ComfyUI output/audio/loras">Output Directory <span style="font-size:10px;color:var(--muted)">(optional)</span></label>
+        <input type="text" id="train-output-dir" placeholder="(default: ComfyUI loras dir)" style="width:100%;font-size:12px">
+      </div>
+    </div>
+
+    <details style="margin:8px 0 12px">
+      <summary style="cursor:pointer;font-size:12px;color:var(--muted);user-select:none">Hyperparameters</summary>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:10px">
+        <div class="field-group">
+          <label title="LoRA rank — higher = more capacity, more VRAM">Rank ⓘ</label>
+          <input type="number" id="train-rank" value="8" min="1" max="128" step="1" style="width:80px">
+        </div>
+        <div class="field-group">
+          <label title="LoRA alpha — scaling factor (typically 2× rank)">Alpha ⓘ</label>
+          <input type="number" id="train-alpha" value="16" min="1" max="256" step="1" style="width:80px">
+        </div>
+        <div class="field-group">
+          <label title="Dropout regularization on LoRA layers">Dropout ⓘ</label>
+          <input type="number" id="train-dropout" value="0.1" min="0" max="0.5" step="0.01" style="width:80px">
+        </div>
+        <div class="field-group">
+          <label title="Learning rate — 1e-4 is a safe default">Learning Rate ⓘ</label>
+          <input type="number" id="train-lr" value="0.0001" min="0.000001" max="0.01" step="0.00001" style="width:100px">
+        </div>
+        <div class="field-group">
+          <label title="Total training epochs">Epochs ⓘ</label>
+          <input type="number" id="train-epochs" value="100" min="1" max="1000" step="1" style="width:80px">
+        </div>
+        <div class="field-group">
+          <label title="Training batch size per step">Batch Size ⓘ</label>
+          <input type="number" id="train-batch" value="1" min="1" max="8" step="1" style="width:70px">
+        </div>
+        <div class="field-group">
+          <label title="Gradient accumulation steps — effective batch = batch × accum">Grad Accum ⓘ</label>
+          <input type="number" id="train-grad-accum" value="4" min="1" max="32" step="1" style="width:70px">
+        </div>
+        <div class="field-group">
+          <label title="Save a checkpoint every N epochs">Save Every ⓘ</label>
+          <input type="number" id="train-save-every" value="10" min="1" max="100" step="1" style="width:70px">
+        </div>
+        <div class="field-group">
+          <label>Seed</label>
+          <input type="number" id="train-seed" value="42" min="0" max="4294967295" style="width:90px">
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+          <input type="checkbox" id="train-llm-label">
+          <span title="Use FL_AceStep_LabelSamples to auto-generate captions for unlabeled audio via LLM">LLM auto-labeling (FL_AceStep_LabelSamples) ⓘ</span>
+        </label>
+      </div>
+    </details>
+
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <button id="btn-train-start">▶ Start Training</button>
+      <button id="btn-train-stop" class="secondary" disabled>■ Stop</button>
+    </div>
+
+    <!-- Progress -->
+    <div style="margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <span id="train-status" style="font-size:12px;color:var(--muted)">Idle</span>
+        <span id="train-progress-label" style="font-size:12px;color:var(--muted)">0%</span>
+      </div>
+      <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden">
+        <div id="train-progress-bar" style="background:var(--accent);height:100%;width:0%;transition:width 0.4s"></div>
+      </div>
+    </div>
+
+    <!-- Loss chart -->
+    <canvas id="train-loss-canvas" width="600" height="120" style="width:100%;height:120px;border-radius:6px;margin-bottom:8px;background:var(--bg)"></canvas>
+
+    <!-- Log -->
+    <div id="train-log" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;height:160px;overflow-y:auto;font-size:11px;font-family:monospace;line-height:1.5"></div>
+  </div>
+
   <!-- HISTORY -->
   <div class="tab-panel" id="tab-history">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
@@ -1113,6 +1205,7 @@
 <script src="/static/lint.js?v=1"></script>
 <script src="/static/stems.js?v=1"></script>
 <script src="/static/cover.js?v=1"></script>
+<script src="/static/train.js?v=1"></script>
 <script src="/static/history.js?v=1"></script>
 <script src="/static/tabs.js?v=2"></script>
 <script src="/static/init.js?v=1"></script>
