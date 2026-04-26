@@ -11,7 +11,7 @@
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
 | 1 | Built-in Audio Player | ✅ done | Inline `<audio controls>` per job card file |
-| 2 | Fix Chords + Notes → Prompt | ✅ done | Chord preset dropdown wasn't calling `buildCaption()` after updating state — overview tags stayed stale. Fixed in `static/bindings.js` |
+| 2 | Fix Chords + Notes → Prompt | ✅ done | 9892e0f — Chord preset dropdown wasn't calling `buildCaption()`; overview tags stayed stale. Fixed in `static/bindings.js` |
 | 3 | Live Token Counter on Tags | 🔲 todo | Show `X/12 tokens` indicator next to Overview tags field, updates in real time |
 | 4 | Audio Format Selection | 🔲 todo | ACE-Step supports `flac`, `wav`, `wav32`, `mp3`, `opus`, `aac` — add dropdown to Parameters tab |
 | 5 | Instrument Auto-Apply from Genre | 🔲 todo | `genres.js` loads `g.typical_instruments` but doesn't populate `mwState.instruments` on genre pick |
