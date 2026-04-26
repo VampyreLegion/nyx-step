@@ -8,7 +8,7 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
-from core.ollama import list_models, lookup_artist, stream_lyrics
+from core.ollama import list_models, lookup_artist, stream_lyrics, expand_prompt
 
 router = APIRouter(prefix="/ollama")
 _executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
@@ -33,6 +33,23 @@ async def artist_info(req: ArtistInfoRequest):
     result = await loop.run_in_executor(
         _executor,
         lambda: lookup_artist(req.artist, req.model, req.use_web),
+    )
+    return result
+
+
+class ExpandRequest(BaseModel):
+    description: str
+    model: str = "gemma4:latest"
+
+
+@router.post("/expand")
+async def expand(req: ExpandRequest):
+    if not req.description.strip():
+        return {"error": "description required"}
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        _executor,
+        lambda: expand_prompt(req.description.strip(), req.model),
     )
     return result
 

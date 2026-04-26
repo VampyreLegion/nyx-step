@@ -41,9 +41,9 @@
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
-| 18 | Lego Mode — Add Instrument Layer | 🔲 todo | `task_type: lego` + `instruction: "guitar"` — add new complementary instrument track to existing audio; needs XL Base/SFT model |
-| 19 | Extract Mode — Single Stem Isolation | 🔲 todo | `task_type: extract` + `instruction: "vocals"` — neural stem isolation via diffusion model; add to Stems tab |
-| 20 | Complete Mode — Generate Backing Track | 🔲 todo | `task_type: complete` — upload a stem, get full accompaniment; songwriter's core workflow |
+| 18 | Lego Mode — Add Instrument Layer | ⏸ blocked | Requires dedicated ComfyUI workflow template; `task_type`/`instruction` not exposed in TextEncodeAceStepAudio1.5 — needs new workflow JSON built in ComfyUI UI |
+| 19 | Extract Mode — Single Stem Isolation | ⏸ blocked | Same — needs workflow template with ReferenceTimbreAudio node wired for diffusion-based extraction |
+| 20 | Complete Mode — Generate Backing Track | ⏸ blocked | Same — no workflow template exists; needs ComfyUI workflow built and exported |
 | 21 | LoRA Browser + Loader | 🔲 todo | Browse community LoRAs (Chinese Rap, RapMachine, Lyric2Vocal, Text2Samples), load one, pass `lora_path` + `lora_scale` |
 | 22 | LoRA Training UI | 🔲 todo | Training wizard tab: drop audio files + metadata, configure LoRA rank/alpha/LR/epochs, monitor training via SSE; uses `/v1/training/start` |
 | 23 | Audio Understanding / Analyze | 🔲 todo | Feed audio → get back caption, BPM, key, time sig, lyrics with timestamps, vocal language; "Analyze Audio" button populates full state |
@@ -59,7 +59,7 @@
 | 26 | Voice Recorder → Whisper → Lyrics | 🔲 todo | Mic input in BioInfusor/Tagging tab → Whisper transcription → lyrics ready for generation |
 | 27 | MIDI Extraction | 🔲 todo | Post-process generated audio through Basic Pitch (Spotify, open-source) → export MIDI for DAW use |
 | 28 | Continuous AI Radio | 🔲 todo | Chain generations using audio codes from previous result as seed; continuous coherent stream; persistent mini-player |
-| 29 | Sample Query / Simple Mode | 🔲 todo | `sample_query` parameter — single natural language description bypasses structured UI; "Simple Mode" toggle |
+| 29 | Sample Query / Simple Mode | ✅ done | Quick Generate box on Overview tab; `POST /ollama/expand` uses Ollama to convert free-text description into tags, BPM, key, scale, instruments; model selector auto-populated |
 | 30 | Multi-Mask Repaint | 🔲 todo | Define multiple time-window regions for repaint in one submit; multi-region timeline picker |
 
 ---

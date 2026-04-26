@@ -34,6 +34,16 @@
 
   <!-- OVERVIEW -->
   <div class="tab-panel active" id="tab-overview">
+    <!-- Quick Generate (Simple Mode) -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:.04em">QUICK GENERATE</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="quick-prompt" placeholder="Describe the music… e.g. dark medieval battle drums with choir" style="flex:1;min-width:200px" title="Describe your music in plain English — AI will populate all style, instrument, and parameter fields automatically">
+        <select id="quick-model" style="min-width:130px;font-size:12px" title="Ollama model to use for expansion"></select>
+        <button class="secondary small" id="btn-quick-expand" title="Use AI to convert your description into structured tags and parameters">✨ Expand</button>
+      </div>
+      <div id="quick-status" style="font-size:11px;color:var(--muted);margin-top:5px;min-height:14px"></div>
+    </div>
     <div class="field-group">
       <label>Song Name</label>
       <input type="text" id="song-name" placeholder="e.g. Dark Psy Journey">
@@ -1055,6 +1065,7 @@
 <script src="/static/presets.js?v=1"></script>
 <script src="/static/jobs.js?v=4"></script>
 <script src="/static/easy.js?v=1"></script>
+<script src="/static/quick.js?v=1"></script>
 <script src="/static/lint.js?v=1"></script>
 <script src="/static/stems.js?v=1"></script>
 <script src="/static/cover.js?v=1"></script>
