@@ -72,4 +72,4 @@
 | — | Remix Repaint mode (time window) | 2026-04-25 | 434eb10 |
 | — | Hover tooltips on all controls | 2026-04-25 | 434eb10 |
 | — | About tab v3.0 update | 2026-04-25 | 434eb10 |
-| 1 | Built-in Audio Player | 2026-04-26 | (next commit) |
+| 1 | Built-in Audio Player | 2026-04-26 | 5b920b0 |
