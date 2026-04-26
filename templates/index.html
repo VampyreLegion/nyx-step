@@ -938,12 +938,11 @@
 
   <!-- TRAIN LORA -->
   <div class="tab-panel" id="tab-train">
-    <p style="font-size:12px;color:var(--muted);margin:0 0 14px">Train a LoRA adapter on your own audio dataset using FL-AceStep. Requires the <code>FL_AceStep_Train</code> ComfyUI plugin.</p>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 14px">Train a LoRA adapter on your own audio dataset. Uses the <strong>FL_AceStep_Train</strong> ComfyUI nodes — all 6 nodes confirmed installed. Each audio file needs a matching <code>_prompt.txt</code> and optionally a <code>_lyrics.txt</code>.</p>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
-      <!-- Dataset -->
       <div class="field-group" style="grid-column:1/-1">
-        <label title="Absolute path to a folder containing .mp3, .wav, or .flac training files">Dataset Directory ⓘ</label>
+        <label title="Absolute path to a folder containing .mp3/.wav/.flac + matching _prompt.txt files">Dataset Directory ⓘ</label>
         <input type="text" id="train-dataset-dir" placeholder="/path/to/audio/dataset" style="width:100%;font-family:monospace;font-size:12px">
       </div>
       <div class="field-group">
@@ -951,8 +950,29 @@
         <input type="text" id="train-lora-name" value="my_lora" style="width:100%">
       </div>
       <div class="field-group">
-        <label title="Where to save checkpoints. Defaults to ComfyUI output/audio/loras">Output Directory <span style="font-size:10px;color:var(--muted)">(optional)</span></label>
-        <input type="text" id="train-output-dir" placeholder="(default: ComfyUI loras dir)" style="width:100%;font-size:12px">
+        <label title="Activation tag prepended/appended to every sample caption — useful to trigger the LoRA during inference">Activation Tag <span style="font-size:10px;color:var(--muted)">(optional)</span></label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="train-custom-tag" placeholder="e.g. my_style" style="flex:1">
+          <select id="train-tag-position" style="font-size:12px">
+            <option value="prepend">prepend</option>
+            <option value="append">append</option>
+            <option value="replace">replace</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group">
+        <label title="Where preprocessed tensor cache is stored">Tensor Cache Dir <span style="font-size:10px;color:var(--muted)">(optional)</span></label>
+        <input type="text" id="train-tensor-dir" placeholder="(default: ./output/acestep/datasets)" style="width:100%;font-size:12px">
+      </div>
+      <div class="field-group">
+        <label title="Where the final LoRA .safetensors file is saved">LoRA Output Dir <span style="font-size:10px;color:var(--muted)">(optional)</span></label>
+        <input type="text" id="train-lora-dir" placeholder="(default: ./output/acestep/loras)" style="width:100%;font-size:12px">
+      </div>
+      <div class="field-group" style="grid-column:1/-1">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="train-all-instrumental" checked>
+          <span title="Mark all samples as instrumental (no vocals). Uncheck if your dataset contains sung vocals.">All Instrumental ⓘ</span>
+        </label>
       </div>
     </div>
 
@@ -960,16 +980,16 @@
       <summary style="cursor:pointer;font-size:12px;color:var(--muted);user-select:none">Hyperparameters</summary>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:10px">
         <div class="field-group">
-          <label title="LoRA rank — higher = more capacity, more VRAM">Rank ⓘ</label>
-          <input type="number" id="train-rank" value="8" min="1" max="128" step="1" style="width:80px">
+          <label title="LoRA rank — higher = more capacity, more VRAM. Must be multiple of 4.">Rank ⓘ</label>
+          <input type="number" id="train-rank" value="8" min="4" max="256" step="4" style="width:80px">
         </div>
         <div class="field-group">
-          <label title="LoRA alpha — scaling factor (typically 2× rank)">Alpha ⓘ</label>
-          <input type="number" id="train-alpha" value="16" min="1" max="256" step="1" style="width:80px">
+          <label title="LoRA alpha — scaling factor (typically 2× rank). Must be multiple of 4.">Alpha ⓘ</label>
+          <input type="number" id="train-alpha" value="16" min="4" max="512" step="4" style="width:80px">
         </div>
         <div class="field-group">
           <label title="Dropout regularization on LoRA layers">Dropout ⓘ</label>
-          <input type="number" id="train-dropout" value="0.1" min="0" max="0.5" step="0.01" style="width:80px">
+          <input type="number" id="train-dropout" value="0.1" min="0" max="0.5" step="0.05" style="width:80px">
         </div>
         <div class="field-group">
           <label title="Learning rate — 1e-4 is a safe default">Learning Rate ⓘ</label>
@@ -977,7 +997,7 @@
         </div>
         <div class="field-group">
           <label title="Total training epochs">Epochs ⓘ</label>
-          <input type="number" id="train-epochs" value="100" min="1" max="1000" step="1" style="width:80px">
+          <input type="number" id="train-epochs" value="100" min="10" max="10000" step="10" style="width:80px">
         </div>
         <div class="field-group">
           <label title="Training batch size per step">Batch Size ⓘ</label>
@@ -985,22 +1005,50 @@
         </div>
         <div class="field-group">
           <label title="Gradient accumulation steps — effective batch = batch × accum">Grad Accum ⓘ</label>
-          <input type="number" id="train-grad-accum" value="4" min="1" max="32" step="1" style="width:70px">
+          <input type="number" id="train-grad-accum" value="4" min="1" max="16" step="1" style="width:70px">
         </div>
         <div class="field-group">
           <label title="Save a checkpoint every N epochs">Save Every ⓘ</label>
-          <input type="number" id="train-save-every" value="10" min="1" max="100" step="1" style="width:70px">
+          <input type="number" id="train-save-every" value="10" min="5" max="1000" step="5" style="width:70px">
+        </div>
+        <div class="field-group">
+          <label title="Linear warmup steps at the start of training">Warmup Steps ⓘ</label>
+          <input type="number" id="train-warmup" value="100" min="0" max="1000" step="10" style="width:80px">
+        </div>
+        <div class="field-group">
+          <label title="AdamW weight decay">Weight Decay ⓘ</label>
+          <input type="number" id="train-weight-decay" value="0.01" min="0" max="0.1" step="0.001" style="width:80px">
+        </div>
+        <div class="field-group">
+          <label title="Gradient clipping max norm">Grad Clip ⓘ</label>
+          <input type="number" id="train-grad-clip" value="1.0" min="0.1" max="10" step="0.1" style="width:70px">
         </div>
         <div class="field-group">
           <label>Seed</label>
-          <input type="number" id="train-seed" value="42" min="0" max="4294967295" style="width:90px">
+          <input type="number" id="train-seed" value="42" min="0" max="2147483647" style="width:90px">
         </div>
       </div>
-      <div style="margin-top:8px">
-        <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+      <div class="field-group" style="margin-top:8px">
+        <label title="Comma-separated attention projection names to apply LoRA to">Target Modules ⓘ</label>
+        <input type="text" id="train-target-modules" value="q_proj,k_proj,v_proj,o_proj" style="width:100%;font-family:monospace;font-size:11px">
+      </div>
+    </details>
+
+    <details style="margin:0 0 12px">
+      <summary style="cursor:pointer;font-size:12px;color:var(--muted);user-select:none">LLM Auto-Labeling <span style="font-size:11px">(optional — generates captions for unlabeled audio)</span></summary>
+      <div style="margin-top:10px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;margin-bottom:8px">
           <input type="checkbox" id="train-llm-label">
-          <span title="Use FL_AceStep_LabelSamples to auto-generate captions for unlabeled audio via LLM">LLM auto-labeling (FL_AceStep_LabelSamples) ⓘ</span>
+          <span title="Run FL_AceStep_LabelSamples before preprocessing — uses an ACE-Step LM to auto-caption each audio file">Enable LLM labeling ⓘ</span>
         </label>
+        <div class="field-group">
+          <label title="Which ACE-Step language model to use for captioning">LLM Model ⓘ</label>
+          <select id="train-llm-model" style="font-size:12px">
+            <option value="acestep-5Hz-lm-1.7B">1.7B (recommended)</option>
+            <option value="acestep-5Hz-lm-0.6B">0.6B (fast, less accurate)</option>
+            <option value="acestep-5Hz-lm-4B">4B (highest quality)</option>
+          </select>
+        </div>
       </div>
     </details>
 
@@ -1274,7 +1322,7 @@
 <script src="/static/lint.js?v=1"></script>
 <script src="/static/stems.js?v=1"></script>
 <script src="/static/cover.js?v=1"></script>
-<script src="/static/train.js?v=1"></script>
+<script src="/static/train.js?v=2"></script>
 <script src="/static/history.js?v=1"></script>
 <script src="/static/tabs.js?v=2"></script>
 <script src="/static/init.js?v=1"></script>

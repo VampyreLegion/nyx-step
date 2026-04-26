@@ -150,7 +150,11 @@
     const body = {
       dataset_dir: datasetDir,
       lora_name: document.getElementById("train-lora-name").value.trim() || "my_lora",
-      output_dir: document.getElementById("train-output-dir").value.trim(),
+      custom_tag: document.getElementById("train-custom-tag").value.trim(),
+      tag_position: document.getElementById("train-tag-position").value,
+      all_instrumental: document.getElementById("train-all-instrumental").checked,
+      tensor_output_dir: document.getElementById("train-tensor-dir").value.trim(),
+      lora_output_dir: document.getElementById("train-lora-dir").value.trim(),
       lora_rank: parseInt(document.getElementById("train-rank").value) || 8,
       lora_alpha: parseInt(document.getElementById("train-alpha").value) || 16,
       lora_dropout: parseFloat(document.getElementById("train-dropout").value) || 0.1,
@@ -159,8 +163,13 @@
       batch_size: parseInt(document.getElementById("train-batch").value) || 1,
       gradient_accumulation: parseInt(document.getElementById("train-grad-accum").value) || 4,
       save_every_n_epochs: parseInt(document.getElementById("train-save-every").value) || 10,
+      warmup_steps: parseInt(document.getElementById("train-warmup").value) || 100,
+      weight_decay: parseFloat(document.getElementById("train-weight-decay").value) || 0.01,
+      max_grad_norm: parseFloat(document.getElementById("train-grad-clip").value) || 1.0,
+      target_modules: document.getElementById("train-target-modules").value.trim() || "q_proj,k_proj,v_proj,o_proj",
       seed: parseInt(document.getElementById("train-seed").value) || 42,
       use_llm_labeling: document.getElementById("train-llm-label").checked,
+      llm_model: document.getElementById("train-llm-model").value,
     };
 
     _lossHistory = [];
