@@ -634,6 +634,11 @@
         <input type="number" id="param-duration" value="30" step="1" min="5" max="300"
           title="Audio length in seconds. Longer = more VRAM and time. 30s is good for a section; 60–180s for a full piece. Max ~300s. Default: 30.">
       </div>
+      <div class="field-group">
+        <label title="Generate multiple variations in one job. Each variation uses a different random seed. All results appear as separate job cards. 1–4 recommended; higher values use proportionally more VRAM. Default: 1.">Batch ⓘ</label>
+        <input type="number" id="param-batch-size" value="1" min="1" max="8" step="1"
+          title="Batch size: generate N variations simultaneously. Each gets its own seed and job card. More = more VRAM. Default: 1.">
+      </div>
     </div>
     <div class="row">
       <div class="field-group">
@@ -996,9 +1001,9 @@
   </div>
 </div>
 
-<script src="/static/state.js?v=5"></script>
+<script src="/static/state.js?v=6"></script>
 <script src="/static/utils.js?v=2"></script>
-<script src="/static/bindings.js?v=8"></script>
+<script src="/static/bindings.js?v=9"></script>
 <script src="/static/genres.js?v=2"></script>
 <script src="/static/chips.js?v=1"></script>
 <script src="/static/tags.js?v=1"></script>

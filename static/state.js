@@ -9,4 +9,5 @@ const mwState = {
   vocal_language: "auto",
   generate_audio_codes: true,
   dit_model: "turbo",
+  batch_size: 1,
 };

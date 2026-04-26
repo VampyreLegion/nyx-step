@@ -42,6 +42,7 @@ class GenerateRequest(BaseModel):
     vocal_language: str = "auto"
     generate_audio_codes: bool = True
     dit_model: str = "turbo"
+    batch_size: int = Field(default=1, ge=1, le=8)
 
 
 @router.post("/generate")

@@ -26,7 +26,8 @@ bind("param-temp",   "temperature", v => parseFloat(v) || 0.85);
 bind("param-topp",   "top_p",       v => parseFloat(v) || 0.9);
 bind("param-topk",   "top_k",       v => parseInt(v)   || 0);
 bind("param-minp",   "min_p",       v => parseFloat(v) || 0.0);
-bind("param-seed",   "seed",        v => parseInt(v)   || 0);
+bind("param-seed",       "seed",       v => parseInt(v)   || 0);
+bind("param-batch-size", "batch_size", v => Math.min(8, Math.max(1, parseInt(v) || 1)));
 
 document.getElementById("style-chords-preset").addEventListener("change", e => {
   if (!e.target.value) return;
@@ -69,6 +70,7 @@ document.getElementById("btn-reset-params").addEventListener("click", () => {
     vocal_language: "auto",
     generate_audio_codes: true,
     dit_model: "turbo",
+    batch_size: 1,
   };
   Object.assign(mwState, defaults);
   document.getElementById("param-steps").value    = defaults.steps;
@@ -86,6 +88,7 @@ document.getElementById("btn-reset-params").addEventListener("click", () => {
   document.getElementById("param-vocal-language").value = defaults.vocal_language;
   document.getElementById("param-gen-audio-codes").checked = true;
   document.getElementById("param-dit-model").value = "turbo";
+  document.getElementById("param-batch-size").value = 1;
   document.getElementById("param-model-hint").textContent = _modelHints["turbo"];
   updatePayloadPreview();
 });

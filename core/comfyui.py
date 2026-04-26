@@ -101,6 +101,7 @@ class ComfyUIClient:
         for node in workflow.values():
             if isinstance(node, dict) and node.get("class_type") == "EmptyAceStep1.5LatentAudio":
                 node.setdefault("inputs", {})["seconds"] = float(state.get("duration", 30))
+                node["inputs"]["batch_size"] = max(1, min(8, int(state.get("batch_size", 1))))
 
         for node in workflow.values():
             if isinstance(node, dict) and node.get("class_type") == "KSampler":
