@@ -14,7 +14,7 @@ _client = ComfyUIClient()
 
 class RemixRequest(BaseModel):
     source_file: str
-    mode: str = "variation"       # variation | extend
+    mode: str = "variation"       # variation | extend | repaint
     denoise: float = Field(default=0.5, ge=0.05, le=0.95)
     seed_seconds: float = Field(default=10.0, ge=3.0, le=60.0)
     tags: str = ""
@@ -36,6 +36,8 @@ class RemixRequest(BaseModel):
     top_p: float = Field(default=0.9, ge=0.0, le=1.0)
     top_k: int = Field(default=0, ge=0, le=1000)
     min_p: float = Field(default=0.0, ge=0.0, le=1.0)
+    repaint_start: float = Field(default=0.0, ge=0.0)
+    repaint_end: float = Field(default=10.0, ge=0.0)
     song_name: str = "Remix"
 
 
@@ -50,15 +52,25 @@ async def remix(req: RemixRequest, request: Request):
     caption = req.tags.strip()
     lyrics = req.lyrics
 
-    result = _client.build_remix_workflow(
-        source_filename=req.source_file,
-        caption=caption,
-        lyrics=lyrics,
-        state=state,
-        mode=req.mode,
-        denoise=req.denoise,
-        seed_seconds=req.seed_seconds,
-    )
+    if req.mode == "repaint":
+        result = _client.build_repaint_workflow(
+            source_filename=req.source_file,
+            caption=caption,
+            lyrics=lyrics,
+            state=state,
+            start_time=req.repaint_start,
+            end_time=req.repaint_end,
+        )
+    else:
+        result = _client.build_remix_workflow(
+            source_filename=req.source_file,
+            caption=caption,
+            lyrics=lyrics,
+            state=state,
+            mode=req.mode,
+            denoise=req.denoise,
+            seed_seconds=req.seed_seconds,
+        )
     if "error" in result:
         return JSONResponse({"error": result["error"]}, status_code=400)
 
