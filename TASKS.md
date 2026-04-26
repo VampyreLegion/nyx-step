@@ -30,10 +30,10 @@
 | 11 | Model Selector (DiT + LM) | ✅ done | DiT Model dropdown (XL Turbo/SFT/Base) in Parameters; swaps UNETLoader `unet_name` in workflow; shows recommended steps per model; LM model selection is ComfyUI-FL only |
 | 12 | Batch Size Control | ✅ done | `batch_size` spinner (1–8) in Parameters; wired to `EmptyAceStep1.5LatentAudio` `batch_size` input; each output file gets its own job card |
 | 13 | Cover Mode | ✅ done | Dedicated Cover tab; upload reference audio, ACE-Step preserves melody while applying new style tags; `POST /cover` form endpoint; `build_cover_workflow` → `_build_remix_from_input` in ComfyUI client |
-| 14 | Audio Codes Cache (Fast Variation) | 🔲 todo | Store `audio_codes` from generation results; pass back as conditioning for instant variations (skips VAE re-encode) |
-| 15 | LRC Synchronized Lyrics | 🔲 todo | `auto_lrc: true` in request → timestamp-aligned lyrics displayed in job card synced to audio player |
-| 16 | Generation Quality Score | 🔲 todo | `auto_score: true` returns DiT Lyrics Alignment Score — show as badge on job card |
-| 17 | Demucs Fine-Tuned Models | 🔲 todo | Add `htdemucs_ft` and `mdx_extra` to Demucs model dropdown; no backend changes needed |
+| 14 | Audio Codes Cache (Fast Variation) | ⏸ blocked | Requires ComfyUI node-level access to audio_codes tensor — not exposed via workflow JSON; revisit when custom node available |
+| 15 | LRC Synchronized Lyrics | ⏸ blocked | `auto_lrc` is standalone-API-only param; not in ComfyUI TextEncodeAceStepAudio1.5 node schema |
+| 16 | Generation Quality Score | ⏸ blocked | `auto_score` is standalone-API-only; no ComfyUI node exposes DiT Lyrics Alignment Score |
+| 17 | Demucs Fine-Tuned Models | ✅ done | Added `htdemucs_ft` and `mdx_extra` to dropdown; model name passed directly to `-n` flag, no backend changes needed |
 
 ---
 
