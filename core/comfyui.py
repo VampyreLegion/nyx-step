@@ -129,6 +129,39 @@ class ComfyUIClient:
             if isinstance(node, dict) and node.get("class_type") == "UNETLoader":
                 node.setdefault("inputs", {})["unet_name"] = unet_name
 
+        # Insert LoraLoader if a LoRA is selected
+        lora_name = state.get("lora_name", "").strip()
+        lora_scale = float(state.get("lora_scale", 1.0))
+        if lora_name:
+            # Find UNETLoader and DualCLIPLoader node IDs
+            unet_id = next((k for k, v in workflow.items() if isinstance(v, dict) and v.get("class_type") == "UNETLoader"), None)
+            clip_id = next((k for k, v in workflow.items() if isinstance(v, dict) and v.get("class_type") == "DualCLIPLoader"), None)
+            if unet_id and clip_id:
+                lora_id = "_lora_"
+                workflow[lora_id] = {
+                    "class_type": "LoraLoader",
+                    "_meta": {"title": f"LoRA: {lora_name}"},
+                    "inputs": {
+                        "model": [unet_id, 0],
+                        "clip": [clip_id, 0],
+                        "lora_name": lora_name,
+                        "strength_model": lora_scale,
+                        "strength_clip": lora_scale,
+                    },
+                }
+                # Redirect nodes that use UNETLoader output to LoraLoader model output
+                for node in workflow.values():
+                    if not isinstance(node, dict):
+                        continue
+                    for ik, iv in node.get("inputs", {}).items():
+                        if isinstance(iv, list) and len(iv) == 2 and iv[0] == unet_id and iv[1] == 0:
+                            node["inputs"][ik] = [lora_id, 0]
+                        elif isinstance(iv, list) and len(iv) == 2 and iv[0] == clip_id and iv[1] == 0:
+                            node["inputs"][ik] = [lora_id, 1]
+                # Restore LoraLoader's own inputs (don't redirect them)
+                workflow[lora_id]["inputs"]["model"] = [unet_id, 0]
+                workflow[lora_id]["inputs"]["clip"] = [clip_id, 0]
+
         # Swap audio save node to match requested format
         _fmt_map = {
             "mp3":  ("SaveAudioMP3",  "Save Audio (MP3)"),

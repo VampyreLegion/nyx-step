@@ -44,7 +44,7 @@
 | 18 | Lego Mode — Add Instrument Layer | ⏸ blocked | Requires dedicated ComfyUI workflow template; `task_type`/`instruction` not exposed in TextEncodeAceStepAudio1.5 — needs new workflow JSON built in ComfyUI UI |
 | 19 | Extract Mode — Single Stem Isolation | ⏸ blocked | Same — needs workflow template with ReferenceTimbreAudio node wired for diffusion-based extraction |
 | 20 | Complete Mode — Generate Backing Track | ⏸ blocked | Same — no workflow template exists; needs ComfyUI workflow built and exported |
-| 21 | LoRA Browser + Loader | 🔲 todo | Browse community LoRAs (Chinese Rap, RapMachine, Lyric2Vocal, Text2Samples), load one, pass `lora_path` + `lora_scale` |
+| 21 | LoRA Browser + Loader | ✅ done | LoRA section in Parameters; GET /loras from ComfyUI /models/loras; LoraLoader injected into workflow between UNETLoader/DualCLIPLoader and sampler nodes; scale control; refresh button |
 | 22 | LoRA Training UI | 🔲 todo | Training wizard tab: drop audio files + metadata, configure LoRA rank/alpha/LR/epochs, monitor training via SSE; uses `/v1/training/start` |
 | 23 | Audio Understanding / Analyze | ✅ done | POST /analyze; scipy onset detection → BPM, Krumhansl-Schmuckler chromagram → key/scale, faster-whisper → lyrics+language; Apply button populates BPM/key/scale/lyrics/language into state |
 | 24 | Repaint Timeline Picker | ✅ done | Canvas timeline in repaint panel: drag two handles to set start/end region; syncs with number inputs both ways; uses WaveSurfer duration if available |
@@ -73,3 +73,21 @@
 | — | Hover tooltips on all controls | 2026-04-25 | 434eb10 |
 | — | About tab v3.0 update | 2026-04-25 | 434eb10 |
 | 1 | Built-in Audio Player | 2026-04-26 | 5b920b0 |
+| 2 | Chord Preset Fix | 2026-04-26 | 9892e0f |
+| 3 | Live Token Counter | 2026-04-26 | ca1b60f |
+| 4 | Audio Format Selection | 2026-04-26 | 70d5dd1 |
+| 5 | Genre → Auto-Instruments | 2026-04-26 | 9c3355d |
+| 6 | Vocal Language Control | 2026-04-26 | a84dc93 |
+| 7 | Metadata JSON Download | 2026-04-26 | f98c0b7 |
+| 8 | Reset Parameters Button | 2026-04-26 | 0ba7fd4 |
+| 9 | History Browser Tab | 2026-04-26 | c995ffc |
+| 10 | LM Stage Toggle | 2026-04-26 | 29cc362 |
+| 11 | DiT Model Selector | 2026-04-26 | 2a31321 |
+| 12 | Batch Size Control | 2026-04-26 | 2ba9e98 |
+| 13 | Cover Mode Tab | 2026-04-26 | 107655e |
+| 17 | Demucs Fine-Tuned Models | 2026-04-26 | 1f9accd |
+| 23 | Audio Understanding / Analyze | 2026-04-26 | 400cd19 |
+| 24 | Repaint Timeline Canvas | 2026-04-26 | 216fbb5 |
+| 25 | WaveSurfer.js Waveform Player | 2026-04-26 | 7876786 |
+| 26 | Voice Recorder → Whisper Lyrics | 2026-04-26 | 2e77bb3 |
+| 29 | Quick Generate / Simple Mode | 2026-04-26 | 63e4964 |

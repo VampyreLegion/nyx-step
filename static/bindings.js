@@ -61,6 +61,30 @@ document.getElementById("param-gen-audio-codes").addEventListener("change", e =>
   mwState.generate_audio_codes = e.target.checked;
 });
 
+document.getElementById("param-lora-name").addEventListener("change", e => {
+  mwState.lora_name = e.target.value;
+});
+document.getElementById("param-lora-scale").addEventListener("input", e => {
+  mwState.lora_scale = parseFloat(e.target.value) || 1.0;
+});
+
+// Populate LoRA dropdown from ComfyUI
+async function _loadLoras() {
+  const sel = document.getElementById("param-lora-name");
+  const countEl = document.getElementById("lora-count");
+  try {
+    const data = await fetch("/loras").then(r => r.json());
+    const loras = data.loras || [];
+    sel.innerHTML = '<option value="">None</option>' +
+      loras.map(l => `<option value="${l}">${l}</option>`).join("");
+    countEl.textContent = loras.length ? `${loras.length} available` : "(none installed)";
+  } catch (_) {
+    countEl.textContent = "(ComfyUI offline)";
+  }
+}
+_loadLoras();
+document.getElementById("btn-lora-refresh").addEventListener("click", _loadLoras);
+
 document.getElementById("btn-reset-params").addEventListener("click", () => {
   const defaults = {
     steps: 8, cfg_scale: 2.0, duration: 30.0,

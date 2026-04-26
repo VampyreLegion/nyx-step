@@ -16,6 +16,18 @@ router = APIRouter()
 _client = ComfyUIClient()
 
 
+@router.get("/loras")
+async def list_loras():
+    try:
+        import requests as _req
+        import config as _cfg
+        r = _req.get(f"{_cfg.COMFYUI_URL}/models/loras", timeout=5)
+        r.raise_for_status()
+        return {"loras": r.json()}
+    except Exception as exc:
+        return {"loras": [], "error": str(exc)}
+
+
 class GenerateRequest(BaseModel):
     tags: str = ""
     lyrics: str = ""
@@ -43,6 +55,8 @@ class GenerateRequest(BaseModel):
     generate_audio_codes: bool = True
     dit_model: str = "turbo"
     batch_size: int = Field(default=1, ge=1, le=8)
+    lora_name: str = ""
+    lora_scale: float = Field(default=1.0, ge=0.0, le=2.0)
 
 
 @router.post("/generate")

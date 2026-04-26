@@ -10,4 +10,6 @@ const mwState = {
   generate_audio_codes: true,
   dit_model: "turbo",
   batch_size: 1,
+  lora_name: "",
+  lora_scale: 1.0,
 };
