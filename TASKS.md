@@ -45,6 +45,10 @@
 | 19 | Extract Mode — Single Stem Isolation | ⏸ blocked | Same — needs workflow template with ReferenceTimbreAudio node wired for diffusion-based extraction |
 | 20 | Complete Mode — Generate Backing Track | ⏸ blocked | Same — no workflow template exists; needs ComfyUI workflow built and exported |
 | 21 | LoRA Browser + Loader | ✅ done | LoRA section in Parameters; GET /loras from ComfyUI /models/loras; LoraLoader injected into workflow between UNETLoader/DualCLIPLoader and sampler nodes; scale control; refresh button |
+| 22 | LoRA Training UI | 🔲 todo | Complex — needs FL_AceStep_Train node wiring and full training pipeline UI |
+| 27 | MIDI Extraction | ⏸ blocked | basic-pitch incompatible with Python 3.12 (pkgutil.ImpImporter removed); revisit when compat fix available or alternative found |
+| 28 | Continuous AI Radio | ⏸ blocked | Requires audio_codes chaining (same blocker as #14); needs ComfyUI node support |
+| 30 | Multi-Mask Repaint | ⏸ blocked | Requires custom ComfyUI workflow with multiple TrimAudio chains; no template exists |
 | 22 | LoRA Training UI | 🔲 todo | Training wizard tab: drop audio files + metadata, configure LoRA rank/alpha/LR/epochs, monitor training via SSE; uses `/v1/training/start` |
 | 23 | Audio Understanding / Analyze | ✅ done | POST /analyze; scipy onset detection → BPM, Krumhansl-Schmuckler chromagram → key/scale, faster-whisper → lyrics+language; Apply button populates BPM/key/scale/lyrics/language into state |
 | 24 | Repaint Timeline Picker | ✅ done | Canvas timeline in repaint panel: drag two handles to set start/end region; syncs with number inputs both ways; uses WaveSurfer duration if available |
