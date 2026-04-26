@@ -41,6 +41,30 @@ document.getElementById("param-lock-seed").addEventListener("change", e => {
   mwState.lock_seed = e.target.checked;
 });
 
+const _qualityOptions = {
+  mp3:  [["V0","V0 (best VBR)"],["128k","128k"],["320k","320k"]],
+  flac: [],
+  opus: [["64k","64k"],["96k","96k"],["128k","128k"],["192k","192k"],["320k","320k"]],
+};
+document.getElementById("param-audio-format").addEventListener("change", e => {
+  const fmt = e.target.value;
+  mwState.audio_format = fmt;
+  const qSel = document.getElementById("param-audio-quality");
+  const qWrap = document.getElementById("param-quality-wrap");
+  const opts = _qualityOptions[fmt] || [];
+  if (opts.length === 0) {
+    qWrap.style.display = "none";
+    mwState.audio_quality = "";
+  } else {
+    qWrap.style.display = "";
+    qSel.innerHTML = opts.map(([v,l]) => `<option value="${v}">${l}</option>`).join("");
+    mwState.audio_quality = opts[0][0];
+  }
+});
+document.getElementById("param-audio-quality").addEventListener("change", e => {
+  mwState.audio_quality = e.target.value;
+});
+
 document.getElementById("btn-random-seed").addEventListener("click", () => {
   const seed = Math.floor(Math.random() * (2 ** 32 - 1)) + 1;
   document.getElementById("param-seed").value = seed;

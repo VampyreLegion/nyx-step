@@ -672,6 +672,24 @@
         </label>
       </div>
     </div>
+    <div class="row">
+      <div class="field-group">
+        <label title="Output audio format. MP3: universal, smaller files. FLAC: lossless, larger files, best for post-production. Opus: modern lossy, excellent quality at low bitrates.">Format ⓘ</label>
+        <select id="param-audio-format" title="Output format: MP3 (universal), FLAC (lossless), Opus (efficient)">
+          <option value="mp3">MP3</option>
+          <option value="flac">FLAC (lossless)</option>
+          <option value="opus">Opus</option>
+        </select>
+      </div>
+      <div class="field-group" id="param-quality-wrap">
+        <label title="Bitrate or quality setting for the selected format. V0 = best variable-bitrate MP3. 320k = highest constant bitrate.">Quality ⓘ</label>
+        <select id="param-audio-quality" title="Bitrate/quality for the selected format">
+          <option value="V0">V0 (best VBR)</option>
+          <option value="128k">128k</option>
+          <option value="320k">320k</option>
+        </select>
+      </div>
+    </div>
   </div>
 
   <!-- STEMS -->
@@ -922,9 +940,9 @@
   </div>
 </div>
 
-<script src="/static/state.js?v=1"></script>
+<script src="/static/state.js?v=2"></script>
 <script src="/static/utils.js?v=2"></script>
-<script src="/static/bindings.js?v=3"></script>
+<script src="/static/bindings.js?v=4"></script>
 <script src="/static/genres.js?v=1"></script>
 <script src="/static/chips.js?v=1"></script>
 <script src="/static/tags.js?v=1"></script>

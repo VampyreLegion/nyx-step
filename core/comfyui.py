@@ -112,6 +112,30 @@ class ComfyUIClient:
             if isinstance(node, dict) and node.get("class_type") == "TextEncodeAceStepAudio1.5":
                 node.setdefault("inputs", {})["seed"] = seed
 
+        # Swap audio save node to match requested format
+        _fmt_map = {
+            "mp3":  ("SaveAudioMP3",  "Save Audio (MP3)"),
+            "flac": ("SaveAudio",     "Save Audio (FLAC)"),
+            "opus": ("SaveAudioOpus", "Save Audio (Opus)"),
+        }
+        audio_format = state.get("audio_format", "mp3").lower()
+        audio_quality = state.get("audio_quality", "V0")
+        cls, title = _fmt_map.get(audio_format, _fmt_map["mp3"])
+        for node in workflow.values():
+            if isinstance(node, dict) and node.get("class_type") in (
+                "SaveAudioMP3", "SaveAudio", "SaveAudioOpus"
+            ):
+                node["class_type"] = cls
+                node["_meta"] = {"title": title}
+                inp = node.setdefault("inputs", {})
+                inp.pop("quality", None)
+                inp.pop("audioUI", None)
+                if audio_format == "mp3":
+                    inp["quality"] = audio_quality or "V0"
+                    inp["audioUI"] = ""
+                elif audio_format == "opus":
+                    inp["quality"] = audio_quality or "128k"
+
         return {"workflow": workflow, "seed": seed}
 
     def build_remix_workflow(
