@@ -17,7 +17,7 @@
 <div id="tab-bar">
   <button class="tab-btn active" data-tab="overview">Overview</button>
   <button class="tab-btn" data-tab="easy">Legion's BioInfusor</button>
-  <button class="tab-btn" data-tab="style">Style</button>
+  <button class="tab-btn" data-tab="style">Style Infusor</button>
   <button class="tab-btn" data-tab="instruments">Instruments</button>
   <button class="tab-btn" data-tab="vocals">Vocals</button>
   <button class="tab-btn" data-tab="lyrics">Tagging</button>
@@ -201,15 +201,68 @@
       <div class="field-group">
         <label>Scale</label>
         <select id="style-scale">
-          <option>Major</option><option>Minor</option><option>Harmonic Minor</option>
-          <option>Melodic Minor</option><option>Pentatonic Major</option><option>Pentatonic Minor</option>
+          <optgroup label="Standard">
+            <option>Major</option>
+            <option>Minor</option>
+            <option>Harmonic Minor</option>
+            <option>Melodic Minor</option>
+          </optgroup>
+          <optgroup label="Pentatonic / Blues">
+            <option>Pentatonic Major</option>
+            <option>Pentatonic Minor</option>
+            <option>Blues</option>
+            <option>Blues Major</option>
+          </optgroup>
+          <optgroup label="Symmetric">
+            <option>Whole Tone</option>
+            <option>Diminished</option>
+            <option>Chromatic</option>
+          </optgroup>
+          <optgroup label="World / Exotic">
+            <option>Hungarian Minor</option>
+            <option>Double Harmonic Major</option>
+            <option>Phrygian Dominant</option>
+            <option>Neapolitan Minor</option>
+            <option>Neapolitan Major</option>
+            <option>Persian</option>
+            <option>Enigmatic</option>
+          </optgroup>
+          <optgroup label="Jazz">
+            <option>Bebop Major</option>
+            <option>Bebop Dominant</option>
+            <option>Acoustic</option>
+            <option>Altered</option>
+          </optgroup>
         </select>
       </div>
       <div class="field-group">
         <label>Mode</label>
         <select id="style-mode">
-          <option value="">—</option><option>Dorian</option><option>Phrygian</option>
-          <option>Lydian</option><option>Mixolydian</option><option>Aeolian</option><option>Locrian</option>
+          <option value="">—</option>
+          <optgroup label="Church Modes">
+            <option>Ionian</option>
+            <option>Dorian</option>
+            <option>Phrygian</option>
+            <option>Lydian</option>
+            <option>Mixolydian</option>
+            <option>Aeolian</option>
+            <option>Locrian</option>
+          </optgroup>
+          <optgroup label="Jazz Modes">
+            <option>Lydian Dominant</option>
+            <option>Super Locrian</option>
+            <option>Lydian Augmented</option>
+            <option>Phrygian Dominant</option>
+            <option>Half-Diminished</option>
+          </optgroup>
+          <optgroup label="Ethnic / Other">
+            <option>Ukrainian Dorian</option>
+            <option>Bhairav</option>
+            <option>Bhairavi</option>
+            <option>Yaman</option>
+            <option>Kafi</option>
+            <option>Hijaz</option>
+          </optgroup>
         </select>
       </div>
       <div class="field-group">
@@ -990,6 +1043,7 @@
       <button class="inner-tab-btn active" data-guide="starthere">Start Here</button>
       <button class="inner-tab-btn" data-guide="summary">Summary</button>
       <button class="inner-tab-btn" data-guide="flowcharts">Flowcharts</button>
+      <button class="inner-tab-btn" data-guide="scale">Scales &amp; Modes</button>
       <button class="inner-tab-btn" data-guide="ch1">1. Philosophy</button>
       <button class="inner-tab-btn" data-guide="ch2">2. Tags</button>
       <button class="inner-tab-btn" data-guide="ch3">3. Lyrics</button>
@@ -1037,7 +1091,7 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.1 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
       </div>
 
@@ -1075,13 +1129,15 @@
       </div>
 
       <div class="about-section">
-        <h3>Style Tab</h3>
+        <h3>Style Infusor Tab</h3>
         <ul>
           <li>Genre browser with 150+ genres across 17 categories — category sidebar, chip grid, live search</li>
           <li>Selecting a genre auto-fills BPM, key, scale, mode, time signature and immediately updates Overview tags live</li>
           <li>Genre info panel shows description and typical instruments</li>
           <li>BPM, Key, Scale, Mode, Time Signature controls — all changes sync to Overview tags and payload preview in real time</li>
-          <li>Non-standard scales (pentatonic, harmonic minor, etc.) automatically map to the nearest valid Nyx Step keyscale and append the scale name to tags</li>
+          <li>Scale dropdown: 20+ options across Standard, Pentatonic/Blues, Symmetric, World/Exotic, and Jazz groups</li>
+          <li>Mode dropdown: 13 options — all 7 church modes, 5 jazz modes (Lydian Dominant, Super Locrian, etc.), and 6 ethnic/raga modes (Bhairav, Hijaz, Yaman, etc.)</li>
+          <li>Scales and modes are injected as plain-text tags into the caption; Nyx-Step's Qwen text encoder interprets them semantically — harmonic colour is influenced, not mechanically enforced. See the Guide → Scales &amp; Modes tab for full reliability notes</li>
           <li>Chord Progression field with 44-preset dropdown (Pop, Rock, Electronic, R&amp;B, Jazz, Film, Metal, Ambient)</li>
           <li>Notes / Melody Hint field for guiding harmonic and melodic structure</li>
         </ul>
@@ -1091,7 +1147,7 @@
         <h3>Instruments &amp; Vocals Tabs</h3>
         <ul>
           <li>Instruments: chip selector across all categories from the Nyx-Step instruments database</li>
-          <li>Vocals: chip selectors for Tone, Style, Texture, and Gender tags</li>
+          <li>Vocals: 8 chip categories — Tone (18 options), Style (21), Texture &amp; Technique (17), Range (9), Emotion (16), Arrangement (10), Voice Type (8), Production (8) — ~107 total</li>
           <li>Both tabs have an editable Selected textarea — manually type or edit comma-separated values; chips re-sync automatically</li>
           <li>Selections feed into Overview tags and the Nyx-Step generation prompt</li>
         </ul>
@@ -1120,7 +1176,8 @@
       <div class="about-section">
         <h3>Guide Tab</h3>
         <ul>
-          <li>8-section reference: philosophy, tags, lyrics syntax, DAW tips, hidden syntax, operations, examples, troubleshooting</li>
+          <li>9-section reference: Scales &amp; Modes, philosophy, tags, lyrics syntax, DAW tips, hidden syntax, operations, examples, troubleshooting</li>
+          <li>Scales &amp; Modes section covers: how Nyx-Step processes scale/mode tags (Qwen text encoder, semantic not mechanical), reliability by category (Standard/Church Modes → high; Symmetric/Jazz → good; World/Ethnic → moderate), scale character reference table for all 20+ scales, and usage tips</li>
           <li>Summary page includes the Nyx-Step infographic, How AI Creates Music From Static diagram, and the full Keyword &amp; Tag Library</li>
         </ul>
       </div>
@@ -1138,6 +1195,18 @@
           <li>Parenthetical markers: (echo), (harmony), (ad lib) for background vocal layers</li>
           <li>Instrumentation, Performance Technique, Mood / Emotion, Production, Tempo &amp; Groove, Era / Style tags</li>
           <li>Language Codes: [zh], [ko], [ja], [es], [fr], [de], [en] for multilingual phonetic enforcement</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Train LoRA Tab</h3>
+        <ul>
+          <li>Train a LoRA adapter directly from the UI on your own audio dataset — requires the FL-AceStep ComfyUI plugin</li>
+          <li>Fields: dataset directory, LoRA name, output directory, plus collapsible hyperparams (rank, alpha, dropout, learning rate, epochs, batch size, gradient accumulation, save-every-N-epochs, seed)</li>
+          <li>Optional LLM auto-labeling toggle — runs FL_AceStep_LabelSamples to generate captions for unlabeled audio files</li>
+          <li>Start/Stop buttons; real-time canvas loss chart that plots per-step loss history as training runs</li>
+          <li>Progress bar and color-coded log panel — status, progress, checkpoint, and completion events streamed live via SSE bridged from the ComfyUI WebSocket (<code>acestep.training.progress</code> event channel)</li>
+          <li>Backend: POST /train/start builds and submits the FL_AceStep ComfyUI workflow; GET /train/events bridges ComfyUI WebSocket to SSE; POST /train/stop sends ComfyUI /interrupt</li>
         </ul>
       </div>
 
@@ -1165,7 +1234,7 @@
           <li>Rate limiting: 20 generate/remix requests per 60s per user (sliding window, configurable)</li>
           <li>Generation history logged to history.jsonl — every completed job records caption, lyrics, seed, and output files; purges entries older than 7 days every 6 hours</li>
           <li>API docs available at /api/docs (Swagger UI) and /api/redoc</li>
-          <li>Frontend split into 13 focused JS modules (state, utils, bindings, genres, chips, tags, presets, jobs, easy, lint, stems, tabs, init)</li>
+          <li>Frontend split into 16 focused JS modules (state, utils, bindings, genres, chips, tags, presets, jobs, easy, analyze, voice, quick, lint, stems, cover, train, tabs, init)</li>
         </ul>
       </div>
     </div>
