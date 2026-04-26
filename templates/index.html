@@ -1139,25 +1139,27 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.1 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.2 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
       </div>
 
       <div class="about-section">
         <h3>Overview Tab</h3>
         <ul>
+          <li><strong>Quick Idea Starter</strong> — type a plain-English music description; AI (Ollama) expands it into structured tags, BPM, key, scale, instruments, and mood; model selector auto-populated from Ollama</li>
+          <li>Analyze Audio panel — upload any audio file for instant BPM detection, key/scale analysis (chromagram), and lyrics transcription (faster-whisper); Apply button pushes all results into generation state</li>
           <li>Editable tags textarea — overrides Style / Instruments / Vocals tabs; syncs automatically when switching to Overview</li>
           <li>Editable lyrics textarea — bidirectionally synced with the Tagging tab editor</li>
-          <li>Live payload preview showing exactly what gets sent to Nyx Step (tags, lyrics, BPM, key, steps, CFG, duration, seed, etc.)</li>
+          <li>Live payload preview showing exactly what gets sent to Nyx-Step (tags, lyrics, BPM, key, steps, CFG, duration, seed, etc.)</li>
           <li>↺ Sync from tabs button rebuilds tags from current state at any time</li>
           <li>🎵 Generate Music Idea — submits job to ComfyUI with real-time progress bar and SSE status updates; job card appears immediately on submit</li>
-          <li>Job cards with shimmer progress bars; completed jobs include a download link, 🔀 Remix button, and 🔁 Retake button</li>
-          <li>🔀 Remix — inline panel per job: Variation (re-generate with denoise control), Extend (seed from last N seconds and grow the track), or Repaint (regenerate a start→end time window while keeping surrounding audio intact — uses ReferenceTimbreAudio for tonal consistency)</li>
-          <li>🔁 Retake — resubmits the exact same prompt with a new random seed; generates a variation without changing structure or style; only available for jobs generated in the current session</li>
+          <li>Job cards: WaveSurfer.js v7 waveform player with ▶/⏸ toggle + live timestamp; shimmer progress bar while generating; on completion: ⬇ download link, "song creation file" (downloads full generation metadata as JSON), 🔀 Remix button, 🔁 Retake button</li>
+          <li>🔀 Remix — inline panel per job: Variation (re-generate with denoise control), Extend (seed from last N seconds and grow the track), or Repaint (regenerate a start→end time window with canvas timeline picker — drag handles to set region; uses ReferenceTimbreAudio for tonal consistency)</li>
+          <li>🔁 Retake — resubmits the exact same prompt with a new random seed; only available for jobs generated in the current session</li>
           <li>🗑 Clear list — removes all job cards from the display</li>
           <li>💾 Save / 📂 Load — server-side preset modal; type a name to save, click any entry to load, 🗑 to delete</li>
           <li>🗑 Clear — resets all fields, chips, and state to defaults with confirmation</li>
-          <li>All tab changes (Style, Instruments, Vocals, Parameters, Tagging) are reflected live in Overview tags and payload preview</li>
+          <li>All tab changes (Style Infusor, Instruments, Vocals, Parameters, Tagging) reflected live in Overview tags and payload preview</li>
         </ul>
       </div>
 
@@ -1204,10 +1206,16 @@
       <div class="about-section">
         <h3>Parameters Tab</h3>
         <ul>
-          <li>Steps (1–150), CFG Scale (0.1–20), Duration in seconds (5–300)</li>
-          <li>Temperature (0–2), Top-P (0–1), Top-K (0–1000), Min-P (0–1) — all with deep tooltips explaining effect on generation</li>
+          <li>Steps (1–150), CFG Scale (0.1–20), Duration (5–300s), Batch Size (1–8)</li>
+          <li>Temperature (0–2), Top-P (0–1), Top-K (0–1000), Min-P (0–1) — LM sampling controls with tooltips</li>
           <li>Seed with 🎲 random button and lock toggle for reproducible generations</li>
-          <li>All values validated server-side before reaching ComfyUI — out-of-range values return a readable error</li>
+          <li>Audio Format — MP3 (V0/128k/320k), FLAC (lossless), Opus (64k–320k); quality selector hides for FLAC</li>
+          <li>Vocal Language — auto / en / zh / ja / ko / es / fr / de / pt / it / ru / ar / hi; explicit setting prevents mis-detection for non-English lyrics</li>
+          <li>DiT Model — XL Turbo (8 steps, CFG 2.0), SFT (50 steps, CFG 7.0), Base (50 steps, enables Lego/Extract/Complete modes); recommended settings hint updates on change</li>
+          <li>LM Stage toggle — generate_audio_codes; advanced lm_* params are standalone-API-only</li>
+          <li>LoRA section — dropdown populated from ComfyUI models/loras; strength slider (0–2); ↺ refresh button; injects LoraLoader node into workflow between UNETLoader/DualCLIPLoader and sampler</li>
+          <li>↺ Reset to Defaults — resets all 14 parameter fields in one click</li>
+          <li>All values validated server-side; out-of-range values return a readable error</li>
           <li>Changes sync to Overview payload preview immediately and on tab switch</li>
         </ul>
       </div>
@@ -1247,14 +1255,39 @@
       </div>
 
       <div class="about-section">
+        <h3>Cover Tab</h3>
+        <ul>
+          <li>Upload any reference audio track — Nyx-Step preserves its melody while rewriting the style using your tags</li>
+          <li>Fields: reference audio file, style tags, optional lyrics, song name, denoise (0.1–0.95), steps, CFG, duration</li>
+          <li>Denoise 0.6–0.8 preserves melody well; 0.9+ loses structure in favour of style. SFT model recommended (50 steps, CFG 7.0)</li>
+          <li>Backend: POST /cover uploads file to ComfyUI input dir, calls build_cover_workflow → ReferenceTimbreAudio node; job tracked and streamed same as normal generation</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
         <h3>Train LoRA Tab</h3>
         <ul>
-          <li>Train a LoRA adapter directly from the UI on your own audio dataset — requires the FL-AceStep ComfyUI plugin</li>
-          <li>Fields: dataset directory, LoRA name, output directory, plus collapsible hyperparams (rank, alpha, dropout, learning rate, epochs, batch size, gradient accumulation, save-every-N-epochs, seed)</li>
-          <li>Optional LLM auto-labeling toggle — runs FL_AceStep_LabelSamples to generate captions for unlabeled audio files</li>
-          <li>Start/Stop buttons; real-time canvas loss chart that plots per-step loss history as training runs</li>
-          <li>Progress bar and color-coded log panel — status, progress, checkpoint, and completion events streamed live via SSE bridged from the ComfyUI WebSocket (<code>acestep.training.progress</code> event channel)</li>
-          <li>Backend: POST /train/start builds and submits the FL_AceStep ComfyUI workflow; GET /train/events bridges ComfyUI WebSocket to SSE; POST /train/stop sends ComfyUI /interrupt</li>
+          <li>All 6 FL_AceStep training nodes confirmed installed in ComfyUI: ScanDirectory, LabelSamples, PreprocessDataset, TrainingConfig, LLMLoader, Train</li>
+          <li>Dataset format: one folder containing <code>filename.mp3</code> (or .wav/.flac) + <code>filename_prompt.txt</code> (comma-separated tags) + optional <code>filename_lyrics.txt</code></li>
+          <li>Activation tag field — prepended/appended/replaced in every sample caption; use this tag during inference to trigger the LoRA style</li>
+          <li>All instrumental toggle — marks all samples as instrumental; uncheck for vocal datasets</li>
+          <li>Separate dirs: tensor cache (preprocessed latents) and LoRA output (final .safetensors)</li>
+          <li>Full hyperparams: rank, alpha, dropout, learning rate, epochs, batch size, gradient accumulation, save-every-N-epochs, warmup steps, weight decay, gradient clip, target modules (default: q_proj,k_proj,v_proj,o_proj), seed</li>
+          <li>LLM Auto-Labeling — optional collapsible section; enable to run FL_AceStep_LabelSamples before preprocessing; model selector: 0.6B (fast), 1.7B (recommended), 4B (highest quality)</li>
+          <li>Start/Stop buttons; real-time canvas loss chart; progress bar; color-coded log</li>
+          <li>Events streamed live via SSE bridged from ComfyUI WebSocket (<code>acestep.training.progress</code> channel) — status, per-step progress, checkpoint saves, completion with final LoRA path</li>
+          <li>Standalone ACE-Step (ai2.nyxstudios.net) is inference-only — training requires ComfyUI FL_AceStep nodes</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>History Tab</h3>
+        <ul>
+          <li>Searchable log of all completed generations — search by song name or tags</li>
+          <li>Each record shows: song name, tags, BPM/key/scale, seed, timestamp, output files with ⬇ download links</li>
+          <li>📥 Load button restores all parameters (tags, lyrics, BPM, key, scale, steps, CFG, duration, seed, format, language, model, batch size, LoRA) back into generation state</li>
+          <li>Backend: GET /api/history reads history.jsonl; purges records older than 7 days every 6 hours</li>
+          <li>↺ Refresh button re-fetches from server; search filters client-side in real time</li>
         </ul>
       </div>
 
