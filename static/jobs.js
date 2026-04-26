@@ -150,9 +150,9 @@ function addDownloadLinks(container, files) {
     const metaBtn = document.createElement("a");
     metaBtn.href = "/meta/" + encodeURIComponent(f);
     metaBtn.download = f.replace(/\.[^.]+$/, "") + "_meta.json";
-    metaBtn.textContent = "{}";
+    metaBtn.textContent = "song creation file";
     metaBtn.title = "Download generation metadata (parameters, seed, caption) as JSON";
-    metaBtn.style.cssText = "color:var(--muted);font-size:11px;font-family:monospace;text-decoration:none;padding:2px 4px;border:1px solid var(--border);border-radius:3px;";
+    metaBtn.style.cssText = "color:var(--muted);font-size:11px;text-decoration:none;padding:2px 6px;border:1px solid var(--border);border-radius:3px;";
     row.appendChild(a);
     row.appendChild(metaBtn);
     row.appendChild(remixBtn);
