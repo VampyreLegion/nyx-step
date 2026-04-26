@@ -24,6 +24,7 @@
   <button class="tab-btn" data-tab="parameters">Parameters</button>
   <button class="tab-btn" data-tab="lint">Lint</button>
   <button class="tab-btn" data-tab="stems">Stems</button>
+  <button class="tab-btn" data-tab="cover" title="Generate a stylistic cover of any reference audio track">Cover</button>
   <button class="tab-btn" data-tab="history">History</button>
   <button class="tab-btn" data-tab="guide">Guide</button>
   <button class="tab-btn" data-tab="about">About</button>
@@ -786,6 +787,48 @@
     </div>
   </div>
 
+  <!-- COVER -->
+  <div class="tab-panel" id="tab-cover">
+    <p style="font-size:12px;color:var(--muted);margin:0 0 14px">Upload a reference track. ACE-Step preserves its melody while rewriting the style using your tags.</p>
+    <div class="field-group">
+      <label>Reference Audio</label>
+      <input type="file" id="cover-file" accept="audio/*">
+    </div>
+    <div class="field-group">
+      <label title="Tags describing the desired output style (genre, mood, instruments, etc.)">Style Tags</label>
+      <input type="text" id="cover-tags" placeholder="e.g. jazz piano trio, upbeat, swing" style="width:100%">
+    </div>
+    <div class="field-group">
+      <label>Lyrics <span style="font-size:10px;color:var(--muted)">(optional)</span></label>
+      <textarea id="cover-lyrics" rows="4" placeholder="Leave blank to keep instrumental" style="width:100%;resize:vertical;font-size:12px"></textarea>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+      <div class="field-group" style="flex:1;min-width:140px">
+        <label>Song Name</label>
+        <input type="text" id="cover-song-name" value="Cover" style="width:100%">
+      </div>
+      <div class="field-group" style="min-width:110px">
+        <label title="How aggressively to reskin. 0.6–0.8 preserves melody well; 0.9+ loses structure.">Denoise ⓘ</label>
+        <input type="number" id="cover-denoise" value="0.75" min="0.1" max="0.95" step="0.05" style="width:80px">
+      </div>
+      <div class="field-group" style="min-width:80px">
+        <label title="Inference steps — 20–50 recommended (SFT model)">Steps ⓘ</label>
+        <input type="number" id="cover-steps" value="20" min="1" max="150" step="1" style="width:70px">
+      </div>
+      <div class="field-group" style="min-width:80px">
+        <label title="Guidance scale — 7.0 recommended for SFT cover mode">CFG ⓘ</label>
+        <input type="number" id="cover-cfg" value="7.0" min="0.1" max="20" step="0.5" style="width:70px">
+      </div>
+      <div class="field-group" style="min-width:90px">
+        <label title="Duration of the output in seconds">Duration ⓘ</label>
+        <input type="number" id="cover-duration" value="30" min="5" max="300" step="1" style="width:70px">
+      </div>
+    </div>
+    <button id="btn-cover-submit" title="Generate a cover that preserves the melody of the reference audio">Generate Cover</button>
+    <div id="cover-status" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
+    <div id="cover-result" style="margin-top:10px"></div>
+  </div>
+
   <!-- HISTORY -->
   <div class="tab-panel" id="tab-history">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
@@ -1012,6 +1055,7 @@
 <script src="/static/easy.js?v=1"></script>
 <script src="/static/lint.js?v=1"></script>
 <script src="/static/stems.js?v=1"></script>
+<script src="/static/cover.js?v=1"></script>
 <script src="/static/history.js?v=1"></script>
 <script src="/static/tabs.js?v=2"></script>
 <script src="/static/init.js?v=1"></script>

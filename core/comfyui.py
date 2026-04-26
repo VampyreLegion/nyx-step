@@ -155,6 +155,17 @@ class ComfyUIClient:
 
         return {"workflow": workflow, "seed": seed}
 
+    def build_cover_workflow(
+        self,
+        input_name: str,
+        caption: str,
+        lyrics: str,
+        state: dict,
+        denoise: float = 0.75,
+    ) -> dict:
+        """Like build_remix_workflow but the file is already in ComfyUI input dir."""
+        return self._build_remix_from_input(input_name, caption, lyrics, state, denoise)
+
     def build_remix_workflow(
         self,
         source_filename: str,
@@ -165,9 +176,6 @@ class ComfyUIClient:
         denoise: float = 0.5,
         seed_seconds: float = 10.0,
     ) -> dict:
-        if not config.WORKFLOW_REMIX_TEMPLATE.exists():
-            return {"error": f"Remix template not found: {config.WORKFLOW_REMIX_TEMPLATE}"}
-
         source_path = config.COMFYUI_OUTPUT_DIR / source_filename
         if not source_path.exists():
             return {"error": f"Source file not found: {source_filename}"}
@@ -178,6 +186,19 @@ class ComfyUIClient:
                 input_name = self.copy_to_input(source_path)
         else:
             input_name = self.copy_to_input(source_path)
+
+        return self._build_remix_from_input(input_name, caption, lyrics, state, denoise)
+
+    def _build_remix_from_input(
+        self,
+        input_name: str,
+        caption: str,
+        lyrics: str,
+        state: dict,
+        denoise: float,
+    ) -> dict:
+        if not config.WORKFLOW_REMIX_TEMPLATE.exists():
+            return {"error": f"Remix template not found: {config.WORKFLOW_REMIX_TEMPLATE}"}
 
         with open(config.WORKFLOW_REMIX_TEMPLATE) as f:
             workflow = json.load(f)

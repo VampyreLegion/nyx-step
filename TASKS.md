@@ -29,7 +29,7 @@
 | 10 | LM Controls (lm_temperature, CoT, use_cot_*) | ✅ done | "LM Stage" section in Parameters exposes `generate_audio_codes` toggle; advanced lm_* params are standalone-API-only and not in ComfyUI node schema |
 | 11 | Model Selector (DiT + LM) | ✅ done | DiT Model dropdown (XL Turbo/SFT/Base) in Parameters; swaps UNETLoader `unet_name` in workflow; shows recommended steps per model; LM model selection is ComfyUI-FL only |
 | 12 | Batch Size Control | ✅ done | `batch_size` spinner (1–8) in Parameters; wired to `EmptyAceStep1.5LatentAudio` `batch_size` input; each output file gets its own job card |
-| 13 | Cover Mode | 🔲 todo | `task_type: cover` — upload reference audio, ACE-Step preserves melody but rewrites style; add to Stems/Remix tab |
+| 13 | Cover Mode | ✅ done | Dedicated Cover tab; upload reference audio, ACE-Step preserves melody while applying new style tags; `POST /cover` form endpoint; `build_cover_workflow` → `_build_remix_from_input` in ComfyUI client |
 | 14 | Audio Codes Cache (Fast Variation) | 🔲 todo | Store `audio_codes` from generation results; pass back as conditioning for instant variations (skips VAE re-encode) |
 | 15 | LRC Synchronized Lyrics | 🔲 todo | `auto_lrc: true` in request → timestamp-aligned lyrics displayed in job card synced to audio player |
 | 16 | Generation Quality Score | 🔲 todo | `auto_score: true` returns DiT Lyrics Alignment Score — show as badge on job card |
