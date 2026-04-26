@@ -5,6 +5,7 @@ const bind = (id, key, transform) => {
   const handler = () => {
     mwState[key] = transform ? transform(el.value) : el.value;
     document.getElementById("overview-tags").value = buildCaption();
+    updateTagTokenCount();
     updatePayloadPreview();
   };
   el.addEventListener("input", _debounce(handler, 150));
@@ -58,5 +59,5 @@ document.getElementById("overview-lyrics").addEventListener("input", e => {
   mwState.lyrics = e.target.value;
 });
 
-document.getElementById("overview-tags").addEventListener("input", updatePayloadPreview);
+document.getElementById("overview-tags").addEventListener("input", () => { updateTagTokenCount(); updatePayloadPreview(); });
 document.getElementById("btn-sync-overview").addEventListener("click", syncOverviewFromState);

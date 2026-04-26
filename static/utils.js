@@ -51,7 +51,18 @@ function syncOverviewFromState() {
   syncParamsFromDOM();
   document.getElementById("overview-tags").value = buildCaption();
   document.getElementById("overview-lyrics").value = mwState.lyrics || "";
+  updateTagTokenCount();
   updatePayloadPreview();
+}
+
+function updateTagTokenCount() {
+  const el = document.getElementById("tag-token-count");
+  if (!el) return;
+  const tags = document.getElementById("overview-tags").value;
+  const tokens = tags.split(",").map(t => t.trim()).filter(t => t.length > 0);
+  const n = tokens.length;
+  el.textContent = n + (n === 1 ? " token" : " tokens");
+  el.style.color = n >= 15 ? "var(--error)" : n >= 12 ? "var(--warning, #f0a500)" : "var(--muted)";
 }
 
 function updatePayloadPreview() {
