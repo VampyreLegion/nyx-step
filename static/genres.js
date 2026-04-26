@@ -67,6 +67,12 @@ function _selectGenre(genre) {
     info += `<br><span style="color:var(--accent2)">Typical: ${genre.typical_instruments.join(", ")}</span>`;
   document.getElementById("genre-info").innerHTML = info;
 
+  if (genre.typical_instruments?.length) {
+    mwState.instruments = [...genre.typical_instruments];
+    document.getElementById("instrument-selected").value = mwState.instruments.join(", ");
+    _syncInstrumentChips();
+  }
+
   document.getElementById("overview-tags").value = buildCaption();
   updatePayloadPreview();
 }
