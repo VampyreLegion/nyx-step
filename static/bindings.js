@@ -45,6 +45,31 @@ document.getElementById("param-vocal-language").addEventListener("change", e => 
   mwState.vocal_language = e.target.value;
 });
 
+document.getElementById("btn-reset-params").addEventListener("click", () => {
+  const defaults = {
+    steps: 8, cfg_scale: 2.0, duration: 30.0,
+    temperature: 0.85, top_p: 0.9, top_k: 0, min_p: 0.0,
+    seed: 0, lock_seed: false,
+    audio_format: "mp3", audio_quality: "V0",
+    vocal_language: "auto",
+  };
+  Object.assign(mwState, defaults);
+  document.getElementById("param-steps").value    = defaults.steps;
+  document.getElementById("param-cfg").value      = defaults.cfg_scale;
+  document.getElementById("param-duration").value = defaults.duration;
+  document.getElementById("param-temp").value     = defaults.temperature;
+  document.getElementById("param-topp").value     = defaults.top_p;
+  document.getElementById("param-topk").value     = defaults.top_k;
+  document.getElementById("param-minp").value     = defaults.min_p;
+  document.getElementById("param-seed").value     = defaults.seed;
+  document.getElementById("param-lock-seed").checked = false;
+  document.getElementById("param-audio-format").value   = defaults.audio_format;
+  document.getElementById("param-audio-quality").value  = defaults.audio_quality;
+  document.getElementById("param-quality-wrap").style.display = "";
+  document.getElementById("param-vocal-language").value = defaults.vocal_language;
+  updatePayloadPreview();
+});
+
 const _qualityOptions = {
   mp3:  [["V0","V0 (best VBR)"],["128k","128k"],["320k","320k"]],
   flac: [],
