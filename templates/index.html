@@ -710,6 +710,22 @@
       </div>
     </div>
     <div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px">Model</div>
+      <div class="row" style="gap:12px">
+        <div class="field-group">
+          <label style="font-size:12px" title="DiT (diffusion) model. Turbo: 8 steps, fastest. SFT: 50 steps, highest quality. Base: 50 steps, full mode support (Lego/Extract/Complete). Changing model updates the recommended step count.">DiT Model ⓘ</label>
+          <select id="param-dit-model" title="Turbo=fast (8 steps), SFT=quality (50 steps), Base=full capabilities (50 steps)">
+            <option value="turbo">XL Turbo (8 steps — fast)</option>
+            <option value="sft">XL SFT (50 steps — quality)</option>
+            <option value="base">XL Base (50 steps — full modes)</option>
+          </select>
+        </div>
+        <div class="field-group" style="display:flex;align-items:flex-end">
+          <span id="param-model-hint" style="font-size:11px;color:var(--muted)">Recommended: 8 steps, CFG 2.0</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
       <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px">LM Stage</div>
       <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"
         title="Enable the 5Hz Language Model that pre-generates audio codes before diffusion. When ON: higher quality, slower start (~10–30s overhead). When OFF: faster but lower coherence — use when providing a reference audio. Default: ON.">
@@ -980,9 +996,9 @@
   </div>
 </div>
 
-<script src="/static/state.js?v=4"></script>
+<script src="/static/state.js?v=5"></script>
 <script src="/static/utils.js?v=2"></script>
-<script src="/static/bindings.js?v=7"></script>
+<script src="/static/bindings.js?v=8"></script>
 <script src="/static/genres.js?v=2"></script>
 <script src="/static/chips.js?v=1"></script>
 <script src="/static/tags.js?v=1"></script>

@@ -116,6 +116,18 @@ class ComfyUIClient:
             if isinstance(node, dict) and node.get("class_type") == "TextEncodeAceStepAudio1.5":
                 node.setdefault("inputs", {})["seed"] = seed
 
+        # Swap DiT model in UNETLoader
+        _dit_models = {
+            "turbo": "acestep_v1.5_xl_turbo_bf16.safetensors",
+            "sft":   "acestep_v1.5_xl_sft_bf16.safetensors",
+            "base":  "acestep_v1.5_xl_base_bf16.safetensors",
+        }
+        dit_key = state.get("dit_model", "turbo").lower()
+        unet_name = _dit_models.get(dit_key, _dit_models["turbo"])
+        for node in workflow.values():
+            if isinstance(node, dict) and node.get("class_type") == "UNETLoader":
+                node.setdefault("inputs", {})["unet_name"] = unet_name
+
         # Swap audio save node to match requested format
         _fmt_map = {
             "mp3":  ("SaveAudioMP3",  "Save Audio (MP3)"),

@@ -8,4 +8,5 @@ const mwState = {
   audio_format: "mp3", audio_quality: "V0",
   vocal_language: "auto",
   generate_audio_codes: true,
+  dit_model: "turbo",
 };

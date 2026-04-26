@@ -45,6 +45,17 @@ document.getElementById("param-vocal-language").addEventListener("change", e => 
   mwState.vocal_language = e.target.value;
 });
 
+const _modelHints = {
+  turbo: "Recommended: 8 steps, CFG 2.0",
+  sft:   "Recommended: 50 steps, CFG 7.0",
+  base:  "Recommended: 50 steps, CFG 7.0 — enables Lego/Extract/Complete",
+};
+document.getElementById("param-dit-model").addEventListener("change", e => {
+  const m = e.target.value;
+  mwState.dit_model = m;
+  document.getElementById("param-model-hint").textContent = _modelHints[m] || "";
+});
+
 document.getElementById("param-gen-audio-codes").addEventListener("change", e => {
   mwState.generate_audio_codes = e.target.checked;
 });
@@ -57,6 +68,7 @@ document.getElementById("btn-reset-params").addEventListener("click", () => {
     audio_format: "mp3", audio_quality: "V0",
     vocal_language: "auto",
     generate_audio_codes: true,
+    dit_model: "turbo",
   };
   Object.assign(mwState, defaults);
   document.getElementById("param-steps").value    = defaults.steps;
@@ -73,6 +85,8 @@ document.getElementById("btn-reset-params").addEventListener("click", () => {
   document.getElementById("param-quality-wrap").style.display = "";
   document.getElementById("param-vocal-language").value = defaults.vocal_language;
   document.getElementById("param-gen-audio-codes").checked = true;
+  document.getElementById("param-dit-model").value = "turbo";
+  document.getElementById("param-model-hint").textContent = _modelHints["turbo"];
   updatePayloadPreview();
 });
 
