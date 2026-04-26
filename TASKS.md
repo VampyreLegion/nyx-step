@@ -25,7 +25,7 @@
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
-| 9 | History Browser Tab | 🔲 todo | `history.jsonl` already logs all jobs — new tab with search, date filter, "Re-load into state" |
+| 9 | History Browser Tab | ✅ done | New History tab with search, per-record cards, ⬇ download links, 📥 Load button to restore all params into state; `GET /api/history` endpoint |
 | 10 | LM Controls (lm_temperature, CoT, use_cot_*) | 🔲 todo | Collapsible "LM / Thinking" section in Parameters: lm_temperature, lm_cfg_scale, lm_top_k, lm_top_p, use_cot_metas, use_cot_caption, thinking mode, lm_negative_prompt |
 | 11 | Model Selector (DiT + LM) | 🔲 todo | Dropdown for DiT model (XL Turbo/SFT/Base, 2B Turbo/SFT/Base) + LM model (0.6B, 1.7B, 4B, None) |
 | 12 | Batch Size Control | 🔲 todo | Add `batch_size` spinner (1–8) to Parameters; each result gets its own job card |

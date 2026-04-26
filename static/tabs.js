@@ -8,6 +8,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     if (btn.dataset.tab === "overview") syncOverviewFromState();
     if (btn.dataset.tab === "lyrics") document.getElementById("lyrics-editor").value = mwState.lyrics;
     if (btn.dataset.tab === "lint") updateLintStatePreview();
+    if (btn.dataset.tab === "history") { if (typeof loadHistory === "function" && _historyRecords.length === 0) loadHistory(); }
   });
 });
 

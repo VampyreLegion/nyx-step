@@ -24,6 +24,7 @@
   <button class="tab-btn" data-tab="parameters">Parameters</button>
   <button class="tab-btn" data-tab="lint">Lint</button>
   <button class="tab-btn" data-tab="stems">Stems</button>
+  <button class="tab-btn" data-tab="history">History</button>
   <button class="tab-btn" data-tab="guide">Guide</button>
   <button class="tab-btn" data-tab="about">About</button>
 </div>
@@ -756,6 +757,16 @@
     </div>
   </div>
 
+  <!-- HISTORY -->
+  <div class="tab-panel" id="tab-history">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <input type="text" id="history-search" placeholder="Search by song name or tags…" style="flex:1;min-width:200px;font-size:12px">
+      <button class="secondary small" id="btn-history-refresh" title="Reload history from server">↺ Refresh</button>
+    </div>
+    <div id="history-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div id="history-empty" style="color:var(--muted);font-size:13px;display:none;padding:12px 0">No history found.</div>
+  </div>
+
   <!-- GUIDE -->
   <div class="tab-panel" id="tab-guide">
     <div class="inner-tabs" id="guide-tabs">
@@ -972,7 +983,8 @@
 <script src="/static/easy.js?v=1"></script>
 <script src="/static/lint.js?v=1"></script>
 <script src="/static/stems.js?v=1"></script>
-<script src="/static/tabs.js?v=1"></script>
+<script src="/static/history.js?v=1"></script>
+<script src="/static/tabs.js?v=2"></script>
 <script src="/static/init.js?v=1"></script>
 </body>
 </html>
