@@ -636,6 +636,19 @@
       <label>Template</label>
       <select id="lyrics-template"><option value="">-- select template --</option></select>
     </div>
+    <!-- Voice Recorder -->
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;padding:8px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
+      <button id="btn-voice-record" title="Hold to record — release to transcribe via Whisper">🎙 Record</button>
+      <span id="voice-record-status" style="font-size:11px;color:var(--muted)">Press Record to capture speech → lyrics via Whisper</span>
+      <select id="voice-whisper-model" style="font-size:11px;margin-left:auto" title="Whisper model size — larger = more accurate but slower">
+        <option value="base" selected>base</option>
+        <option value="small">small</option>
+        <option value="medium">medium</option>
+      </select>
+      <label style="font-size:11px;font-weight:normal;cursor:pointer" title="Append transcription to existing lyrics instead of replacing">
+        <input type="checkbox" id="voice-append"> Append
+      </label>
+    </div>
     <textarea id="lyrics-editor" placeholder="Lyrics appear here. Edit freely." style="min-height:480px;resize:vertical"></textarea>
   </div>
 
@@ -1079,6 +1092,7 @@
 <script src="/static/jobs.js?v=6"></script>
 <script src="/static/easy.js?v=1"></script>
 <script src="/static/analyze.js?v=1"></script>
+<script src="/static/voice.js?v=1"></script>
 <script src="/static/quick.js?v=1"></script>
 <script src="/static/lint.js?v=1"></script>
 <script src="/static/stems.js?v=1"></script>

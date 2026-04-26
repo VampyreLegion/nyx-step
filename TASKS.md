@@ -56,7 +56,7 @@
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
-| 26 | Voice Recorder → Whisper → Lyrics | 🔲 todo | Mic input in BioInfusor/Tagging tab → Whisper transcription → lyrics ready for generation |
+| 26 | Voice Recorder → Whisper → Lyrics | ✅ done | Record button in Tagging tab; MediaRecorder API → POST /transcribe → faster-whisper → lyrics textarea; Append mode, model selector (base/small/medium) |
 | 27 | MIDI Extraction | 🔲 todo | Post-process generated audio through Basic Pitch (Spotify, open-source) → export MIDI for DAW use |
 | 28 | Continuous AI Radio | 🔲 todo | Chain generations using audio codes from previous result as seed; continuous coherent stream; persistent mini-player |
 | 29 | Sample Query / Simple Mode | ✅ done | Quick Generate box on Overview tab; `POST /ollama/expand` uses Ollama to convert free-text description into tags, BPM, key, scale, instruments; model selector auto-populated |
