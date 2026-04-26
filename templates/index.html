@@ -709,7 +709,15 @@
         </select>
       </div>
     </div>
-    <div style="margin-top:12px">
+    <div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px">LM Stage</div>
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"
+        title="Enable the 5Hz Language Model that pre-generates audio codes before diffusion. When ON: higher quality, slower start (~10–30s overhead). When OFF: faster but lower coherence — use when providing a reference audio. Default: ON.">
+        <input type="checkbox" id="param-gen-audio-codes" checked style="margin-top:2px">
+        <span>Enable LM / Audio Codes Stage <span style="color:var(--muted);font-size:11px">— pre-generates 5Hz semantic codes; improves coherence but adds ~10–30s overhead</span></span>
+      </label>
+    </div>
+    <div style="margin-top:10px">
       <button class="secondary small" id="btn-reset-params" title="Reset all generation parameters to their default values">↺ Reset to Defaults</button>
     </div>
   </div>
@@ -972,9 +980,9 @@
   </div>
 </div>
 
-<script src="/static/state.js?v=3"></script>
+<script src="/static/state.js?v=4"></script>
 <script src="/static/utils.js?v=2"></script>
-<script src="/static/bindings.js?v=6"></script>
+<script src="/static/bindings.js?v=7"></script>
 <script src="/static/genres.js?v=2"></script>
 <script src="/static/chips.js?v=1"></script>
 <script src="/static/tags.js?v=1"></script>

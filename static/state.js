@@ -7,4 +7,5 @@ const mwState = {
   temperature: 0.85, top_p: 0.9, top_k: 0, min_p: 0.0,
   audio_format: "mp3", audio_quality: "V0",
   vocal_language: "auto",
+  generate_audio_codes: true,
 };

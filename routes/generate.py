@@ -40,6 +40,7 @@ class GenerateRequest(BaseModel):
     audio_format: str = "mp3"
     audio_quality: str = "V0"
     vocal_language: str = "auto"
+    generate_audio_codes: bool = True
 
 
 @router.post("/generate")

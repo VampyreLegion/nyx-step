@@ -45,6 +45,10 @@ document.getElementById("param-vocal-language").addEventListener("change", e => 
   mwState.vocal_language = e.target.value;
 });
 
+document.getElementById("param-gen-audio-codes").addEventListener("change", e => {
+  mwState.generate_audio_codes = e.target.checked;
+});
+
 document.getElementById("btn-reset-params").addEventListener("click", () => {
   const defaults = {
     steps: 8, cfg_scale: 2.0, duration: 30.0,
@@ -52,6 +56,7 @@ document.getElementById("btn-reset-params").addEventListener("click", () => {
     seed: 0, lock_seed: false,
     audio_format: "mp3", audio_quality: "V0",
     vocal_language: "auto",
+    generate_audio_codes: true,
   };
   Object.assign(mwState, defaults);
   document.getElementById("param-steps").value    = defaults.steps;
@@ -67,6 +72,7 @@ document.getElementById("btn-reset-params").addEventListener("click", () => {
   document.getElementById("param-audio-quality").value  = defaults.audio_quality;
   document.getElementById("param-quality-wrap").style.display = "";
   document.getElementById("param-vocal-language").value = defaults.vocal_language;
+  document.getElementById("param-gen-audio-codes").checked = true;
   updatePayloadPreview();
 });
 

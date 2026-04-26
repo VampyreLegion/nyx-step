@@ -69,6 +69,7 @@ class ComfyUIClient:
                 lang = state.get("vocal_language", "auto")
                 if lang and lang != "auto":
                     inputs["language"] = lang
+                inputs["generate_audio_codes"] = state.get("generate_audio_codes", True)
                 inputs["bpm"] = state.get("bpm", 120)
                 inputs["duration"] = float(state.get("duration", 30))
                 inputs["cfg_scale"] = state.get("cfg_scale", 2.0)
