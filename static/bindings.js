@@ -32,6 +32,7 @@ document.getElementById("style-chords-preset").addEventListener("change", e => {
   document.getElementById("style-chords").value = e.target.value;
   mwState.chords = e.target.value;
   e.target.value = "";
+  document.getElementById("overview-tags").value = buildCaption();
   updatePayloadPreview();
 });
 
