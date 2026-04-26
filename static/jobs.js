@@ -149,6 +149,12 @@ function addDownloadLinks(container, files) {
     row.appendChild(a);
     row.appendChild(remixBtn);
     container.appendChild(row);
+
+    const audioEl = document.createElement("audio");
+    audioEl.controls = true;
+    audioEl.src = "/download/" + encodeURIComponent(f) + bust;
+    audioEl.style.cssText = "width:100%;margin-top:4px;height:36px;";
+    container.appendChild(audioEl);
   });
 
   if (files.length) {
