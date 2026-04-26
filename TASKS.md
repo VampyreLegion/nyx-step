@@ -47,7 +47,7 @@
 | 21 | LoRA Browser + Loader | 🔲 todo | Browse community LoRAs (Chinese Rap, RapMachine, Lyric2Vocal, Text2Samples), load one, pass `lora_path` + `lora_scale` |
 | 22 | LoRA Training UI | 🔲 todo | Training wizard tab: drop audio files + metadata, configure LoRA rank/alpha/LR/epochs, monitor training via SSE; uses `/v1/training/start` |
 | 23 | Audio Understanding / Analyze | 🔲 todo | Feed audio → get back caption, BPM, key, time sig, lyrics with timestamps, vocal language; "Analyze Audio" button populates full state |
-| 24 | Repaint Timeline Picker | 🔲 todo | Visual timeline bar with draggable region selector replacing free-form seconds inputs; waveform from Web Audio API |
+| 24 | Repaint Timeline Picker | ✅ done | Canvas timeline in repaint panel: drag two handles to set start/end region; syncs with number inputs both ways; uses WaveSurfer duration if available |
 | 25 | Waveform Player | ✅ done | WaveSurfer.js v7 bundled locally; each job card shows waveform + ▶/⏸ button + live timestamp; falls back to `<audio>` if WaveSurfer unavailable |
 
 ---

@@ -2,6 +2,7 @@
 let _activeGenPromptId = null;
 let _genProgressTimer = null;
 let _jobPayloads = {};
+const _waveInstances = {};  // filename → WaveSurfer instance
 
 function setGenProgress(state, label) {
   const wrap = document.getElementById("gen-progress-wrap");
@@ -179,7 +180,7 @@ function addDownloadLinks(container, files) {
     container.appendChild(waveWrap);
     const audioSrc = "/download/" + encodeURIComponent(f) + bust;
     if (typeof WaveSurfer !== "undefined") {
-      const ws = WaveSurfer.create({
+      const ws = WaveSurfer.create({ /* jshint ignore:line */
         container: waveDiv,
         waveColor: "var(--border)",
         progressColor: "var(--accent)",
@@ -190,6 +191,7 @@ function addDownloadLinks(container, files) {
         url: audioSrc,
         interact: true,
       });
+      _waveInstances[f] = ws;
       const fmt = s => {
         const m = Math.floor(s / 60), sec = Math.floor(s % 60);
         return `${m}:${sec.toString().padStart(2,"0")}`;
@@ -287,14 +289,18 @@ function toggleRemixPanel(card, sourceFile) {
         <input type="number" class="remix-seed-secs" min="3" max="60" value="10" style="width:60px">
       </label>
     </div>
-    <div class="remix-repaint-wrap" style="display:none;gap:12px;align-items:center;margin-bottom:8px;flex-wrap:wrap;background:var(--surface3,#2a2a2a);padding:8px;border-radius:4px">
-      <span style="color:var(--muted);font-size:11px">Regenerate a time window within the track:</span>
-      <label style="font-weight:normal">Start (s):
-        <input type="number" class="remix-repaint-start" min="0" step="0.5" value="5" style="width:70px">
-      </label>
-      <label style="font-weight:normal">End (s):
-        <input type="number" class="remix-repaint-end" min="0" step="0.5" value="15" style="width:70px">
-      </label>
+    <div class="remix-repaint-wrap" style="display:none;margin-bottom:8px;background:var(--surface3,#2a2a2a);padding:8px;border-radius:4px">
+      <div style="color:var(--muted);font-size:11px;margin-bottom:6px">Drag handles to set the region to regenerate:</div>
+      <canvas class="remix-timeline" width="400" height="36" style="width:100%;height:36px;border-radius:4px;cursor:crosshair;display:block;"></canvas>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:6px;flex-wrap:wrap">
+        <label style="font-weight:normal;font-size:11px">Start (s):
+          <input type="number" class="remix-repaint-start" min="0" step="0.5" value="5" style="width:65px">
+        </label>
+        <label style="font-weight:normal;font-size:11px">End (s):
+          <input type="number" class="remix-repaint-end" min="0" step="0.5" value="15" style="width:65px">
+        </label>
+        <span class="remix-timeline-label" style="font-size:11px;color:var(--muted)"></span>
+      </div>
     </div>
     <div style="margin-bottom:8px">
       <input type="text" class="remix-name" placeholder="Remix name" value="Remix of ${sourceFile.replace('.mp3','')}" style="width:100%">
@@ -323,10 +329,80 @@ function toggleRemixPanel(card, sourceFile) {
   modeInputs.forEach(r => r.addEventListener("change", () => {
     const mode = panel.querySelector(`input[name="remix-mode-${sourceFile}"]:checked`).value;
     seedWrap.style.display = mode === "extend" ? "" : "none";
-    repaintWrap.style.display = mode === "repaint" ? "flex" : "none";
+    repaintWrap.style.display = mode === "repaint" ? "block" : "none";
     hintEl.textContent = _hints[mode] || "";
+    if (mode === "repaint") {
+      // sync canvas px width to display width for sharp rendering
+      requestAnimationFrame(() => {
+        canvas.width = canvas.offsetWidth * (window.devicePixelRatio || 1);
+        canvas.height = 36 * (window.devicePixelRatio || 1);
+        canvas.style.height = "36px";
+        _drawTimeline();
+      });
+    }
   }));
   denoiseEl.addEventListener("input", () => { denoiseVal.textContent = parseFloat(denoiseEl.value).toFixed(2); });
+
+  // ── Repaint timeline canvas ─────────────────────────────────────────────────
+  const canvas = panel.querySelector(".remix-timeline");
+  const startInput = panel.querySelector(".remix-repaint-start");
+  const endInput   = panel.querySelector(".remix-repaint-end");
+  const tlLabel    = panel.querySelector(".remix-timeline-label");
+  let _tlDuration  = 60;  // default; updated from WaveSurfer when available
+  if (_waveInstances[sourceFile]) {
+    const dur = _waveInstances[sourceFile].getDuration();
+    if (dur > 0) _tlDuration = dur;
+  }
+
+  function _drawTimeline() {
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    const s = parseFloat(startInput.value) || 0;
+    const e = parseFloat(endInput.value)   || 10;
+    const sx = (s / _tlDuration) * W;
+    const ex = (e / _tlDuration) * W;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#222";
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "rgba(100,180,255,0.18)";
+    ctx.fillRect(sx, 0, ex - sx, H);
+    // handles
+    [[sx, s], [ex, e]].forEach(([x, t]) => {
+      ctx.fillStyle = "#5af";
+      ctx.fillRect(x - 2, 0, 4, H);
+      ctx.fillStyle = "#fff";
+      ctx.font = "10px monospace";
+      ctx.fillText(t.toFixed(1) + "s", Math.max(2, x - 14), H - 4);
+    });
+    tlLabel.textContent = `Region: ${s.toFixed(1)}s – ${e.toFixed(1)}s (${(e - s).toFixed(1)}s)`;
+  }
+  _drawTimeline();
+
+  // Sync number inputs → canvas
+  [startInput, endInput].forEach(inp => inp.addEventListener("input", _drawTimeline));
+
+  // Mouse drag on canvas → update inputs
+  let _dragHandle = null;  // "start" | "end"
+  canvas.addEventListener("mousedown", ev => {
+    const rect = canvas.getBoundingClientRect();
+    const px = (ev.clientX - rect.left) / rect.width;
+    const t = px * _tlDuration;
+    const s = parseFloat(startInput.value) || 0;
+    const e = parseFloat(endInput.value)   || 10;
+    _dragHandle = Math.abs(t - s) < Math.abs(t - e) ? "start" : "end";
+  });
+  window.addEventListener("mousemove", ev => {
+    if (!_dragHandle) return;
+    const rect = canvas.getBoundingClientRect();
+    const px = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+    const t = Math.round(px * _tlDuration * 2) / 2;
+    const s = parseFloat(startInput.value) || 0;
+    const e = parseFloat(endInput.value)   || 10;
+    if (_dragHandle === "start") { startInput.value = Math.min(t, e - 0.5).toFixed(1); }
+    else                         { endInput.value   = Math.max(t, s + 0.5).toFixed(1); }
+    _drawTimeline();
+  });
+  window.addEventListener("mouseup", () => { _dragHandle = null; });
 
   panel.querySelector(".remix-submit").addEventListener("click", async () => {
     const btn = panel.querySelector(".remix-submit");
