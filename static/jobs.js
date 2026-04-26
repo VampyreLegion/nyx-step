@@ -157,11 +157,56 @@ function addDownloadLinks(container, files) {
     row.appendChild(remixBtn);
     container.appendChild(row);
 
-    const audioEl = document.createElement("audio");
-    audioEl.controls = true;
-    audioEl.src = "/download/" + encodeURIComponent(f) + bust;
-    audioEl.style.cssText = "width:100%;margin-top:4px;height:36px;";
-    container.appendChild(audioEl);
+    // Waveform player
+    const waveWrap = document.createElement("div");
+    waveWrap.style.cssText = "margin-top:6px;";
+    const waveDiv = document.createElement("div");
+    waveDiv.style.cssText = "width:100%;border-radius:4px;overflow:hidden;cursor:pointer;";
+    const controls = document.createElement("div");
+    controls.style.cssText = "display:flex;align-items:center;gap:8px;margin-top:4px;";
+    const playBtn = document.createElement("button");
+    playBtn.className = "secondary small";
+    playBtn.textContent = "▶";
+    playBtn.title = "Play / Pause";
+    playBtn.style.cssText = "font-size:13px;padding:2px 10px;min-width:36px;";
+    const timeEl = document.createElement("span");
+    timeEl.style.cssText = "font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;";
+    timeEl.textContent = "0:00 / 0:00";
+    controls.appendChild(playBtn);
+    controls.appendChild(timeEl);
+    waveWrap.appendChild(waveDiv);
+    waveWrap.appendChild(controls);
+    container.appendChild(waveWrap);
+    const audioSrc = "/download/" + encodeURIComponent(f) + bust;
+    if (typeof WaveSurfer !== "undefined") {
+      const ws = WaveSurfer.create({
+        container: waveDiv,
+        waveColor: "var(--border)",
+        progressColor: "var(--accent)",
+        height: 40,
+        barWidth: 2,
+        barGap: 1,
+        barRadius: 2,
+        url: audioSrc,
+        interact: true,
+      });
+      const fmt = s => {
+        const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+        return `${m}:${sec.toString().padStart(2,"0")}`;
+      };
+      ws.on("ready", () => { timeEl.textContent = `0:00 / ${fmt(ws.getDuration())}`; });
+      ws.on("timeupdate", t => { timeEl.textContent = `${fmt(t)} / ${fmt(ws.getDuration())}`; });
+      ws.on("play", () => { playBtn.textContent = "⏸"; });
+      ws.on("pause", () => { playBtn.textContent = "▶"; });
+      ws.on("finish", () => { playBtn.textContent = "▶"; });
+      playBtn.addEventListener("click", () => ws.playPause());
+    } else {
+      const audioEl = document.createElement("audio");
+      audioEl.controls = true;
+      audioEl.src = audioSrc;
+      audioEl.style.cssText = "width:100%;height:36px;";
+      waveWrap.replaceWith(audioEl);
+    }
   });
 
   if (files.length) {

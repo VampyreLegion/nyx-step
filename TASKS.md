@@ -48,7 +48,7 @@
 | 22 | LoRA Training UI | 🔲 todo | Training wizard tab: drop audio files + metadata, configure LoRA rank/alpha/LR/epochs, monitor training via SSE; uses `/v1/training/start` |
 | 23 | Audio Understanding / Analyze | 🔲 todo | Feed audio → get back caption, BPM, key, time sig, lyrics with timestamps, vocal language; "Analyze Audio" button populates full state |
 | 24 | Repaint Timeline Picker | 🔲 todo | Visual timeline bar with draggable region selector replacing free-form seconds inputs; waveform from Web Audio API |
-| 25 | Waveform Player | 🔲 todo | Upgrade inline player with waveform visualization (Web Audio API or Wavesurfer.js); click-to-seek, playhead |
+| 25 | Waveform Player | ✅ done | WaveSurfer.js v7 bundled locally; each job card shows waveform + ▶/⏸ button + live timestamp; falls back to `<audio>` if WaveSurfer unavailable |
 
 ---
 
