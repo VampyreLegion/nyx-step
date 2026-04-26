@@ -41,6 +41,10 @@ document.getElementById("param-lock-seed").addEventListener("change", e => {
   mwState.lock_seed = e.target.checked;
 });
 
+document.getElementById("param-vocal-language").addEventListener("change", e => {
+  mwState.vocal_language = e.target.value;
+});
+
 const _qualityOptions = {
   mp3:  [["V0","V0 (best VBR)"],["128k","128k"],["320k","320k"]],
   flac: [],

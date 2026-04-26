@@ -39,6 +39,7 @@ class GenerateRequest(BaseModel):
     song_name: str = "Untitled"
     audio_format: str = "mp3"
     audio_quality: str = "V0"
+    vocal_language: str = "auto"
 
 
 @router.post("/generate")

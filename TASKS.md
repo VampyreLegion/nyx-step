@@ -15,7 +15,7 @@
 | 3 | Live Token Counter on Tags | ✅ done | `#tag-token-count` span next to Tags label; green→orange at 12→red at 15; updates on every edit and state sync |
 | 4 | Audio Format Selection | ✅ done | Format dropdown (MP3/FLAC/Opus) + quality selector in Parameters; swaps ComfyUI save node in `build_workflow()`; quality options change per format |
 | 5 | Instrument Auto-Apply from Genre | ✅ done | `_selectGenre()` now sets `mwState.instruments`, updates textarea, and calls `_syncInstrumentChips()` |
-| 6 | Vocal Language Explicit Control | 🔲 todo | Add `vocal_language` ISO dropdown (en, zh, ja, ko, es, fr, de…) to Parameters tab |
+| 6 | Vocal Language Explicit Control | ✅ done | `vocal_language` dropdown in Parameters (auto/en/zh/ja/ko/es/fr/de/pt/it/ru/ar/hi); wired through state→request→workflow `language` field |
 | 7 | Output Metadata Download | 🔲 todo | Attach `.json` sidecar or ID3 tags to downloaded files with caption, lyrics, seed, parameters |
 | 8 | Reset Parameters to Defaults | 🔲 todo | "Reset" button in Parameters tab restores all generation params to defaults |
 

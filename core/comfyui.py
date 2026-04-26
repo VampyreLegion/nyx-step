@@ -66,6 +66,9 @@ class ComfyUIClient:
                 inputs = node.setdefault("inputs", {})
                 inputs["tags"] = caption
                 inputs["lyrics"] = lyrics
+                lang = state.get("vocal_language", "auto")
+                if lang and lang != "auto":
+                    inputs["language"] = lang
                 inputs["bpm"] = state.get("bpm", 120)
                 inputs["duration"] = float(state.get("duration", 30))
                 inputs["cfg_scale"] = state.get("cfg_scale", 2.0)
