@@ -47,7 +47,7 @@
 | 21 | LoRA Browser + Loader | ✅ done | LoRA section in Parameters; GET /loras from ComfyUI /models/loras; LoraLoader injected into workflow between UNETLoader/DualCLIPLoader and sampler nodes; scale control; refresh button |
 | 22 | LoRA Training UI | ✅ done | Train LoRA tab: dataset dir, hyperparams (rank/alpha/LR/epochs/batch/grad_accum), LLM labeling toggle; POST /train/start builds FL_AceStep workflow; GET /train/events SSE bridges ComfyUI WS `acestep.training.progress`; real-time loss canvas chart |
 | 27 | MIDI Extraction | ✅ done | Dual-mode: librosa pyin (melody/monophonic) + piano-transcription-inference (polyphonic piano); POST /midi/extract; MIDI tab + Guide section + About v3.3 |
-| 28 | Continuous AI Radio | 🔄 in progress | NyxSaveAudioCodes unblocks this; musicweb UI + backend chaining still needed |
+| 28 | Continuous AI Radio | ✅ done | SSE-chained generations via ReferenceTimbreAudio; POST /radio/start-stop, GET /radio/events; 📻 Radio tab with mini player + segment history |
 | 30 | Multi-Mask Repaint | ✅ done | workflow_multirepaint_template.json (3 regions) + NyxAudioOverlay node; POST /multirepaint; UI needed |
 | 22 | LoRA Training UI | ✅ done | See row above |
 | 23 | Audio Understanding / Analyze | ✅ done | POST /analyze; scipy onset detection → BPM, Krumhansl-Schmuckler chromagram → key/scale, faster-whisper → lyrics+language; Apply button populates BPM/key/scale/lyrics/language into state |
@@ -69,7 +69,7 @@
 |---|---------|--------|-------|
 | 26 | Voice Recorder → Whisper → Lyrics | ✅ done | Record button in Tagging tab; MediaRecorder API → POST /transcribe → faster-whisper → lyrics textarea; Append mode, model selector (base/small/medium) |
 | 27 | MIDI Extraction | ✅ done | Dual-mode: librosa pyin (melody) + piano-transcription-inference (polyphonic); POST /midi/extract; MIDI tab in UI |
-| 28 | Continuous AI Radio | 🔲 todo | Chain generations using audio codes from previous result as seed; continuous coherent stream; persistent mini-player |
+| 28 | Continuous AI Radio | ✅ done | See Major Features row — done |
 | 29 | Sample Query / Simple Mode | ✅ done | Quick Generate box on Overview tab; `POST /ollama/expand` uses Ollama to convert free-text description into tags, BPM, key, scale, instruments; model selector auto-populated |
 | 30 | Multi-Mask Repaint | ✅ done | NyxAudioOverlay node chains regions back; workflow_multirepaint_template.json; POST /multirepaint |
 

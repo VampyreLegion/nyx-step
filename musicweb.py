@@ -63,6 +63,7 @@ from routes.train import router as train_router
 from routes.midi import router as midi_router
 from routes.lego import router as lego_router
 from routes.extract import router as extract_router
+from routes.radio import router as radio_router
 
 app.include_router(gen_router)
 app.include_router(queue_router)
@@ -77,6 +78,7 @@ app.include_router(train_router)
 app.include_router(midi_router)
 app.include_router(lego_router)
 app.include_router(extract_router)
+app.include_router(radio_router)
 
 import json as _json
 from fastapi.responses import JSONResponse
