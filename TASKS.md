@@ -30,7 +30,7 @@
 | 11 | Model Selector (DiT + LM) | ✅ done | DiT Model dropdown (XL Turbo/SFT/Base) in Parameters; swaps UNETLoader `unet_name` in workflow; shows recommended steps per model; LM model selection is ComfyUI-FL only |
 | 12 | Batch Size Control | ✅ done | `batch_size` spinner (1–8) in Parameters; wired to `EmptyAceStep1.5LatentAudio` `batch_size` input; each output file gets its own job card |
 | 13 | Cover Mode | ✅ done | Dedicated Cover tab; upload reference audio, ACE-Step preserves melody while applying new style tags; `POST /cover` form endpoint; `build_cover_workflow` → `_build_remix_from_input` in ComfyUI client |
-| 14 | Audio Codes Cache (Fast Variation) | ⏸ blocked | Requires ComfyUI node-level access to audio_codes tensor — not exposed via workflow JSON; revisit when custom node available |
+| 14 | Audio Codes Cache (Fast Variation) | ✅ done | NyxSaveAudioCodes + NyxLoadAudioCodes custom nodes; save LM output to cache/{name}.json; inject on reload; skips Qwen LM stage |
 | 15 | LRC Synchronized Lyrics | ⏸ blocked | `auto_lrc` is standalone-API-only param; not in ComfyUI TextEncodeAceStepAudio1.5 node schema |
 | 16 | Generation Quality Score | ⏸ blocked | `auto_score` is standalone-API-only; no ComfyUI node exposes DiT Lyrics Alignment Score |
 | 17 | Demucs Fine-Tuned Models | ✅ done | Added `htdemucs_ft` and `mdx_extra` to dropdown; model name passed directly to `-n` flag, no backend changes needed |
@@ -42,13 +42,13 @@
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
 | 18 | Lego Mode — Add Instrument Layer | ✅ done | workflow_lego_template.json + ReferenceTimbreAudio; POST /lego; inner-tab in Cover tab; lego.js |
-| 19 | Extract Mode — Single Stem Isolation | ⏸ blocked | Same — needs workflow template with ReferenceTimbreAudio node wired for diffusion-based extraction |
+| 19 | Extract Mode — Single Stem Isolation | ✅ done | workflow_extract_template.json redesigned with ReferenceTimbreAudio + generate_audio_codes=false + denoise=0.98; POST /extract |
 | 20 | Complete Mode — Generate Backing Track | ✅ done | Shares workflow_lego_template.json (denoise=0.8); POST /complete; inner-tab in Cover tab; lego.js |
 | 21 | LoRA Browser + Loader | ✅ done | LoRA section in Parameters; GET /loras from ComfyUI /models/loras; LoraLoader injected into workflow between UNETLoader/DualCLIPLoader and sampler nodes; scale control; refresh button |
 | 22 | LoRA Training UI | ✅ done | Train LoRA tab: dataset dir, hyperparams (rank/alpha/LR/epochs/batch/grad_accum), LLM labeling toggle; POST /train/start builds FL_AceStep workflow; GET /train/events SSE bridges ComfyUI WS `acestep.training.progress`; real-time loss canvas chart |
 | 27 | MIDI Extraction | ✅ done | Dual-mode: librosa pyin (melody/monophonic) + piano-transcription-inference (polyphonic piano); POST /midi/extract; MIDI tab + Guide section + About v3.3 |
-| 28 | Continuous AI Radio | ⏸ blocked | Requires audio_codes chaining (same blocker as #14); needs ComfyUI node support |
-| 30 | Multi-Mask Repaint | ⏸ blocked | Requires custom ComfyUI workflow with multiple TrimAudio chains; no template exists |
+| 28 | Continuous AI Radio | 🔄 in progress | NyxSaveAudioCodes unblocks this; musicweb UI + backend chaining still needed |
+| 30 | Multi-Mask Repaint | ✅ done | workflow_multirepaint_template.json (3 regions) + NyxAudioOverlay node; POST /multirepaint; UI needed |
 | 22 | LoRA Training UI | ✅ done | See row above |
 | 23 | Audio Understanding / Analyze | ✅ done | POST /analyze; scipy onset detection → BPM, Krumhansl-Schmuckler chromagram → key/scale, faster-whisper → lyrics+language; Apply button populates BPM/key/scale/lyrics/language into state |
 | 24 | Repaint Timeline Picker | ✅ done | Canvas timeline in repaint panel: drag two handles to set start/end region; syncs with number inputs both ways; uses WaveSurfer duration if available |
@@ -71,7 +71,7 @@
 | 27 | MIDI Extraction | ✅ done | Dual-mode: librosa pyin (melody) + piano-transcription-inference (polyphonic); POST /midi/extract; MIDI tab in UI |
 | 28 | Continuous AI Radio | 🔲 todo | Chain generations using audio codes from previous result as seed; continuous coherent stream; persistent mini-player |
 | 29 | Sample Query / Simple Mode | ✅ done | Quick Generate box on Overview tab; `POST /ollama/expand` uses Ollama to convert free-text description into tags, BPM, key, scale, instruments; model selector auto-populated |
-| 30 | Multi-Mask Repaint | 🔲 todo | Define multiple time-window regions for repaint in one submit; multi-region timeline picker |
+| 30 | Multi-Mask Repaint | ✅ done | NyxAudioOverlay node chains regions back; workflow_multirepaint_template.json; POST /multirepaint |
 
 ---
 

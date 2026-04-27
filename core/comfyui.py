@@ -517,6 +517,251 @@ class ComfyUIClient:
 
         return {"workflow": workflow, "seed": seed}
 
+    def build_extract_workflow(
+        self,
+        input_name: str,
+        caption: str,
+        lyrics: str,
+        state: dict,
+        denoise: float = 0.98,
+    ) -> dict:
+        """Stem extraction via ReferenceTimbreAudio + high-denoise repaint."""
+        if not config.WORKFLOW_EXTRACT_TEMPLATE.exists():
+            return {"error": f"Extract template not found: {config.WORKFLOW_EXTRACT_TEMPLATE}"}
+
+        with open(config.WORKFLOW_EXTRACT_TEMPLATE) as f:
+            workflow = json.load(f)
+
+        _scale_map = {
+            "major": "major", "minor": "minor",
+            "harmonic minor": "minor", "melodic minor": "minor",
+            "pentatonic major": "major", "pentatonic minor": "minor",
+        }
+
+        for node in workflow.values():
+            if not isinstance(node, dict):
+                continue
+            if node.get("class_type") == "LoadAudio":
+                node["inputs"]["audio"] = input_name
+            elif node.get("class_type") == "TextEncodeAceStepAudio1.5":
+                inp = node.setdefault("inputs", {})
+                inp["tags"] = caption
+                inp["lyrics"] = lyrics
+                inp["bpm"] = state.get("bpm", 120)
+                inp["duration"] = float(state.get("duration", 30))
+                inp["cfg_scale"] = state.get("cfg_scale", 2.0)
+                inp["temperature"] = state.get("temperature", 0.85)
+                inp["top_p"] = state.get("top_p", 0.9)
+                inp["top_k"] = state.get("top_k", 0)
+                inp["min_p"] = state.get("min_p", 0.0)
+                inp["generate_audio_codes"] = False  # always skip LM for extraction
+                key = state.get("key", "")
+                scale = state.get("scale", "")
+                if key and scale:
+                    mapped = _scale_map.get(scale.lower())
+                    if mapped:
+                        inp["keyscale"] = f"{key} {mapped}"
+                time_sig = state.get("time_sig", "4/4")
+                if time_sig:
+                    inp["timesignature"] = time_sig.split("/")[0]
+
+        seed = state.get("seed", 0)
+        if not state.get("lock_seed", False) or seed == 0:
+            seed = random.randint(0, 2**32 - 1)
+
+        sampler_name = state.get("sampler_name", "er_sde") or "er_sde"
+        scheduler = state.get("scheduler", "linear_quadratic") or "linear_quadratic"
+        for node in workflow.values():
+            if isinstance(node, dict) and node.get("class_type") == "KSampler":
+                inp = node.setdefault("inputs", {})
+                inp["steps"] = state.get("steps", 20)
+                inp["denoise"] = float(denoise)
+                inp["seed"] = seed
+                inp["sampler_name"] = sampler_name
+                inp["scheduler"] = scheduler
+        for node in workflow.values():
+            if isinstance(node, dict) and node.get("class_type") == "TextEncodeAceStepAudio1.5":
+                node.setdefault("inputs", {})["seed"] = seed
+
+        _dit_models = {
+            "turbo": "acestep_v1.5_xl_turbo_bf16.safetensors",
+            "sft":   "acestep_v1.5_xl_sft_bf16.safetensors",
+            "base":  "acestep_v1.5_xl_base_bf16.safetensors",
+        }
+        dit_key = state.get("dit_model", "sft").lower()
+        for node in workflow.values():
+            if isinstance(node, dict) and node.get("class_type") == "UNETLoader":
+                node.setdefault("inputs", {})["unet_name"] = _dit_models.get(dit_key, _dit_models["sft"])
+
+        _fmt_map = {
+            "mp3":  ("SaveAudioMP3",  "Save Audio (MP3)"),
+            "flac": ("SaveAudio",     "Save Audio (FLAC)"),
+            "opus": ("SaveAudioOpus", "Save Audio (Opus)"),
+        }
+        audio_format = state.get("audio_format", "mp3").lower()
+        audio_quality = state.get("audio_quality", "V0")
+        cls, title = _fmt_map.get(audio_format, _fmt_map["mp3"])
+        for node in workflow.values():
+            if isinstance(node, dict) and node.get("class_type") in ("SaveAudioMP3", "SaveAudio", "SaveAudioOpus"):
+                node["class_type"] = cls
+                node["_meta"] = {"title": title}
+                inp = node.setdefault("inputs", {})
+                inp.pop("quality", None)
+                inp.pop("audioUI", None)
+                if audio_format == "mp3":
+                    inp["quality"] = audio_quality or "V0"
+                    inp["audioUI"] = ""
+                elif audio_format == "opus":
+                    inp["quality"] = audio_quality or "128k"
+
+        return {"workflow": workflow, "seed": seed}
+
+    def build_multirepaint_workflow(
+        self,
+        input_name: str,
+        caption: str,
+        lyrics: str,
+        state: dict,
+        regions: list[dict],
+        denoise: float = 0.7,
+    ) -> dict:
+        """Multi-region repaint using NyxAudioOverlay to stitch regions back.
+
+        regions: list of dicts with keys start (float, seconds) and end (float, seconds).
+        Supports up to 3 regions — extras are ignored.
+        """
+        if not config.WORKFLOW_MULTIREPAINT_TEMPLATE.exists():
+            return {"error": f"Multi-repaint template not found: {config.WORKFLOW_MULTIREPAINT_TEMPLATE}"}
+
+        if not regions:
+            return {"error": "At least one region required"}
+
+        regions = [r for r in regions if r.get("end", 0) > r.get("start", 0)][:3]
+        if not regions:
+            return {"error": "All regions have end <= start"}
+
+        with open(config.WORKFLOW_MULTIREPAINT_TEMPLATE) as f:
+            workflow = json.load(f)
+
+        _scale_map = {
+            "major": "major", "minor": "minor",
+            "harmonic minor": "minor", "melodic minor": "minor",
+            "pentatonic major": "major", "pentatonic minor": "minor",
+        }
+
+        for node in workflow.values():
+            if not isinstance(node, dict):
+                continue
+            if node.get("class_type") == "LoadAudio":
+                node["inputs"]["audio"] = input_name
+
+        for node in workflow.values():
+            if not isinstance(node, dict):
+                continue
+            if node.get("class_type") == "TextEncodeAceStepAudio1.5":
+                inp = node.setdefault("inputs", {})
+                inp["tags"] = caption
+                inp["lyrics"] = lyrics
+                inp["bpm"] = state.get("bpm", 120)
+                inp["cfg_scale"] = state.get("cfg_scale", 2.0)
+                inp["temperature"] = state.get("temperature", 0.85)
+                inp["top_p"] = state.get("top_p", 0.9)
+                inp["top_k"] = state.get("top_k", 0)
+                inp["min_p"] = state.get("min_p", 0.0)
+                inp["generate_audio_codes"] = False
+                key = state.get("key", "")
+                scale = state.get("scale", "")
+                if key and scale:
+                    mapped = _scale_map.get(scale.lower())
+                    if mapped:
+                        inp["keyscale"] = f"{key} {mapped}"
+                time_sig = state.get("time_sig", "4/4")
+                if time_sig:
+                    inp["timesignature"] = time_sig.split("/")[0]
+
+        seed = state.get("seed", 0)
+        if not state.get("lock_seed", False) or seed == 0:
+            seed = random.randint(0, 2**32 - 1)
+
+        sampler_name = state.get("sampler_name", "er_sde") or "er_sde"
+        scheduler = state.get("scheduler", "linear_quadratic") or "linear_quadratic"
+
+        # Region node ID groups: (trim_id, encode_id, ksampler_id, decode_id, overlay_id)
+        region_nodes = [
+            ("10", "11", "12", "13", "14"),
+            ("20", "21", "22", "23", "24"),
+            ("30", "31", "32", "33", "34"),
+        ]
+
+        # Wire the overlay chain: first region overlays onto LoadAudio output ("1")
+        # Second region overlays onto first overlay output ("14"), etc.
+        overlay_chain_input = "1"
+        for i, (trim_id, enc_id, ks_id, dec_id, ov_id) in enumerate(region_nodes):
+            if i < len(regions):
+                r = regions[i]
+                start = float(r["start"])
+                duration = round(float(r["end"]) - start, 3)
+                if trim_id in workflow:
+                    workflow[trim_id]["inputs"]["start_index"] = start
+                    workflow[trim_id]["inputs"]["duration"] = duration
+                if ks_id in workflow:
+                    inp = workflow[ks_id].setdefault("inputs", {})
+                    inp["steps"] = state.get("steps", 20)
+                    inp["denoise"] = float(denoise)
+                    inp["seed"] = seed
+                    inp["sampler_name"] = sampler_name
+                    inp["scheduler"] = scheduler
+                if ov_id in workflow:
+                    workflow[ov_id]["inputs"]["base"] = [overlay_chain_input, 0]
+                    workflow[ov_id]["inputs"]["start_time"] = start
+                overlay_chain_input = ov_id
+            else:
+                # Remove unused region nodes and re-wire the save node
+                for nid in (trim_id, enc_id, ks_id, dec_id, ov_id):
+                    workflow.pop(nid, None)
+
+        for node in workflow.values():
+            if isinstance(node, dict) and node.get("class_type") == "TextEncodeAceStepAudio1.5":
+                node.setdefault("inputs", {})["seed"] = seed
+
+        # Point save node at the last overlay in the chain
+        for node in workflow.values():
+            if isinstance(node, dict) and node.get("class_type") in ("SaveAudioMP3", "SaveAudio", "SaveAudioOpus"):
+                node["inputs"]["audio"] = [overlay_chain_input, 0]
+
+        _dit_models = {
+            "turbo": "acestep_v1.5_xl_turbo_bf16.safetensors",
+            "sft":   "acestep_v1.5_xl_sft_bf16.safetensors",
+            "base":  "acestep_v1.5_xl_base_bf16.safetensors",
+        }
+        dit_key = state.get("dit_model", "sft").lower()
+        for node in workflow.values():
+            if isinstance(node, dict) and node.get("class_type") == "UNETLoader":
+                node.setdefault("inputs", {})["unet_name"] = _dit_models.get(dit_key, _dit_models["sft"])
+
+        _fmt_map = {
+            "mp3":  ("SaveAudioMP3",  "Save Audio (MP3)"),
+            "flac": ("SaveAudio",     "Save Audio (FLAC)"),
+            "opus": ("SaveAudioOpus", "Save Audio (Opus)"),
+        }
+        audio_format = state.get("audio_format", "mp3").lower()
+        audio_quality = state.get("audio_quality", "V0")
+        cls, title = _fmt_map.get(audio_format, _fmt_map["mp3"])
+        for node in workflow.values():
+            if isinstance(node, dict) and node.get("class_type") in ("SaveAudioMP3", "SaveAudio", "SaveAudioOpus"):
+                node["class_type"] = cls
+                node["_meta"] = {"title": title}
+                inp = node.setdefault("inputs", {})
+                inp.pop("quality", None)
+                inp.pop("audioUI", None)
+                if audio_format == "mp3":
+                    inp["quality"] = audio_quality or "V0"
+                    inp["audioUI"] = ""
+                elif audio_format == "opus":
+                    inp["quality"] = audio_quality or "128k"
+
+        return {"workflow": workflow, "seed": seed}
+
     def send_workflow(self, workflow: dict) -> dict:
         try:
             resp = requests.post(
