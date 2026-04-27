@@ -186,7 +186,7 @@ class PromptLinter:
                 results.append(LintResult(
                     "warning", "lyrics",
                     f"Unrecognized language code [{code}]",
-                    "Supported ACE-Step codes: [zh] [ko] [es] [fr] [de] [ja] [en]",
+                    "Supported Nyx-Step codes: [zh] [ko] [es] [fr] [de] [ja] [en]",
                 ))
 
         outro_match = re.search(r'\[Outro\]', lyrics, re.IGNORECASE)

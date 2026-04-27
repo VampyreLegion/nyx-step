@@ -119,3 +119,16 @@ document.getElementById("history-search").addEventListener("input", e => {
 
 document.getElementById("btn-history-refresh").addEventListener("click", loadHistory);
 
+document.getElementById("btn-history-clear").addEventListener("click", async () => {
+  if (!confirm("Clear all history? This will permanently delete your generation history and cannot be undone.")) return;
+  try {
+    const resp = await fetch("/api/history", { method: "DELETE" });
+    const data = await resp.json();
+    if (data.error) { alert("Error: " + data.error); return; }
+    _historyRecords = [];
+    _renderHistory("");
+  } catch (e) {
+    alert("Failed to clear history: " + e.message);
+  }
+});
+

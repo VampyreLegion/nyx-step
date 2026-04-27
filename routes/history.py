@@ -34,3 +34,19 @@ async def get_history(request: Request, limit: int = 100):
         except Exception:
             pass
     return JSONResponse({"records": records})
+
+
+@router.delete("/api/history")
+async def clear_history(request: Request):
+    user_email = get_user_email(request)
+    if not config.HISTORY_LOG.exists():
+        return JSONResponse({"cleared": 0})
+    try:
+        with open(config.HISTORY_LOG) as f:
+            lines = f.readlines()
+        kept = [l for l in lines if l.strip() and json.loads(l).get("user_email") != user_email]
+        with open(config.HISTORY_LOG, "w") as f:
+            f.writelines(kept)
+        return JSONResponse({"cleared": len(lines) - len(kept)})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)

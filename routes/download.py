@@ -196,7 +196,7 @@ _MIDI_HTML = (
     '<li><strong>Re-orchestrate</strong> — trigger any soft-synth or sample library with the extracted melody</li>'
     '<li><strong>Transpose</strong> — move the melody to a different key for remixing</li>'
     '<li><strong>Chord detection</strong> — use the MIDI piano roll to see what chords the AI generated, then build a real arrangement</li>'
-    '<li><strong>Feed back to ACE-Step</strong> — use extracted note data to write better chord progression tags for the next generation</li>'
+    '<li><strong>Feed back to Nyx-Step</strong> — use extracted note data to write better chord progression tags for the next generation</li>'
     '</ul>'
     "</body></html>"
 )
@@ -207,7 +207,7 @@ _ANALYZE_HTML = (
     '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">Analyze Audio</h2>'
 
     '<h3>What It Measures</h3>'
-    '<p>Upload any audio file to the Analyze Audio panel (Overview tab) to extract the following automatically:</p>'
+    '<p>Upload any audio file to the Analyze tab to extract the following automatically:</p>'
     '<table>'
     '<tr><th>Measurement</th><th>Method</th><th>Use In Generation</th></tr>'
     '<tr><td><strong>BPM</strong></td><td>Energy onset peak detection (scipy)</td><td>Apply → sets BPM field; use as tempo anchor</td></tr>'
@@ -222,7 +222,7 @@ _ANALYZE_HTML = (
     '<ul>'
     '<li>LUFS = Loudness Units relative to Full Scale — the broadcast/streaming loudness standard</li>'
     '<li>Typical targets: Streaming (Spotify/Apple Music) = <code>-14 LUFS</code>; CD masters = <code>-9 LUFS</code>; Film/TV = <code>-24 LUFS</code></li>'
-    '<li>ACE-Step outputs typically come in at <code>-14</code> to <code>-18 LUFS</code> — no action needed for streaming</li>'
+    '<li>Nyx-Step outputs typically come in at <code>-14</code> to <code>-18 LUFS</code> — no action needed for streaming</li>'
     '<li>If a reference track you\'re analyzing is much louder or quieter than the AI output, that difference is visible here</li>'
     '</ul>'
 
@@ -241,7 +241,7 @@ _ANALYZE_HTML = (
     '<li>Click <strong>✓ Apply</strong> — populates BPM, Key, Scale, Chord Progression, Language, and Lyrics into state</li>'
     '<li>Adjust tags to describe the target style (genre, mood, instruments)</li>'
     '<li>Switch to Cover tab — upload the same reference track</li>'
-    '<li>Generate — ACE-Step will preserve the reference melody while applying your new tags</li>'
+    '<li>Generate — Nyx-Step will preserve the reference melody while applying your new tags</li>'
     '</ol>'
     "</body></html>"
 )
@@ -252,16 +252,16 @@ _SAMPLER_HTML = (
     '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">Sampler &amp; Scheduler</h2>'
 
     '<h3>What These Control</h3>'
-    '<p>The <strong>Sampler</strong> and <strong>Scheduler</strong> dropdowns in the Parameters tab control how ACE-Step\'s diffusion process '
+    '<p>The <strong>Sampler</strong> and <strong>Scheduler</strong> dropdowns in the Sampler tab control how Nyx-Step\'s diffusion process '
     'moves from noise to music. Different combinations produce different sonic character even with identical prompts.</p>'
 
     '<h3>Recommended Settings</h3>'
     '<table>'
     '<tr><th>Setting</th><th>Default</th><th>Why</th></tr>'
     '<tr><td>Sampler</td><td><code>er_sde</code></td>'
-    '<td>ACE-Step community sweet spot — smooth transitions, musical phrasing, fewer artifacts than Euler at low step counts</td></tr>'
+    '<td>Nyx-Step sweet spot — smooth transitions, musical phrasing, fewer artifacts than Euler at low step counts</td></tr>'
     '<tr><td>Scheduler</td><td><code>linear_quadratic</code></td>'
-    '<td>Better pitch stability and tonal clarity than linear; the ACE-Step community consistently reports this outperforms Karras for music</td></tr>'
+    '<td>Better pitch stability and tonal clarity than linear; consistently outperforms Karras for music generation</td></tr>'
     '</table>'
 
     '<h3>Sampler Reference</h3>'

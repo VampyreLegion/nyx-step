@@ -15,48 +15,31 @@
 </div>
 
 <div id="tab-bar">
-  <button class="tab-btn active" data-tab="overview">Overview</button>
-  <button class="tab-btn" data-tab="easy">Legion's BioInfusor</button>
-  <button class="tab-btn" data-tab="style">Style Infusor</button>
-  <button class="tab-btn" data-tab="instruments">Instruments</button>
-  <button class="tab-btn" data-tab="vocals">Vocals</button>
-  <button class="tab-btn" data-tab="lyrics">Tagging</button>
-  <button class="tab-btn" data-tab="parameters">Parameters</button>
-  <button class="tab-btn" data-tab="lint">Lint</button>
-  <button class="tab-btn" data-tab="stems">Stems</button>
-  <button class="tab-btn" data-tab="cover" title="Generate a stylistic cover of any reference audio track">Cover</button>
-  <button class="tab-btn" data-tab="train" title="Train a LoRA on your own audio dataset">Train LoRA</button>
-  <button class="tab-btn" data-tab="midi" title="Extract MIDI notes from any audio file">MIDI</button>
-  <button class="tab-btn" data-tab="history">History</button>
-  <button class="tab-btn" data-tab="guide">Guide</button>
-  <button class="tab-btn" data-tab="about">About</button>
+  <button class="tab-btn active" data-tab="overview" title="Main workspace — tags, lyrics, payload preview, generate">Overview</button>
+  <button class="tab-btn" data-tab="easy" title="Legion's BioInfusor — Quick Idea Starter + AI-assisted prompt building; describe your music in plain English">Legion's BioInfusor</button>
+  <button class="tab-btn" data-tab="style" title="Style Infusor — BPM, key, scale, mode, time signature, chord progression">Style Infusor</button>
+  <button class="tab-btn" data-tab="instruments" title="Instruments — select and stack instrument tags">Instruments</button>
+  <button class="tab-btn" data-tab="vocals" title="Vocals — voice type, register, effects, vocal style tags">Vocals</button>
+  <button class="tab-btn" data-tab="lyrics" title="Tagging — structured lyrics editor with section markers">Tagging</button>
+  <button class="tab-btn" data-tab="parameters" title="Parameters — steps, CFG, duration, seed, batch, temperature, format, model, LoRA">Parameters</button>
+  <button class="tab-btn" data-tab="sampler" title="Sampler &amp; Scheduler — diffusion algorithm and noise schedule; controls sonic character of generation">Sampler</button>
+  <button class="tab-btn" data-tab="analyze" title="Analyze Audio — detect BPM, key, scale, LUFS, chord progression, and lyrics from any audio file">Analyze</button>
+  <button class="tab-btn" data-tab="lint" title="Lint — validate tags and lyrics for errors before generating">Lint</button>
+  <button class="tab-btn" data-tab="stems" title="Stems — extract stems from Nyx-Step output or separate audio with Demucs">Stems</button>
+  <button class="tab-btn" data-tab="cover" title="Cover — generate a stylistic cover preserving the melody of a reference track">Cover</button>
+  <button class="tab-btn" data-tab="train" title="Train LoRA — train a custom LoRA adapter on your own audio dataset">Train LoRA</button>
+  <button class="tab-btn" data-tab="midi" title="MIDI — extract MIDI notes from any audio file (melody or piano polyphonic)">MIDI</button>
+  <button class="tab-btn" data-tab="history" title="History — searchable log of all your completed generations with reload and download">History</button>
+  <button class="tab-btn" data-tab="guide" title="Guide — full documentation, flowcharts, scales reference, and workflow tips">Guide</button>
+  <button class="tab-btn" data-tab="about" title="About — version notes and feature changelog">About</button>
 </div>
 
 <div id="tab-content">
 
   <!-- OVERVIEW -->
   <div class="tab-panel active" id="tab-overview">
-    <!-- Analyze Audio -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:.04em">ANALYZE AUDIO</div>
-      <div data-dropzone="analyze-file" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:4px;border:1px solid transparent;border-radius:4px" title="Drag &amp; drop audio file here">
-        <input type="file" id="analyze-file" accept="audio/*" style="flex:1;min-width:160px;font-size:12px" title="Upload an audio file to extract BPM, key, scale, duration, and lyrics">
-        <button class="secondary small" id="btn-analyze" title="Analyze the audio — BPM, key, scale, duration, Whisper transcription">🔍 Analyze</button>
-        <button class="secondary small" id="btn-analyze-apply" style="display:none" title="Apply detected BPM, key, scale, and lyrics to the current state">✓ Apply</button>
-      </div>
-      <div id="analyze-status" style="font-size:11px;color:var(--muted);margin-top:5px;min-height:14px"></div>
-      <div id="analyze-result" style="font-size:11px;margin-top:6px;display:none;background:var(--surface3,#1e1e1e);border-radius:4px;padding:8px;line-height:1.7"></div>
-    </div>
-
-    <!-- Quick Generate (Simple Mode) -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:14px">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:.04em">QUICK IDEA STARTER</div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input type="text" id="quick-prompt" placeholder="Describe the music… e.g. dark medieval battle drums with choir" style="flex:1;min-width:200px" title="Describe your music in plain English — AI will populate all style, instrument, and parameter fields automatically">
-        <select id="quick-model" style="min-width:130px;font-size:12px" title="Ollama model to use for expansion"></select>
-        <button class="secondary small" id="btn-quick-expand" title="Use AI to convert your description into structured tags and parameters">✨ Expand</button>
-      </div>
-      <div id="quick-status" style="font-size:11px;color:var(--muted);margin-top:5px;min-height:14px"></div>
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('starthere')" title="Open the Getting Started guide">📖 Guide</button>
     </div>
     <div class="field-group">
       <label>Song Name</label>
@@ -100,8 +83,21 @@
     <div id="jobs-list"></div>
   </div>
 
-  <!-- EASY -->
+  <!-- EASY / BIONFUSOR -->
   <div class="tab-panel" id="tab-easy">
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('ch1')" title="Open the Philosophy guide for BioInfusor">📖 Guide</button>
+    </div>
+    <!-- Quick Idea Starter -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:.04em">QUICK IDEA STARTER</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="quick-prompt" placeholder="Describe the music… e.g. dark medieval battle drums with choir" style="flex:1;min-width:200px" title="Describe your music in plain English — AI will populate all style, instrument, and parameter fields automatically">
+        <select id="quick-model" style="min-width:130px;font-size:12px" title="Ollama model to use for expansion"></select>
+        <button class="secondary small" id="btn-quick-expand" title="Use AI to convert your description into structured tags and parameters">✨ Expand</button>
+      </div>
+      <div id="quick-status" style="font-size:11px;color:var(--muted);margin-top:5px;min-height:14px"></div>
+    </div>
     <div class="row">
       <div class="field-group">
         <label>Topic / Prompt</label>
@@ -178,6 +174,9 @@
 
   <!-- STYLE -->
   <div class="tab-panel" id="tab-style">
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('scale')" title="Open Scales &amp; Modes guide">📖 Guide</button>
+    </div>
     <div class="field-group">
       <input type="text" id="genre-search" placeholder="🔍 Search genres…">
     </div>
@@ -352,6 +351,9 @@
 
   <!-- INSTRUMENTS -->
   <div class="tab-panel" id="tab-instruments">
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('ch2')" title="Open Tags guide">📖 Guide</button>
+    </div>
     <div id="instrument-chips" style="margin-bottom:12px"></div>
     <div class="section-title">Selected <span style="font-size:11px;color:var(--muted);font-weight:normal">(editable — comma separated)</span></div>
     <textarea id="instrument-selected" rows="2" style="min-height:36px;resize:vertical" placeholder="(none)"></textarea>
@@ -359,6 +361,9 @@
 
   <!-- VOCALS -->
   <div class="tab-panel" id="tab-vocals">
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('ch2')" title="Open Tags guide">📖 Guide</button>
+    </div>
     <div id="vocal-chips"></div>
     <div class="section-title" style="margin-top:12px">Selected <span style="font-size:11px;color:var(--muted);font-weight:normal">(editable — comma separated)</span></div>
     <textarea id="vocal-selected" rows="2" style="min-height:36px;resize:vertical" placeholder="(none)"></textarea>
@@ -366,6 +371,9 @@
 
   <!-- LYRICS / TAGGING -->
   <div class="tab-panel" id="tab-lyrics">
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('ch3')" title="Open Lyrics guide">📖 Guide</button>
+    </div>
     <div class="tag-reference">
 
       <details class="tag-cat" open>
@@ -709,6 +717,9 @@
 
   <!-- PARAMETERS -->
   <div class="tab-panel" id="tab-parameters">
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('ch6')" title="Open Operations guide">📖 Guide</button>
+    </div>
     <div class="row">
       <div class="field-group">
         <label title="How many diffusion sampling steps Nyx-Step runs. Each step refines the audio closer to your prompt. More steps = higher fidelity and detail but slower generation. 8 is fast for testing; 20–30 for quality results; 50+ for maximum quality. Diminishing returns above ~30. Default: 8. Range: 1–100.">Steps ⓘ</label>
@@ -822,38 +833,6 @@
       </div>
     </div>
     <div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
-      <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px">Sampler &amp; Scheduler</div>
-      <div class="row" style="gap:12px">
-        <div class="field-group">
-          <label style="font-size:12px" title="Diffusion sampler. er_sde is the ACE-Step community sweet spot — smooth, musical, low artifacts. Euler/Euler Ancestral are standard KSampler options.">Sampler ⓘ</label>
-          <select id="param-sampler" title="er_sde recommended for ACE-Step">
-            <option value="er_sde">er_sde (recommended)</option>
-            <option value="euler">Euler</option>
-            <option value="euler_ancestral">Euler Ancestral</option>
-            <option value="dpm_2">DPM 2</option>
-            <option value="dpm_2_ancestral">DPM 2 Ancestral</option>
-            <option value="dpmpp_2m">DPM++ 2M</option>
-            <option value="dpmpp_sde">DPM++ SDE</option>
-            <option value="lcm">LCM</option>
-            <option value="heun">Heun</option>
-          </select>
-        </div>
-        <div class="field-group">
-          <label style="font-size:12px" title="Noise schedule. linear_quadratic is the ACE-Step community sweet spot — better pitch stability and tonal clarity. Karras is also popular for quality.">Scheduler ⓘ</label>
-          <select id="param-scheduler" title="linear_quadratic recommended for ACE-Step">
-            <option value="linear_quadratic">Linear Quadratic (recommended)</option>
-            <option value="linear">Linear</option>
-            <option value="karras">Karras</option>
-            <option value="exponential">Exponential</option>
-            <option value="sgm_uniform">SGM Uniform</option>
-            <option value="simple">Simple</option>
-            <option value="ddim_uniform">DDIM Uniform</option>
-            <option value="beta">Beta</option>
-          </select>
-        </div>
-      </div>
-    </div>
-    <div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
       <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px">LM Stage</div>
       <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"
         title="Enable the 5Hz Language Model that pre-generates audio codes before diffusion. When ON: higher quality, slower start (~10–30s overhead). When OFF: faster but lower coherence — use when providing a reference audio. Default: ON.">
@@ -895,6 +874,9 @@
 
   <!-- STEMS -->
   <div class="tab-panel" id="tab-stems">
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('ch6')" title="Open Operations guide">📖 Guide</button>
+    </div>
     <div class="inner-tabs">
       <button class="inner-tab-btn active" data-inner="stems-extract">Nyx-Step Extract</button>
       <button class="inner-tab-btn" data-inner="stems-demucs">Demucs Separate</button>
@@ -940,7 +922,10 @@
 
   <!-- COVER -->
   <div class="tab-panel" id="tab-cover">
-    <p style="font-size:12px;color:var(--muted);margin:0 0 14px">Upload a reference track. ACE-Step preserves its melody while rewriting the style using your tags.</p>
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('ch6')" title="Open Operations guide">📖 Guide</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 14px">Upload a reference track. Nyx-Step preserves its melody while rewriting the style using your tags.</p>
     <div class="field-group" data-dropzone="cover-file" style="border:1px solid transparent;border-radius:4px;padding:4px" title="Drag &amp; drop audio file here">
       <label>Reference Audio</label>
       <input type="file" id="cover-file" accept="audio/*">
@@ -982,6 +967,9 @@
 
   <!-- TRAIN LORA -->
   <div class="tab-panel" id="tab-train">
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('ch6')" title="Open Operations guide">📖 Guide</button>
+    </div>
     <p style="font-size:12px;color:var(--muted);margin:0 0 14px">Train a LoRA adapter on your own audio dataset. Uses the <strong>FL_AceStep_Train</strong> ComfyUI nodes — all 6 nodes confirmed installed. Each audio file needs a matching <code>_prompt.txt</code> and optionally a <code>_lyrics.txt</code>.</p>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
@@ -1083,10 +1071,10 @@
       <div style="margin-top:10px">
         <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;margin-bottom:8px">
           <input type="checkbox" id="train-llm-label">
-          <span title="Run FL_AceStep_LabelSamples before preprocessing — uses an ACE-Step LM to auto-caption each audio file">Enable LLM labeling ⓘ</span>
+          <span title="Run FL_AceStep_LabelSamples before preprocessing — uses a Nyx-Step LM to auto-caption each audio file">Enable LLM labeling ⓘ</span>
         </label>
         <div class="field-group">
-          <label title="Which ACE-Step language model to use for captioning">LLM Model ⓘ</label>
+          <label title="Which Nyx-Step language model to use for captioning">LLM Model ⓘ</label>
           <select id="train-llm-model" style="font-size:12px">
             <option value="acestep-5Hz-lm-1.7B">1.7B (recommended)</option>
             <option value="acestep-5Hz-lm-0.6B">0.6B (fast, less accurate)</option>
@@ -1121,6 +1109,9 @@
 
   <!-- MIDI EXTRACTION -->
   <div class="tab-panel" id="tab-midi">
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('midi')" title="Open MIDI guide">📖 Guide</button>
+    </div>
     <div style="display:flex;flex-direction:column;gap:12px;max-width:600px">
       <p style="margin:0;font-size:12px;color:var(--muted)">Extract MIDI notes from any audio file. <strong>Melody</strong> mode uses librosa pyin (monophonic, works on any instrument). <strong>Piano</strong> mode uses a neural polyphonic transcriber (piano recordings).</p>
 
@@ -1156,6 +1147,8 @@
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
       <input type="text" id="history-search" placeholder="Search by song name or tags…" style="flex:1;min-width:200px;font-size:12px">
       <button class="secondary small" id="btn-history-refresh" title="Reload history from server">↺ Refresh</button>
+      <button class="secondary small" id="btn-history-clear" title="Permanently delete all your generation history" style="color:var(--error,#f38ba8)">🗑 Clear All</button>
+      <button class="secondary small" onclick="openGuideSection('ch8')" title="Open Troubleshooting guide">📖 Guide</button>
     </div>
     <div id="history-list" style="display:flex;flex-direction:column;gap:8px"></div>
     <div id="history-empty" style="color:var(--muted);font-size:13px;display:none;padding:12px 0">No history found.</div>
@@ -1184,8 +1177,68 @@
     <div id="guide-content" style="padding:8px 0"></div>
   </div>
 
+  <!-- SAMPLER -->
+  <div class="tab-panel" id="tab-sampler">
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('sampler')" title="Open Sampler &amp; Scheduler guide">📖 Guide</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 14px">Controls how Nyx-Step's diffusion process moves from noise to music. Different combinations produce different sonic character even with identical prompts.</p>
+    <div style="padding:10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px">Sampler &amp; Scheduler</div>
+      <div class="row" style="gap:12px">
+        <div class="field-group">
+          <label style="font-size:12px" title="Diffusion sampler. er_sde is the Nyx-Step sweet spot — smooth, musical, low artifacts. Euler/Euler Ancestral are standard KSampler options.">Sampler ⓘ</label>
+          <select id="param-sampler" title="er_sde recommended for Nyx-Step">
+            <option value="er_sde">er_sde (recommended)</option>
+            <option value="euler">Euler</option>
+            <option value="euler_ancestral">Euler Ancestral</option>
+            <option value="dpm_2">DPM 2</option>
+            <option value="dpm_2_ancestral">DPM 2 Ancestral</option>
+            <option value="dpmpp_2m">DPM++ 2M</option>
+            <option value="dpmpp_sde">DPM++ SDE</option>
+            <option value="lcm">LCM</option>
+            <option value="heun">Heun</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label style="font-size:12px" title="Noise schedule. linear_quadratic is the Nyx-Step sweet spot — better pitch stability and tonal clarity. Karras is also popular for quality.">Scheduler ⓘ</label>
+          <select id="param-scheduler" title="linear_quadratic recommended for Nyx-Step">
+            <option value="linear_quadratic">Linear Quadratic (recommended)</option>
+            <option value="linear">Linear</option>
+            <option value="karras">Karras</option>
+            <option value="exponential">Exponential</option>
+            <option value="sgm_uniform">SGM Uniform</option>
+            <option value="simple">Simple</option>
+            <option value="ddim_uniform">DDIM Uniform</option>
+            <option value="beta">Beta</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYZE -->
+  <div class="tab-panel" id="tab-analyze">
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('analyze')" title="Open Analyze guide">📖 Guide</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Upload any audio file to extract BPM, key, scale, LUFS, chord progression, and lyrics. Hit Apply to push results into generation state.</p>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px">
+      <div data-dropzone="analyze-file" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:4px;border:1px solid transparent;border-radius:4px" title="Drag &amp; drop audio file here">
+        <input type="file" id="analyze-file" accept="audio/*" style="flex:1;min-width:160px;font-size:12px" title="Upload an audio file to extract BPM, key, scale, duration, and lyrics">
+        <button class="secondary small" id="btn-analyze" title="Analyze the audio — BPM, key, scale, LUFS, chords, Whisper transcription">🔍 Analyze</button>
+        <button class="secondary small" id="btn-analyze-apply" style="display:none" title="Apply detected BPM, key, scale, chords, language, and lyrics to the current state">✓ Apply</button>
+      </div>
+      <div id="analyze-status" style="font-size:11px;color:var(--muted);margin-top:5px;min-height:14px"></div>
+      <div id="analyze-result" style="font-size:11px;margin-top:6px;display:none;background:var(--surface3,#1e1e1e);border-radius:4px;padding:8px;line-height:1.7"></div>
+    </div>
+  </div>
+
   <!-- LINT -->
   <div class="tab-panel" id="tab-lint">
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" onclick="openGuideSection('ch5')" title="Open Hidden Syntax guide">📖 Guide</button>
+    </div>
     <div class="inner-tabs">
       <button class="inner-tab-btn active" data-inner="lint-state">Current State</button>
       <button class="inner-tab-btn" data-inner="lint-paste">Paste</button>
@@ -1219,15 +1272,26 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.4 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.5 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.5 — Tab Restructure &amp; Brand Update</h3>
+        <ul>
+          <li><strong>Sampler tab</strong> — Sampler &amp; Scheduler controls promoted from inside Parameters to their own top-level tab; er_sde + linear_quadratic defaults</li>
+          <li><strong>Analyze tab</strong> — Analyze Audio panel promoted from Overview to its own top-level tab; drag-and-drop supported</li>
+          <li><strong>Quick Idea Starter moved</strong> — Plain-English AI prompt expansion moved from Overview to Legion's BioInfusor tab where it belongs</li>
+          <li><strong>History Clear All</strong> — 🗑 Clear All button on History tab with confirmation; DELETE /api/history permanently removes user's history from history.jsonl</li>
+          <li><strong>Guide links on every tab</strong> — 📖 Guide button in every tab header jumps to the relevant guide section instantly</li>
+          <li><strong>Hover instructions on all tab buttons</strong> — every tab in the tab bar now has a descriptive tooltip on hover</li>
+          <li><strong>Brand rename: ACE-Step → Nyx-Step</strong> — all user-visible text, tooltips, guide content, and AI system prompts updated; internal ComfyUI node class names (FL_AceStep_*, TextEncodeAceStepAudio1.5) unchanged as they are external API identifiers</li>
+        </ul>
       </div>
 
       <div class="about-section">
         <h3>Overview Tab</h3>
         <ul>
-          <li><strong>Quick Idea Starter</strong> — type a plain-English music description; AI (Ollama) expands it into structured tags, BPM, key, scale, instruments, and mood; model selector auto-populated from Ollama</li>
-          <li>Analyze Audio panel — upload any audio file for instant BPM detection, key/scale analysis (chromagram), and lyrics transcription (faster-whisper); Apply button pushes all results into generation state</li>
           <li>Editable tags textarea — overrides Style / Instruments / Vocals tabs; syncs automatically when switching to Overview</li>
           <li>Editable lyrics textarea — bidirectionally synced with the Tagging tab editor</li>
           <li>Live payload preview showing exactly what gets sent to Nyx-Step (tags, lyrics, BPM, key, steps, CFG, duration, seed, etc.)</li>
@@ -1246,13 +1310,14 @@
       <div class="about-section">
         <h3>Legion's BioInfusor</h3>
         <ul>
+          <li><strong>Quick Idea Starter</strong> — type a plain-English music description; AI (Ollama) expands it into structured tags, BPM, key, scale, instruments, and mood; model selector auto-populated from Ollama</li>
           <li>Topic / Prompt, Mood, Subject / Character, and name-override fields feed Ollama lyrics generation</li>
           <li>Style dropdown — 150+ genres grouped by category, auto-sets BPM / key / instruments</li>
           <li>Song structure selector (Verse-Chorus, EDM, Intro-Verse-Chorus-Outro, etc.) and Ollama model selector</li>
           <li>Instrumental only checkbox — generates an arrangement outline instead of sung lyrics</li>
           <li>Artist / Band lookup — queries Ollama (optionally grounded with Brave Search) for genre, instruments, lyric style, lyric themes, and vocal characteristics</li>
           <li>Vocal Artist lookup — queries Ollama / Brave Search for vocal style, range, and typical vocal key (e.g. "a3-d5, often in g major / e minor")</li>
-          <li>Results displayed as Nyx Step formatted tags including vocal key; Apply to state pushes them into generation state</li>
+          <li>Results displayed as Nyx-Step formatted tags including vocal key; Apply to state pushes them into generation state</li>
           <li>Only one Apply button (Artist or Vocal) active at a time — selecting one clears the other</li>
           <li>Live token counter during generation; streaming output directly in the tab</li>
         </ul>
@@ -1294,9 +1359,34 @@
           <li>DiT Model — XL Turbo (8 steps, CFG 2.0), SFT (50 steps, CFG 7.0), Base (50 steps, enables Lego/Extract/Complete modes); recommended settings hint updates on change</li>
           <li>LM Stage toggle — generate_audio_codes; advanced lm_* params are standalone-API-only</li>
           <li>LoRA section — dropdown populated from ComfyUI models/loras; strength slider (0–2); ↺ refresh button; injects LoraLoader node into workflow between UNETLoader/DualCLIPLoader and sampler</li>
-          <li>↺ Reset to Defaults — resets all 14 parameter fields in one click</li>
-          <li>All values validated server-side; out-of-range values return a readable error</li>
+          <li>Dual LoRA stacking — LoRA 1 + LoRA 2 slots chained in series; each has independent scale (0–2)</li>
+          <li>↺ Reset to Defaults — resets all parameter fields in one click</li>
           <li>Changes sync to Overview payload preview immediately and on tab switch</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Sampler Tab</h3>
+        <ul>
+          <li>Dedicated tab for Sampler and Scheduler dropdowns — controls how Nyx-Step's diffusion process moves from noise to music</li>
+          <li>Sampler — er_sde (recommended), Euler, Euler Ancestral, DPM 2, DPM 2 Ancestral, DPM++ 2M, DPM++ SDE, LCM, Heun</li>
+          <li>Scheduler — Linear Quadratic (recommended), Linear, Karras, Exponential, SGM Uniform, Simple, DDIM Uniform, Beta</li>
+          <li>er_sde + linear_quadratic are the Nyx-Step sweet spots: smooth transitions, musical phrasing, pitch stability</li>
+          <li>Different combinations produce distinct sonic character even with identical prompts and seeds</li>
+          <li>Wired directly to KSampler node inputs in ComfyUI workflow</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Analyze Tab</h3>
+        <ul>
+          <li>Dedicated tab for audio analysis — upload any audio file (drag-and-drop supported)</li>
+          <li>BPM detection — scipy energy onset peak detection</li>
+          <li>Key + Scale — Krumhansl-Schmuckler chromagram correlation</li>
+          <li>LUFS — ITU-R BS.1770-4 integrated loudness (pyloudnorm); Nyx-Step outputs typically -14 to -18 LUFS</li>
+          <li>Chord Progression — librosa chroma_stft + major/minor chord templates; Apply copies to chord field</li>
+          <li>Language + Lyrics — faster-whisper ASR (base model, VAD filtered)</li>
+          <li>✓ Apply button pushes BPM, key, scale, chords, language, and lyrics into generation state simultaneously</li>
         </ul>
       </div>
 
@@ -1356,7 +1446,7 @@
           <li>LLM Auto-Labeling — optional collapsible section; enable to run FL_AceStep_LabelSamples before preprocessing; model selector: 0.6B (fast), 1.7B (recommended), 4B (highest quality)</li>
           <li>Start/Stop buttons; real-time canvas loss chart; progress bar; color-coded log</li>
           <li>Events streamed live via SSE bridged from ComfyUI WebSocket (<code>acestep.training.progress</code> channel) — status, per-step progress, checkpoint saves, completion with final LoRA path</li>
-          <li>Standalone ACE-Step (ai2.nyxstudios.net) is inference-only — training requires ComfyUI FL_AceStep nodes</li>
+          <li>Standalone Nyx-Step (ai2.nyxstudios.net) is inference-only — training requires ComfyUI FL_AceStep nodes</li>
         </ul>
       </div>
 
@@ -1377,6 +1467,7 @@
           <li>Searchable log of all completed generations — search by song name or tags</li>
           <li>Each record shows: song name, tags, BPM/key/scale, seed, timestamp, output files with ⬇ download links</li>
           <li>📥 Load button restores all parameters (tags, lyrics, BPM, key, scale, steps, CFG, duration, seed, format, language, model, batch size, LoRA) back into generation state</li>
+          <li>🗑 Clear All — permanently deletes all user history with confirmation; DELETE /api/history rewrites history.jsonl removing only the current user's records</li>
           <li>Backend: GET /api/history reads history.jsonl; purges records older than 7 days every 6 hours</li>
           <li>↺ Refresh button re-fetches from server; search filters client-side in real time</li>
         </ul>
@@ -1407,7 +1498,7 @@
           <li>Generation history logged to history.jsonl — every completed job records caption, lyrics, seed, and output files; purges entries older than 7 days every 6 hours</li>
           <li>API docs available at /api/docs (Swagger UI) and /api/redoc</li>
           <li>Frontend split into 18 focused JS modules (state, utils, bindings, genres, chips, tags, presets, jobs, easy, analyze, voice, quick, lint, stems, cover, train, midi, dropzone, tabs, init)</li>
-          <li>Sampler (er_sde) + Scheduler (linear_quadratic) dropdowns in Parameters — ACE-Step community sweet spots wired directly to KSampler node inputs</li>
+          <li>Sampler (er_sde) + Scheduler (linear_quadratic) — dedicated Sampler tab; Nyx-Step sweet spots wired directly to KSampler node inputs</li>
           <li>Dual LoRA stacking: LoRA 1 + LoRA 2 slots; chained as LoraLoader → LoraLoader2 in workflow</li>
           <li>Drag-and-drop file upload on Analyze, Stems, Cover, and MIDI tabs (shared dropzone.js utility)</li>
           <li>ZIP batch download: POST /download/zip; ZIP All button appears on multi-file job cards</li>
@@ -1445,7 +1536,7 @@
 
 <script src="/static/wavesurfer.min.js"></script>
 <script src="/static/state.js?v=9"></script>
-<script src="/static/utils.js?v=2"></script>
+<script src="/static/utils.js?v=3"></script>
 <script src="/static/bindings.js?v=12"></script>
 <script src="/static/genres.js?v=2"></script>
 <script src="/static/chips.js?v=1"></script>
@@ -1461,7 +1552,7 @@
 <script src="/static/cover.js?v=1"></script>
 <script src="/static/train.js?v=2"></script>
 <script src="/static/midi.js?v=1"></script>
-<script src="/static/history.js?v=1"></script>
+<script src="/static/history.js?v=2"></script>
 <script src="/static/dropzone.js?v=1"></script>
 <script src="/static/tabs.js?v=2"></script>
 <script src="/static/init.js?v=1"></script>

@@ -91,6 +91,12 @@ function updateLintStatePreview() {
     `[Tags]\n${cap}\n\n[Lyrics]\n${mwState.lyrics || "(empty)"}`;
 }
 
+function openGuideSection(id) {
+  document.querySelector('[data-tab="guide"]').click();
+  const btn = document.querySelector(`[data-guide="${id}"]`);
+  if (btn) btn.click();
+}
+
 // ── Guide cache + loader ───────────────────────────────────────────────────────
 const _guideCache = {};
 function loadGuideSection(sectionId, btn) {
