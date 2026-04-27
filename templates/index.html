@@ -1216,7 +1216,7 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.3 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.4 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
       </div>
 
@@ -1398,12 +1398,18 @@
           <li>Exposed via Cloudflare Tunnel at music-ai.nyxstudios.net</li>
           <li>Protected by Cloudflare Access — Google OAuth (invite-only; multi-user support via Cloudflare Access email policies)</li>
           <li>Brave Search API for real web-grounded artist lookups (httpx, key loaded from .env)</li>
-          <li>Presets stored server-side in ~/legionprojects/musicweb/presets/ as .nyx JSON files</li>
+          <li>Presets stored server-side in ~/legionprojects/musicweb/presets/ as .nyx JSON files; exportable as local file downloads, importable from disk via file picker in preset modal</li>
           <li>ComfyUI on port 8188, Ollama on port 11434 — model selectable per request</li>
           <li>Rate limiting: 20 generate/remix requests per 60s per user (sliding window, configurable)</li>
           <li>Generation history logged to history.jsonl — every completed job records caption, lyrics, seed, and output files; purges entries older than 7 days every 6 hours</li>
           <li>API docs available at /api/docs (Swagger UI) and /api/redoc</li>
-          <li>Frontend split into 16 focused JS modules (state, utils, bindings, genres, chips, tags, presets, jobs, easy, analyze, voice, quick, lint, stems, cover, train, tabs, init)</li>
+          <li>Frontend split into 18 focused JS modules (state, utils, bindings, genres, chips, tags, presets, jobs, easy, analyze, voice, quick, lint, stems, cover, train, midi, dropzone, tabs, init)</li>
+          <li>Sampler (er_sde) + Scheduler (linear_quadratic) dropdowns in Parameters — ACE-Step community sweet spots wired directly to KSampler node inputs</li>
+          <li>Dual LoRA stacking: LoRA 1 + LoRA 2 slots; chained as LoraLoader → LoraLoader2 in workflow</li>
+          <li>Drag-and-drop file upload on Analyze, Stems, Cover, and MIDI tabs (shared dropzone.js utility)</li>
+          <li>ZIP batch download: POST /download/zip; ZIP All button appears on multi-file job cards</li>
+          <li>LUFS loudness meter (pyloudnorm ITU-R BS.1770-4) + chord auto-detection (chroma_stft) added to Analyze endpoint</li>
+          <li>ID3/FLAC metadata tags (song name, Nyx-Step AI artist, generation comment) embedded on all downloaded audio files via mutagen</li>
         </ul>
       </div>
     </div>

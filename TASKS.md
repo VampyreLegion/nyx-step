@@ -58,6 +58,8 @@
 | 33 | ZIP Batch Download | ✅ done | POST /download/zip; adds ZIP All button to job cards with batch_size>1; StreamingResponse with zipfile |
 | 34 | LUFS Loudness Meter | ✅ done | pyloudnorm ITU-R BS.1770-4 integrated loudness in Analyze endpoint; displayed in result row |
 | 35 | Chord Auto-Detection | ✅ done | Librosa chroma_stft + major/minor templates; most prominent chords shown in Analyze result; Apply button copies to chord field |
+| 36 | Preset Import/Export (.nyx) | ✅ done | Export current state as .nyx (client-side); per-preset ⬇ export button; Import .nyx from disk → apply + auto-save |
+| 37 | Dual LoRA Stacking | ✅ done | LoRA 1 + LoRA 2 slots in Parameters; second LoRA chained after first in ComfyUI workflow |
 
 ---
 
