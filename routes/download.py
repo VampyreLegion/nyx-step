@@ -14,7 +14,7 @@ from musicweb import tracker, get_user_email
 
 router = APIRouter()
 
-_CHAPTER_IDS = ["starthere", "summary", "flowcharts", "scale", "midi", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
+_CHAPTER_IDS = ["starthere", "summary", "flowcharts", "scale", "midi", "analyze", "sampler", "presets", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
 
 _STYLE = (
     "<style>"
@@ -202,6 +202,152 @@ _MIDI_HTML = (
 )
 
 
+_ANALYZE_HTML = (
+    f"<html><head>{_STYLE}</head><body>"
+    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">Analyze Audio</h2>'
+
+    '<h3>What It Measures</h3>'
+    '<p>Upload any audio file to the Analyze Audio panel (Overview tab) to extract the following automatically:</p>'
+    '<table>'
+    '<tr><th>Measurement</th><th>Method</th><th>Use In Generation</th></tr>'
+    '<tr><td><strong>BPM</strong></td><td>Energy onset peak detection (scipy)</td><td>Apply → sets BPM field; use as tempo anchor</td></tr>'
+    '<tr><td><strong>Key + Scale</strong></td><td>Krumhansl-Schmuckler chromagram correlation</td><td>Apply → sets Key and Scale dropdowns</td></tr>'
+    '<tr><td><strong>LUFS</strong></td><td>ITU-R BS.1770-4 integrated loudness (pyloudnorm)</td><td>Reference only — useful for mastering context</td></tr>'
+    '<tr><td><strong>Chord Progression</strong></td><td>Librosa chroma_stft + major/minor chord templates</td><td>Apply → sets Chord Progression field</td></tr>'
+    '<tr><td><strong>Duration</strong></td><td>Sample count / sample rate</td><td>Reference — set generation Duration to match</td></tr>'
+    '<tr><td><strong>Language + Lyrics</strong></td><td>faster-whisper ASR (base model, VAD filtered)</td><td>Apply → sets Lyrics field and Language dropdown</td></tr>'
+    '</table>'
+
+    '<h3>LUFS — What It Means</h3>'
+    '<ul>'
+    '<li>LUFS = Loudness Units relative to Full Scale — the broadcast/streaming loudness standard</li>'
+    '<li>Typical targets: Streaming (Spotify/Apple Music) = <code>-14 LUFS</code>; CD masters = <code>-9 LUFS</code>; Film/TV = <code>-24 LUFS</code></li>'
+    '<li>ACE-Step outputs typically come in at <code>-14</code> to <code>-18 LUFS</code> — no action needed for streaming</li>'
+    '<li>If a reference track you\'re analyzing is much louder or quieter than the AI output, that difference is visible here</li>'
+    '</ul>'
+
+    '<h3>Chord Detection — Tips</h3>'
+    '<ul>'
+    '<li>Detection is based on chromagram energy — works best on recordings with clear harmonic content (piano, guitar, keys)</li>'
+    '<li>Heavily distorted or percussive recordings may produce noisy chord reads — treat output as a starting suggestion</li>'
+    '<li>The Apply button writes the detected chords directly into the Chord Progression field; edit manually if needed</li>'
+    '<li>Only major and minor chords are detected — extended chords (7ths, 9ths, sus) will be mapped to their closest major/minor</li>'
+    '</ul>'
+
+    '<h3>Workflow: Reference Track → Cover</h3>'
+    '<ol>'
+    '<li>Upload a reference track in the Analyze panel</li>'
+    '<li>Click Analyze — note BPM, Key, Scale, detected chords, and LUFS</li>'
+    '<li>Click <strong>✓ Apply</strong> — populates BPM, Key, Scale, Chord Progression, Language, and Lyrics into state</li>'
+    '<li>Adjust tags to describe the target style (genre, mood, instruments)</li>'
+    '<li>Switch to Cover tab — upload the same reference track</li>'
+    '<li>Generate — ACE-Step will preserve the reference melody while applying your new tags</li>'
+    '</ol>'
+    "</body></html>"
+)
+
+
+_SAMPLER_HTML = (
+    f"<html><head>{_STYLE}</head><body>"
+    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">Sampler &amp; Scheduler</h2>'
+
+    '<h3>What These Control</h3>'
+    '<p>The <strong>Sampler</strong> and <strong>Scheduler</strong> dropdowns in the Parameters tab control how ACE-Step\'s diffusion process '
+    'moves from noise to music. Different combinations produce different sonic character even with identical prompts.</p>'
+
+    '<h3>Recommended Settings</h3>'
+    '<table>'
+    '<tr><th>Setting</th><th>Default</th><th>Why</th></tr>'
+    '<tr><td>Sampler</td><td><code>er_sde</code></td>'
+    '<td>ACE-Step community sweet spot — smooth transitions, musical phrasing, fewer artifacts than Euler at low step counts</td></tr>'
+    '<tr><td>Scheduler</td><td><code>linear_quadratic</code></td>'
+    '<td>Better pitch stability and tonal clarity than linear; the ACE-Step community consistently reports this outperforms Karras for music</td></tr>'
+    '</table>'
+
+    '<h3>Sampler Reference</h3>'
+    '<table>'
+    '<tr><th>Sampler</th><th>Character</th><th>Best For</th></tr>'
+    '<tr><td>er_sde</td><td>Smooth, musical, low artifacts</td><td>All use cases — primary recommendation</td></tr>'
+    '<tr><td>euler</td><td>Clean, deterministic</td><td>Debugging; fast previews at 8–20 steps</td></tr>'
+    '<tr><td>euler_ancestral</td><td>Adds stochastic variation</td><td>Experimental; more diversity per seed</td></tr>'
+    '<tr><td>dpmpp_2m</td><td>Efficient, sharp</td><td>Quality at 20–30 steps with SFT/Base model</td></tr>'
+    '<tr><td>dpmpp_sde</td><td>Stochastic DPM++</td><td>More variation than dpmpp_2m; slower</td></tr>'
+    '<tr><td>heun</td><td>High accuracy, slow</td><td>Maximum quality at 40–50 steps</td></tr>'
+    '<tr><td>lcm</td><td>Very fast, low quality</td><td>Ultra-fast previews (4–8 steps)</td></tr>'
+    '</table>'
+
+    '<h3>Scheduler Reference</h3>'
+    '<table>'
+    '<tr><th>Scheduler</th><th>Character</th><th>Best For</th></tr>'
+    '<tr><td>linear_quadratic</td><td>Pitch-stable, tonally clear</td><td>Primary recommendation — all use cases</td></tr>'
+    '<tr><td>linear</td><td>Simple uniform spacing</td><td>Baseline reference; sometimes sounds flat</td></tr>'
+    '<tr><td>karras</td><td>Front-loaded, detailed</td><td>Quality with SFT/Base model at 30+ steps</td></tr>'
+    '<tr><td>exponential</td><td>Back-loaded denoising</td><td>Experimental — can improve low-freq clarity</td></tr>'
+    '<tr><td>simple</td><td>Minimal</td><td>Fastest convergence, lowest overhead</td></tr>'
+    '</table>'
+
+    '<h3>Steps + Model Interaction</h3>'
+    '<ul>'
+    '<li><strong>XL Turbo</strong>: 8 steps is enough — more steps with Turbo rarely helps, can hurt. Use er_sde + linear_quadratic.</li>'
+    '<li><strong>XL SFT / Base</strong>: 30–50 steps. Try dpmpp_2m + karras for maximum detail, or er_sde + linear_quadratic for safe quality.</li>'
+    '<li>CFG scale interacts with sampler: er_sde handles CFG 2.0 cleanly; euler_ancestral may need lower CFG (1.5) to avoid artifacts.</li>'
+    '</ul>'
+    "</body></html>"
+)
+
+
+_PRESETS_HTML = (
+    f"<html><head>{_STYLE}</head><body>"
+    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">Presets &amp; .nyx Files</h2>'
+
+    '<h3>What Is a Preset?</h3>'
+    '<p>A preset captures the full generation state — BPM, key, scale, mode, chord progression, instruments, vocal tags, '
+    'lyrics, and all Parameters tab values (steps, CFG, duration, sampler, seed, LoRA, etc.) — into a single named snapshot. '
+    'Presets are stored as <code>.nyx</code> JSON files on the server and can be exported as local files or imported from disk.</p>'
+
+    '<h3>Save a Preset</h3>'
+    '<ol>'
+    '<li>Open the preset modal via the 📂 Load/Save Preset button (Overview tab)</li>'
+    '<li>Type a name in the "Preset name…" field</li>'
+    '<li>Click 💾 Save — the preset is written to the server as <code>name.nyx</code></li>'
+    '</ol>'
+
+    '<h3>Load a Preset</h3>'
+    '<ol>'
+    '<li>Open the preset modal</li>'
+    '<li>Click a preset name in the list — all fields are immediately restored</li>'
+    '<li>The generation state updates live; Overview tags and Payload Preview reflect the change instantly</li>'
+    '</ol>'
+
+    '<h3>Export a Preset as a File</h3>'
+    '<ul>'
+    '<li><strong>Export current state</strong>: click <em>⬇ Export .nyx</em> in the preset modal — downloads the current state as a file without saving to server first</li>'
+    '<li><strong>Export saved preset</strong>: click the <em>⬇</em> button next to any preset in the list — downloads that specific preset</li>'
+    '<li>The file is a standard JSON file with a <code>.nyx</code> extension — open in any text editor</li>'
+    '</ul>'
+
+    '<h3>Import a Preset from File</h3>'
+    '<ol>'
+    '<li>Click <em>⬆ Import .nyx</em> in the preset modal</li>'
+    '<li>Choose a <code>.nyx</code> file from disk</li>'
+    '<li>The preset is applied to the current state immediately and also saved to the server under the preset\'s <code>song_name</code></li>'
+    '</ol>'
+
+    '<h3>Dual LoRA Stacking</h3>'
+    '<p>The Parameters tab has two LoRA slots. When both are set, they are chained in series: '
+    'LoRA 1 output feeds into LoRA 2. The workflow becomes: '
+    '<code>UNETLoader → LoraLoader1 → LoraLoader2 → Sampler</code>. '
+    'Both LoRA scale sliders (0–2.0) control their respective influence independently.</p>'
+    '<ul>'
+    '<li>Use LoRA 1 for style (e.g. "jazz_feel_v2.safetensors") and LoRA 2 for texture (e.g. "vinyl_warmth.safetensors")</li>'
+    '<li>Scales above 1.0 increase influence; below 1.0 blends gently. Start at 0.7–0.8 each when stacking.</li>'
+    '<li>If output sounds wrong, try disabling one LoRA (set to None) to isolate which one is causing the issue</li>'
+    '<li>Preset save/load includes LoRA name and scale for both slots</li>'
+    '</ul>'
+    "</body></html>"
+)
+
+
 def _parse_chapter(section_id: str) -> str:
     """Extract one <h2 id="section_id">...</h2> section from Aceuser.html."""
     if section_id == "starthere":
@@ -212,6 +358,12 @@ def _parse_chapter(section_id: str) -> str:
         return _SCALE_HTML
     if section_id == "midi":
         return _MIDI_HTML
+    if section_id == "analyze":
+        return _ANALYZE_HTML
+    if section_id == "sampler":
+        return _SAMPLER_HTML
+    if section_id == "presets":
+        return _PRESETS_HTML
     if not config.ACEUSER_HTML.exists():
         return "<p>Guide file not found.</p>"
     raw = config.ACEUSER_HTML.read_text(encoding="utf-8")
