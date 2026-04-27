@@ -61,6 +61,7 @@ from routes.history import router as history_router
 from routes.analyze import router as analyze_router
 from routes.train import router as train_router
 from routes.midi import router as midi_router
+from routes.lego import router as lego_router
 
 app.include_router(gen_router)
 app.include_router(queue_router)
@@ -73,6 +74,7 @@ app.include_router(history_router)
 app.include_router(analyze_router)
 app.include_router(train_router)
 app.include_router(midi_router)
+app.include_router(lego_router)
 
 import json as _json
 from fastapi.responses import JSONResponse

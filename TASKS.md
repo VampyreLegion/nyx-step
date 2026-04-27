@@ -1,7 +1,7 @@
 # MusicWeb Feature Roadmap
 
 **Status legend:** 🔲 todo · 🔄 in progress · ✅ done  
-**Last updated:** 2026-04-27 (tasks #27, #31 sampler/scheduler, drag-drop, ZIP, LUFS, chord detection done)  
+**Last updated:** 2026-04-27 (tasks #18 Lego Mode, #20 Complete Mode done; Sampler/Analyze tabs, History clear, brand rename)  
 **Repo:** https://github.com/VampyreLegion/musicweb
 
 ---
@@ -41,9 +41,9 @@
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
-| 18 | Lego Mode — Add Instrument Layer | ⏸ blocked | Requires dedicated ComfyUI workflow template; `task_type`/`instruction` not exposed in TextEncodeAceStepAudio1.5 — needs new workflow JSON built in ComfyUI UI |
+| 18 | Lego Mode — Add Instrument Layer | ✅ done | workflow_lego_template.json + ReferenceTimbreAudio; POST /lego; inner-tab in Cover tab; lego.js |
 | 19 | Extract Mode — Single Stem Isolation | ⏸ blocked | Same — needs workflow template with ReferenceTimbreAudio node wired for diffusion-based extraction |
-| 20 | Complete Mode — Generate Backing Track | ⏸ blocked | Same — no workflow template exists; needs ComfyUI workflow built and exported |
+| 20 | Complete Mode — Generate Backing Track | ✅ done | Shares workflow_lego_template.json (denoise=0.8); POST /complete; inner-tab in Cover tab; lego.js |
 | 21 | LoRA Browser + Loader | ✅ done | LoRA section in Parameters; GET /loras from ComfyUI /models/loras; LoraLoader injected into workflow between UNETLoader/DualCLIPLoader and sampler nodes; scale control; refresh button |
 | 22 | LoRA Training UI | ✅ done | Train LoRA tab: dataset dir, hyperparams (rank/alpha/LR/epochs/batch/grad_accum), LLM labeling toggle; POST /train/start builds FL_AceStep workflow; GET /train/events SSE bridges ComfyUI WS `acestep.training.progress`; real-time loss canvas chart |
 | 27 | MIDI Extraction | ✅ done | Dual-mode: librosa pyin (melody/monophonic) + piano-transcription-inference (polyphonic piano); POST /midi/extract; MIDI tab + Guide section + About v3.3 |
