@@ -30,11 +30,14 @@ document.getElementById("btn-analyze").addEventListener("click", async () => {
       return;
     }
     _lastAnalysis = data;
+    const lufsStr   = data.lufs   !== undefined ? ` &nbsp;|&nbsp; <b>LUFS:</b> ${data.lufs} LUFS` : "";
+    const chordsStr = data.chords ? `<br><b>Detected Chords:</b> <span style="color:var(--accent2)">${data.chords}</span>` : "";
     result.innerHTML =
       `<b>BPM:</b> ${data.bpm} &nbsp;|&nbsp; ` +
       `<b>Key:</b> ${data.key} ${data.scale} &nbsp;|&nbsp; ` +
-      `<b>Duration:</b> ${data.duration}s &nbsp;|&nbsp; ` +
+      `<b>Duration:</b> ${data.duration}s` + lufsStr + ` &nbsp;|&nbsp; ` +
       `<b>Language:</b> ${data.vocal_language} (${Math.round((data.language_probability||0)*100)}%)` +
+      chordsStr +
       (data.lyrics ? `<br><br><b>Transcription:</b><br><pre style="white-space:pre-wrap;font-size:10px;margin:4px 0 0;color:var(--muted)">${data.lyrics}</pre>` : "");
     result.style.display = "block";
     applyBtn.style.display = "";
@@ -80,7 +83,12 @@ document.getElementById("btn-analyze-apply").addEventListener("click", () => {
     if (lyricsEl) lyricsEl.value = plain;
     if (overviewEl) overviewEl.value = plain;
   }
+  if (d.chords) {
+    mwState.chords = d.chords;
+    const el = document.getElementById("style-chords");
+    if (el) el.value = d.chords;
+  }
   updatePayloadPreview();
-  document.getElementById("analyze-status").textContent = "Applied to state — BPM, key, scale, language, and lyrics updated.";
+  document.getElementById("analyze-status").textContent = "Applied to state — BPM, key, scale, chords, language, and lyrics updated.";
   document.getElementById("analyze-status").style.color = "var(--accent2)";
 });

@@ -97,6 +97,69 @@ def transcribe(path: pathlib.Path, language: str | None = None) -> dict:
         return {"lyrics": "", "language": "en", "language_probability": 0.0}
 
 
+_CHORD_TEMPLATES: dict[str, list[float]] = {}
+
+def _build_chord_templates() -> None:
+    """Build major/minor chord templates over 12 pitch classes."""
+    if _CHORD_TEMPLATES:
+        return
+    major = [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0]  # root, M3, P5
+    minor = [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0]  # root, m3, P5
+    for root in range(12):
+        _CHORD_TEMPLATES[NOTE_NAMES[root]] = [major[(i - root) % 12] for i in range(12)]
+        _CHORD_TEMPLATES[NOTE_NAMES[root] + "m"] = [minor[(i - root) % 12] for i in range(12)]
+
+
+def estimate_chords(mono: np.ndarray, sr: int, n_chords: int = 8) -> str:
+    """Detect the most prominent chord progression from the audio."""
+    try:
+        import librosa
+        _build_chord_templates()
+        hop = 4096
+        chroma = librosa.feature.chroma_stft(y=mono, sr=sr, hop_length=hop, n_fft=8192)
+        # Median-pool into segments of ~1 beat
+        seg_frames = max(1, sr // hop // 2)
+        n_segs = chroma.shape[1] // seg_frames
+        chords_seq: list[str] = []
+        for s in range(n_segs):
+            seg = chroma[:, s * seg_frames:(s + 1) * seg_frames].mean(axis=1)
+            best, best_chord = -1.0, "C"
+            for name, tmpl in _CHORD_TEMPLATES.items():
+                score = float(np.dot(seg, tmpl) / (np.linalg.norm(seg) * np.linalg.norm(tmpl) + 1e-8))
+                if score > best:
+                    best, best_chord = score, name
+            chords_seq.append(best_chord)
+        # Collapse consecutive duplicates
+        compressed: list[str] = []
+        for c in chords_seq:
+            if not compressed or compressed[-1] != c:
+                compressed.append(c)
+        # Return the n_chords most representative unique chords in order
+        seen: list[str] = []
+        for c in compressed:
+            if c not in seen:
+                seen.append(c)
+            if len(seen) >= n_chords:
+                break
+        return " - ".join(seen) if seen else ""
+    except Exception:
+        return ""
+
+
+def estimate_lufs(path: pathlib.Path) -> float | None:
+    """Measure integrated LUFS via pyloudnorm (ITU-R BS.1770-4)."""
+    try:
+        import pyloudnorm as pyln
+        data, sr = sf.read(str(path), always_2d=True, dtype="float32")
+        meter = pyln.Meter(sr)
+        loudness = meter.integrated_loudness(data)
+        if np.isfinite(loudness):
+            return round(float(loudness), 1)
+        return None
+    except Exception:
+        return None
+
+
 def analyze(path: pathlib.Path) -> dict:
     try:
         mono, sr = _load_mono(path)
@@ -107,11 +170,13 @@ def analyze(path: pathlib.Path) -> dict:
     key, scale = estimate_key(mono, sr)
 
     duration = round(len(mono) / sr, 2)
+    lufs = estimate_lufs(path)
+    chords = estimate_chords(mono, sr)
 
     # Transcription via Whisper
     transcription = transcribe(path)
 
-    return {
+    result: dict = {
         "bpm": bpm,
         "key": key,
         "scale": scale,
@@ -120,3 +185,8 @@ def analyze(path: pathlib.Path) -> dict:
         "vocal_language": transcription["language"],
         "language_probability": transcription["language_probability"],
     }
+    if lufs is not None:
+        result["lufs"] = lufs
+    if chords:
+        result["chords"] = chords
+    return result

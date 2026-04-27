@@ -9,6 +9,8 @@ const mwState = {
   vocal_language: "auto",
   generate_audio_codes: true,
   dit_model: "turbo",
+  sampler_name: "er_sde",
+  scheduler: "linear_quadratic",
   batch_size: 1,
   lora_name: "",
   lora_scale: 1.0,

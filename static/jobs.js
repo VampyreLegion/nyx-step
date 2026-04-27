@@ -214,7 +214,7 @@ function addDownloadLinks(container, files) {
   if (files.length) {
     const promptId = container.closest(".job-card").id.replace("job-", "");
     const retakeRow = document.createElement("div");
-    retakeRow.style.cssText = "margin-top:6px;";
+    retakeRow.style.cssText = "margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;";
     const retakeBtn = document.createElement("button");
     retakeBtn.className = "secondary small";
     retakeBtn.textContent = "🔁 Retake";
@@ -222,6 +222,38 @@ function addDownloadLinks(container, files) {
     retakeBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     retakeBtn.addEventListener("click", () => retakeJob(promptId, retakeBtn));
     retakeRow.appendChild(retakeBtn);
+
+    if (files.length > 1) {
+      const zipBtn = document.createElement("button");
+      zipBtn.className = "secondary small";
+      zipBtn.textContent = "⬇ ZIP All";
+      zipBtn.title = `Download all ${files.length} files as a ZIP archive`;
+      zipBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+      zipBtn.addEventListener("click", async () => {
+        zipBtn.disabled = true;
+        zipBtn.textContent = "Zipping…";
+        try {
+          const r = await fetch("/download/zip", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filenames: files, zip_name: `${promptId}_batch.zip` }),
+          });
+          if (!r.ok) { alert("ZIP failed: " + r.statusText); return; }
+          const blob = await r.blob();
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `${promptId}_batch.zip`;
+          a.click();
+        } catch (e) {
+          alert("ZIP error: " + e);
+        } finally {
+          zipBtn.disabled = false;
+          zipBtn.textContent = "⬇ ZIP All";
+        }
+      });
+      retakeRow.appendChild(zipBtn);
+    }
+
     container.appendChild(retakeRow);
   }
 }

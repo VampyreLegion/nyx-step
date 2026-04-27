@@ -110,3 +110,7 @@ input[title] { cursor: help; }
 .tag-cat[open] summary::before { transform: rotate(90deg); }
 .tag-cat summary:hover { background: var(--surface2); }
 .tag-cat-body { padding: 6px 10px 10px; }
+
+/* ── Drag-and-drop zones ─────────────────────────────────────────────────── */
+[data-dropzone] { border-radius: 6px; transition: border-color 0.15s, background 0.15s; }
+[data-dropzone].dz-over { border: 2px dashed var(--accent) !important; background: rgba(124,101,217,0.08) !important; }

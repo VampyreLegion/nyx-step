@@ -1,17 +1,20 @@
 from __future__ import annotations
+import io
 import json
 import re
+import zipfile
 from pathlib import Path
 
 from fastapi import APIRouter, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
+from pydantic import BaseModel
 
 import config
 from musicweb import tracker, get_user_email
 
 router = APIRouter()
 
-_CHAPTER_IDS = ["starthere", "summary", "flowcharts", "scale", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
+_CHAPTER_IDS = ["starthere", "summary", "flowcharts", "scale", "midi", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
 
 _STYLE = (
     "<style>"
@@ -144,6 +147,61 @@ _SCALE_HTML = (
 )
 
 
+_MIDI_HTML = (
+    f"<html><head>{_STYLE}</head><body>"
+    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">MIDI Extraction</h2>'
+
+    '<h3>What It Does</h3>'
+    '<p>The MIDI tab converts audio recordings into MIDI files you can load directly into any DAW (Ableton, FL Studio, Logic, Reaper). '
+    'Two extraction engines are available depending on the source material:</p>'
+    '<table>'
+    '<tr><th>Mode</th><th>Engine</th><th>Best For</th><th>Output</th></tr>'
+    '<tr><td><strong>Melody</strong></td><td>librosa pyin</td>'
+    '<td>Any single melodic instrument — vocals, guitar, violin, flute, synth lead</td>'
+    '<td>Monophonic MIDI — one note at a time</td></tr>'
+    '<tr><td><strong>Piano</strong></td><td>Piano Transcription Inference (neural)</td>'
+    '<td>Piano recordings — acoustic and electric</td>'
+    '<td>Polyphonic MIDI — full chord and voice detection</td></tr>'
+    '</table>'
+
+    '<h3>Melody Mode — Tips</h3>'
+    '<ul>'
+    '<li>Works on any monophonic (single-note) source — it uses pitch detection (pyin), not note onset prediction</li>'
+    '<li>Set the <strong>BPM</strong> field to the tempo of the audio before extracting — use the Analyze tab to auto-detect BPM first</li>'
+    '<li>Very quiet or heavily reverbed recordings may produce extra short spurious notes — these can be cleaned up in your DAW</li>'
+    '<li>Notes shorter than 50 ms are automatically filtered to reduce noise</li>'
+    '<li>Background harmony, chords, or other instruments are ignored — only the dominant pitch is tracked</li>'
+    '</ul>'
+
+    '<h3>Piano Mode — Tips</h3>'
+    '<ul>'
+    '<li>Uses a GPU-accelerated neural model trained specifically on piano recordings</li>'
+    '<li>Works best on dry or lightly reverbed piano — heavy processing or mixed-down tracks may produce extra ghost notes</li>'
+    '<li>BPM is not required for piano mode — the model works in real time without a tempo reference</li>'
+    '<li>Full polyphony: chords, bass lines, and treble melody are all captured simultaneously</li>'
+    '<li>Output MIDI velocity reflects note loudness from the audio</li>'
+    '</ul>'
+
+    '<h3>Workflow</h3>'
+    '<ol>'
+    '<li>Go to the <strong>Analyze</strong> tab and upload the audio — note the detected BPM</li>'
+    '<li>Switch to the <strong>MIDI</strong> tab, select Mode and enter the BPM if using Melody mode</li>'
+    '<li>Upload the same audio file and click <strong>Extract MIDI</strong></li>'
+    '<li>Download the .mid file and import it into your DAW</li>'
+    '<li>Quantize in your DAW if needed — pyin outputs raw timing, not quantized to a grid</li>'
+    '</ol>'
+
+    '<h3>What To Do With The MIDI</h3>'
+    '<ul>'
+    '<li><strong>Re-orchestrate</strong> — trigger any soft-synth or sample library with the extracted melody</li>'
+    '<li><strong>Transpose</strong> — move the melody to a different key for remixing</li>'
+    '<li><strong>Chord detection</strong> — use the MIDI piano roll to see what chords the AI generated, then build a real arrangement</li>'
+    '<li><strong>Feed back to ACE-Step</strong> — use extracted note data to write better chord progression tags for the next generation</li>'
+    '</ul>'
+    "</body></html>"
+)
+
+
 def _parse_chapter(section_id: str) -> str:
     """Extract one <h2 id="section_id">...</h2> section from Aceuser.html."""
     if section_id == "starthere":
@@ -152,6 +210,8 @@ def _parse_chapter(section_id: str) -> str:
         return _FLOWCHARTS_HTML
     if section_id == "scale":
         return _SCALE_HTML
+    if section_id == "midi":
+        return _MIDI_HTML
     if not config.ACEUSER_HTML.exists():
         return "<p>Guide file not found.</p>"
     raw = config.ACEUSER_HTML.read_text(encoding="utf-8")
@@ -210,6 +270,73 @@ async def meta(filename: str, request: Request):
     return JSONResponse({"error": "Metadata not found"}, status_code=404)
 
 
+def _tag_audio(file_path: Path, meta: dict | None) -> bytes | None:
+    """Return file bytes with ID3/FLAC tags applied from meta. Returns None on failure."""
+    if not meta:
+        return None
+    try:
+        ext = file_path.suffix.lower()
+        raw = file_path.read_bytes()
+        buf = io.BytesIO(raw)
+        title   = meta.get("song_name", "")
+        caption = meta.get("caption", "")
+        seed    = str(meta.get("seed", ""))
+        comment = f"Tags: {caption}\nSeed: {seed}" if caption else f"Seed: {seed}"
+
+        if ext == ".mp3":
+            from mutagen.mp3 import MP3
+            from mutagen.id3 import ID3, TIT2, TPE1, COMM, ID3NoHeaderError
+            audio = MP3(buf)
+            try:
+                tags = audio.tags or ID3()
+            except ID3NoHeaderError:
+                tags = ID3()
+            tags.add(TIT2(encoding=3, text=title))
+            tags.add(TPE1(encoding=3, text="Nyx-Step AI"))
+            tags.add(COMM(encoding=3, lang="eng", desc="", text=comment))
+            out = io.BytesIO()
+            tags.save(out)
+            # Prepend ID3 header to raw MP3 data (tags go at start)
+            out.seek(0)
+            return out.read() + raw
+
+        elif ext in (".flac",):
+            from mutagen.flac import FLAC
+            audio = FLAC(buf)
+            audio["title"]   = title
+            audio["artist"]  = "Nyx-Step AI"
+            audio["comment"] = comment
+            out = io.BytesIO()
+            audio.save(out)
+            out.seek(0)
+            return out.read()
+
+    except Exception:
+        pass
+    return None
+
+
+def _get_meta_for_file(filename: str) -> dict | None:
+    """Look up job metadata for a filename from history or in-memory tracker."""
+    try:
+        if config.HISTORY_LOG.exists():
+            with open(config.HISTORY_LOG) as f:
+                for line in reversed(f.readlines()):
+                    try:
+                        record = json.loads(line)
+                        if filename in record.get("output_files", []):
+                            return record
+                    except Exception:
+                        continue
+    except Exception:
+        pass
+    with tracker._lock:
+        for job in tracker._jobs.values():
+            if filename in job.output_files:
+                return {"song_name": job.song_name, "caption": job.caption, "seed": job.seed}
+    return None
+
+
 @router.get("/download/{filename}")
 async def download(filename: str, request: Request):
     user_email = get_user_email(request)
@@ -221,12 +348,65 @@ async def download(filename: str, request: Request):
     if not file_path.exists():
         return JSONResponse({"error": "File not on disk"}, status_code=404)
 
+    ext = file_path.suffix.lower()
+    media_type = {"mp3": "audio/mpeg", "flac": "audio/flac", "opus": "audio/ogg"}.get(ext.lstrip("."), "audio/mpeg")
+
+    # Try to serve with embedded metadata tags
+    meta = _get_meta_for_file(filename)
+    tagged = _tag_audio(file_path, meta)
+    if tagged:
+        return StreamingResponse(
+            io.BytesIO(tagged),
+            media_type=media_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Cache-Control": "no-store, no-cache, must-revalidate",
+                "Pragma": "no-cache",
+            },
+        )
+
     return FileResponse(
         path=str(file_path),
-        media_type="audio/mpeg",
+        media_type=media_type,
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
             "Cache-Control": "no-store, no-cache, must-revalidate",
             "Pragma": "no-cache",
         },
+    )
+
+
+class _ZipRequest(BaseModel):
+    filenames: list[str]
+    zip_name: str = "musicweb_batch.zip"
+
+
+@router.post("/download/zip")
+async def download_zip(req: _ZipRequest, request: Request):
+    user_email = get_user_email(request)
+    if not req.filenames:
+        return JSONResponse({"error": "No filenames provided"}, status_code=400)
+    if len(req.filenames) > 50:
+        return JSONResponse({"error": "Max 50 files per ZIP"}, status_code=400)
+
+    buf = io.BytesIO()
+    added = 0
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for fname in req.filenames:
+            if not tracker.user_owns_file(user_email, fname):
+                continue
+            fpath = config.COMFYUI_OUTPUT_DIR / fname
+            if fpath.exists():
+                zf.write(fpath, fname)
+                added += 1
+
+    if added == 0:
+        return JSONResponse({"error": "No accessible files found"}, status_code=404)
+
+    buf.seek(0)
+    safe_name = re.sub(r"[^\w.\-]", "_", req.zip_name)
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
     )

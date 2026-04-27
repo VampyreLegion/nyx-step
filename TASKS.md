@@ -1,7 +1,7 @@
 # MusicWeb Feature Roadmap
 
 **Status legend:** 🔲 todo · 🔄 in progress · ✅ done  
-**Last updated:** 2026-04-26 (task #22 done)  
+**Last updated:** 2026-04-27 (tasks #27, #31 sampler/scheduler, drag-drop, ZIP, LUFS, chord detection done)  
 **Repo:** https://github.com/VampyreLegion/musicweb
 
 ---
@@ -46,13 +46,18 @@
 | 20 | Complete Mode — Generate Backing Track | ⏸ blocked | Same — no workflow template exists; needs ComfyUI workflow built and exported |
 | 21 | LoRA Browser + Loader | ✅ done | LoRA section in Parameters; GET /loras from ComfyUI /models/loras; LoraLoader injected into workflow between UNETLoader/DualCLIPLoader and sampler nodes; scale control; refresh button |
 | 22 | LoRA Training UI | ✅ done | Train LoRA tab: dataset dir, hyperparams (rank/alpha/LR/epochs/batch/grad_accum), LLM labeling toggle; POST /train/start builds FL_AceStep workflow; GET /train/events SSE bridges ComfyUI WS `acestep.training.progress`; real-time loss canvas chart |
-| 27 | MIDI Extraction | ⏸ blocked | basic-pitch incompatible with Python 3.12 (pkgutil.ImpImporter removed); revisit when compat fix available or alternative found |
+| 27 | MIDI Extraction | ✅ done | Dual-mode: librosa pyin (melody/monophonic) + piano-transcription-inference (polyphonic piano); POST /midi/extract; MIDI tab + Guide section + About v3.3 |
 | 28 | Continuous AI Radio | ⏸ blocked | Requires audio_codes chaining (same blocker as #14); needs ComfyUI node support |
 | 30 | Multi-Mask Repaint | ⏸ blocked | Requires custom ComfyUI workflow with multiple TrimAudio chains; no template exists |
 | 22 | LoRA Training UI | ✅ done | See row above |
 | 23 | Audio Understanding / Analyze | ✅ done | POST /analyze; scipy onset detection → BPM, Krumhansl-Schmuckler chromagram → key/scale, faster-whisper → lyrics+language; Apply button populates BPM/key/scale/lyrics/language into state |
 | 24 | Repaint Timeline Picker | ✅ done | Canvas timeline in repaint panel: drag two handles to set start/end region; syncs with number inputs both ways; uses WaveSurfer duration if available |
 | 25 | Waveform Player | ✅ done | WaveSurfer.js v7 bundled locally; each job card shows waveform + ▶/⏸ button + live timestamp; falls back to `<audio>` if WaveSurfer unavailable |
+| 31 | Sampler &amp; Scheduler Selector | ✅ done | Dropdowns in Parameters: Sampler (er_sde default) + Scheduler (linear_quadratic default); wired through state→GenerateRequest→KSampler node inputs; reset button restores defaults |
+| 32 | Drag-and-Drop File Upload | ✅ done | dropzone.js shared utility; data-dropzone attribute on Analyze, Stems, Cover, MIDI file inputs; .dz-over CSS on dragover |
+| 33 | ZIP Batch Download | ✅ done | POST /download/zip; adds ZIP All button to job cards with batch_size>1; StreamingResponse with zipfile |
+| 34 | LUFS Loudness Meter | ✅ done | pyloudnorm ITU-R BS.1770-4 integrated loudness in Analyze endpoint; displayed in result row |
+| 35 | Chord Auto-Detection | ✅ done | Librosa chroma_stft + major/minor templates; most prominent chords shown in Analyze result; Apply button copies to chord field |
 
 ---
 
@@ -61,7 +66,7 @@
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
 | 26 | Voice Recorder → Whisper → Lyrics | ✅ done | Record button in Tagging tab; MediaRecorder API → POST /transcribe → faster-whisper → lyrics textarea; Append mode, model selector (base/small/medium) |
-| 27 | MIDI Extraction | 🔲 todo | Post-process generated audio through Basic Pitch (Spotify, open-source) → export MIDI for DAW use |
+| 27 | MIDI Extraction | ✅ done | Dual-mode: librosa pyin (melody) + piano-transcription-inference (polyphonic); POST /midi/extract; MIDI tab in UI |
 | 28 | Continuous AI Radio | 🔲 todo | Chain generations using audio codes from previous result as seed; continuous coherent stream; persistent mini-player |
 | 29 | Sample Query / Simple Mode | ✅ done | Quick Generate box on Overview tab; `POST /ollama/expand` uses Ollama to convert free-text description into tags, BPM, key, scale, instruments; model selector auto-populated |
 | 30 | Multi-Mask Repaint | 🔲 todo | Define multiple time-window regions for repaint in one submit; multi-region timeline picker |

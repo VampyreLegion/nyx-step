@@ -57,6 +57,13 @@ document.getElementById("param-dit-model").addEventListener("change", e => {
   document.getElementById("param-model-hint").textContent = _modelHints[m] || "";
 });
 
+document.getElementById("param-sampler").addEventListener("change", e => {
+  mwState.sampler_name = e.target.value;
+});
+document.getElementById("param-scheduler").addEventListener("change", e => {
+  mwState.scheduler = e.target.value;
+});
+
 document.getElementById("param-gen-audio-codes").addEventListener("change", e => {
   mwState.generate_audio_codes = e.target.checked;
 });
@@ -94,6 +101,8 @@ document.getElementById("btn-reset-params").addEventListener("click", () => {
     vocal_language: "auto",
     generate_audio_codes: true,
     dit_model: "turbo",
+    sampler_name: "er_sde",
+    scheduler: "linear_quadratic",
     batch_size: 1,
   };
   Object.assign(mwState, defaults);
@@ -112,6 +121,8 @@ document.getElementById("btn-reset-params").addEventListener("click", () => {
   document.getElementById("param-vocal-language").value = defaults.vocal_language;
   document.getElementById("param-gen-audio-codes").checked = true;
   document.getElementById("param-dit-model").value = "turbo";
+  document.getElementById("param-sampler").value = "er_sde";
+  document.getElementById("param-scheduler").value = "linear_quadratic";
   document.getElementById("param-batch-size").value = 1;
   document.getElementById("param-model-hint").textContent = _modelHints["turbo"];
   updatePayloadPreview();

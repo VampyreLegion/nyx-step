@@ -103,9 +103,14 @@ class ComfyUIClient:
                 node.setdefault("inputs", {})["seconds"] = float(state.get("duration", 30))
                 node["inputs"]["batch_size"] = max(1, min(8, int(state.get("batch_size", 1))))
 
+        sampler_name = state.get("sampler_name", "er_sde") or "er_sde"
+        scheduler    = state.get("scheduler", "linear_quadratic") or "linear_quadratic"
         for node in workflow.values():
             if isinstance(node, dict) and node.get("class_type") == "KSampler":
-                node.setdefault("inputs", {})["steps"] = state.get("steps", 8)
+                inp = node.setdefault("inputs", {})
+                inp["steps"]        = state.get("steps", 8)
+                inp["sampler_name"] = sampler_name
+                inp["scheduler"]    = scheduler
 
         seed = state.get("seed", 0)
         if not state.get("lock_seed", False) or seed == 0:
