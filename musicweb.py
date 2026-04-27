@@ -64,6 +64,8 @@ from routes.midi import router as midi_router
 from routes.lego import router as lego_router
 from routes.extract import router as extract_router
 from routes.radio import router as radio_router
+from routes.lrc import router as lrc_router
+from routes.quality import router as quality_router
 
 app.include_router(gen_router)
 app.include_router(queue_router)
@@ -79,6 +81,8 @@ app.include_router(midi_router)
 app.include_router(lego_router)
 app.include_router(extract_router)
 app.include_router(radio_router)
+app.include_router(lrc_router)
+app.include_router(quality_router)
 
 import json as _json
 from fastapi.responses import JSONResponse

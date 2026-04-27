@@ -254,6 +254,62 @@ function addDownloadLinks(container, files) {
       retakeRow.appendChild(zipBtn);
     }
 
+    // ── Quality Score button ──────────────────────────────────────────────────
+    const qBtn = document.createElement("button");
+    qBtn.className = "secondary small";
+    qBtn.textContent = "📊 Score";
+    qBtn.title = "Analyse audio quality: loudness, dynamics, spectral balance, clipping, coherence";
+    qBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+    qBtn.addEventListener("click", async () => {
+      qBtn.disabled = true; qBtn.textContent = "…";
+      const scoreEl = container.querySelector(".quality-score-result") || (() => {
+        const d = document.createElement("div");
+        d.className = "quality-score-result";
+        d.style.cssText = "margin-top:4px;font-size:11px;color:var(--muted)";
+        container.appendChild(d);
+        return d;
+      })();
+      try {
+        const r = await fetch("/quality/" + encodeURIComponent(files[0]));
+        const d = await r.json();
+        if (d.error) { scoreEl.textContent = "Score error: " + d.error; return; }
+        const dims = Object.entries(d.scores).map(([k, v]) => `${k} ${v}`).join(" · ");
+        scoreEl.innerHTML = `<strong>Quality ${d.grade} (${d.composite}/10)</strong> — ${dims}`;
+      } catch(e) { scoreEl.textContent = "Score error: " + e.message; }
+      finally { qBtn.disabled = false; qBtn.textContent = "📊 Score"; }
+    });
+    retakeRow.appendChild(qBtn);
+
+    // ── LRC Lyrics button (only if job had lyrics) ────────────────────────────
+    const payload = _jobPayloads[promptId];
+    const lyricsText = payload?.lyrics || "";
+    if (lyricsText.trim()) {
+      const lrcBtn = document.createElement("button");
+      lrcBtn.className = "secondary small";
+      lrcBtn.textContent = "🎵 LRC";
+      lrcBtn.title = "Generate time-synchronized LRC file from the lyrics used in this generation";
+      lrcBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+      lrcBtn.addEventListener("click", async () => {
+        lrcBtn.disabled = true; lrcBtn.textContent = "Generating…";
+        try {
+          const r = await fetch("/lrc/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename: files[0], lyrics: lyricsText, bpm: mwState.bpm || 120, save: true }),
+          });
+          const d = await r.json();
+          if (d.error) { alert("LRC error: " + d.error); return; }
+          const blob = new Blob([d.lrc], { type: "text/plain" });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = d.filename;
+          a.click();
+        } catch(e) { alert("LRC error: " + e.message); }
+        finally { lrcBtn.disabled = false; lrcBtn.textContent = "🎵 LRC"; }
+      });
+      retakeRow.appendChild(lrcBtn);
+    }
+
     container.appendChild(retakeRow);
   }
 }

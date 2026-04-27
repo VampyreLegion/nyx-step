@@ -31,8 +31,8 @@
 | 12 | Batch Size Control | ✅ done | `batch_size` spinner (1–8) in Parameters; wired to `EmptyAceStep1.5LatentAudio` `batch_size` input; each output file gets its own job card |
 | 13 | Cover Mode | ✅ done | Dedicated Cover tab; upload reference audio, ACE-Step preserves melody while applying new style tags; `POST /cover` form endpoint; `build_cover_workflow` → `_build_remix_from_input` in ComfyUI client |
 | 14 | Audio Codes Cache (Fast Variation) | ✅ done | NyxSaveAudioCodes + NyxLoadAudioCodes custom nodes; save LM output to cache/{name}.json; inject on reload; skips Qwen LM stage |
-| 15 | LRC Synchronized Lyrics | ⏸ blocked | `auto_lrc` is standalone-API-only param; not in ComfyUI TextEncodeAceStepAudio1.5 node schema |
-| 16 | Generation Quality Score | ⏸ blocked | `auto_score` is standalone-API-only; no ComfyUI node exposes DiT Lyrics Alignment Score |
+| 15 | LRC Synchronized Lyrics | ✅ done | POST /lrc/generate: RMS phrase-boundary detection → maps lyric lines to onset times → .lrc download; 🎵 LRC button on job cards (when lyrics present) |
+| 16 | Generation Quality Score | ✅ done | GET /quality/{file}: loudness/dynamics/spectral/saturation/coherence → 0–10 composite + letter grade; 📊 Score button on every job card |
 | 17 | Demucs Fine-Tuned Models | ✅ done | Added `htdemucs_ft` and `mdx_extra` to dropdown; model name passed directly to `-n` flag, no backend changes needed |
 
 ---
