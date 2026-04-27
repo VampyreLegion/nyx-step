@@ -867,13 +867,24 @@
         <button class="secondary small" id="btn-lora-refresh" title="Reload LoRA list from ComfyUI" style="font-size:10px;padding:1px 6px">↺</button>
         <span id="lora-count" style="font-size:11px;color:var(--muted)"></span>
       </div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px">LoRA 1</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
         <select id="param-lora-name" style="flex:1;min-width:160px;font-size:12px" title="Select a LoRA to apply. Empty = no LoRA.">
           <option value="">None</option>
         </select>
         <div class="field-group" style="min-width:90px">
           <label style="font-size:11px" title="LoRA influence strength (0=off, 1=full). Applied to both model and CLIP.">Scale ⓘ</label>
           <input type="number" id="param-lora-scale" value="1.0" min="0" max="2" step="0.05" style="width:70px">
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px">LoRA 2 <span style="color:var(--muted);font-size:10px">(stacked — applied after LoRA 1)</span></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <select id="param-lora2-name" style="flex:1;min-width:160px;font-size:12px" title="Optional second LoRA. Both LoRAs are chained in series.">
+          <option value="">None</option>
+        </select>
+        <div class="field-group" style="min-width:90px">
+          <label style="font-size:11px" title="Second LoRA influence strength.">Scale ⓘ</label>
+          <input type="number" id="param-lora2-scale" value="1.0" min="0" max="2" step="0.05" style="width:70px">
         </div>
       </div>
     </div>
@@ -1411,19 +1422,26 @@
       <input type="text" id="preset-name-input" placeholder="Preset name…" style="flex:1;font-size:12px">
       <button class="small" id="btn-preset-save-named">💾 Save</button>
     </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="secondary small" id="btn-preset-export-current" title="Download the current state as a .nyx file" style="font-size:11px">⬇ Export .nyx</button>
+      <label class="secondary small" style="cursor:pointer;font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;display:inline-block" title="Import a .nyx preset file from disk">
+        ⬆ Import .nyx
+        <input type="file" id="preset-import-file" accept=".nyx,.json" style="display:none">
+      </label>
+    </div>
     <div id="preset-list" style="overflow-y:auto;flex:1;border:1px solid var(--border);border-radius:6px;min-height:120px;padding:4px"></div>
     <div id="preset-modal-status" style="font-size:11px;color:var(--muted);min-height:16px"></div>
   </div>
 </div>
 
 <script src="/static/wavesurfer.min.js"></script>
-<script src="/static/state.js?v=8"></script>
+<script src="/static/state.js?v=9"></script>
 <script src="/static/utils.js?v=2"></script>
-<script src="/static/bindings.js?v=11"></script>
+<script src="/static/bindings.js?v=12"></script>
 <script src="/static/genres.js?v=2"></script>
 <script src="/static/chips.js?v=1"></script>
 <script src="/static/tags.js?v=1"></script>
-<script src="/static/presets.js?v=1"></script>
+<script src="/static/presets.js?v=2"></script>
 <script src="/static/jobs.js?v=8"></script>
 <script src="/static/easy.js?v=1"></script>
 <script src="/static/analyze.js?v=3"></script>

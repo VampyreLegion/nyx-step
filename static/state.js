@@ -14,4 +14,6 @@ const mwState = {
   batch_size: 1,
   lora_name: "",
   lora_scale: 1.0,
+  lora2_name: "",
+  lora2_scale: 1.0,
 };

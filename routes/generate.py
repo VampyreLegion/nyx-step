@@ -59,6 +59,8 @@ class GenerateRequest(BaseModel):
     lora_scale: float = Field(default=1.0, ge=0.0, le=2.0)
     sampler_name: str = "er_sde"
     scheduler: str = "linear_quadratic"
+    lora2_name: str = ""
+    lora2_scale: float = Field(default=1.0, ge=0.0, le=2.0)
 
 
 @router.post("/generate")

@@ -107,9 +107,10 @@ async function _refreshPresetList() {
       return;
     }
     list.innerHTML = data.presets.map(name =>
-      `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid var(--border)">
+      `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid var(--border);gap:4px">
         <span style="cursor:pointer;color:var(--text);font-size:12px;flex:1" data-load="${name}">${name}</span>
-        <button class="secondary small" style="font-size:10px;padding:2px 6px" data-delete="${name}">🗑</button>
+        <button class="secondary small" style="font-size:10px;padding:2px 6px" data-export="${name}" title="Download this preset as a .nyx file">⬇</button>
+        <button class="secondary small" style="font-size:10px;padding:2px 6px" data-delete="${name}" title="Delete preset">🗑</button>
       </div>`
     ).join("");
     list.querySelectorAll("[data-load]").forEach(el => {
@@ -121,6 +122,19 @@ async function _refreshPresetList() {
         _closePresetModal();
         document.getElementById("generate-status").textContent = `Loaded: ${el.dataset.load}`;
         document.getElementById("generate-status").style.color = "var(--accent2)";
+      });
+    });
+    list.querySelectorAll("[data-export]").forEach(el => {
+      el.addEventListener("click", async () => {
+        const name = el.dataset.export;
+        const resp = await fetch(`/presets/${encodeURIComponent(name)}`);
+        const preset = await resp.json();
+        if (preset.error) return;
+        const blob = new Blob([JSON.stringify(preset, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = name.replace(/[^\w\-. ]/g, "_") + ".nyx";
+        a.click();
       });
     });
     list.querySelectorAll("[data-delete]").forEach(el => {
@@ -162,6 +176,48 @@ document.getElementById("btn-load-preset").addEventListener("click", _openPreset
 document.getElementById("btn-preset-modal-close").addEventListener("click", _closePresetModal);
 document.getElementById("preset-modal").addEventListener("click", e => {
   if (e.target === e.currentTarget) _closePresetModal();
+});
+
+// Export current state as .nyx file (no server round-trip)
+document.getElementById("btn-preset-export-current").addEventListener("click", () => {
+  const preset = _buildPreset();
+  const blob = new Blob([JSON.stringify(preset, null, 2)], { type: "application/json" });
+  const name = (preset.song_name || "preset").replace(/[^\w\-. ]/g, "_");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name + ".nyx";
+  a.click();
+  document.getElementById("preset-modal-status").textContent = `Exported ${name}.nyx`;
+});
+
+// Import .nyx file from disk → apply + optionally save
+document.getElementById("preset-import-file").addEventListener("change", async function () {
+  const file = this.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById("preset-modal-status");
+  try {
+    const text = await file.text();
+    const preset = JSON.parse(text);
+    if (!preset.bpm && !preset.tags && !preset.genre) {
+      statusEl.textContent = "Invalid .nyx file — missing expected fields.";
+      return;
+    }
+    _applyPreset(preset);
+    statusEl.textContent = `Imported ${file.name} — applied to state.`;
+    // Also save to server under the preset name
+    const saveName = preset.song_name || file.name.replace(/\.nyx$/i, "").replace(/[^\w\-. ]/g, "_") || "imported";
+    await fetch(`/presets/${encodeURIComponent(saveName)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(preset),
+    });
+    _refreshPresetList();
+    statusEl.textContent = `Imported and saved as "${saveName}".`;
+  } catch (e) {
+    statusEl.textContent = "Import error: " + e.message;
+  } finally {
+    this.value = "";
+  }
 });
 
 // ── Clear buttons ─────────────────────────────────────────────────────────────

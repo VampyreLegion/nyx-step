@@ -74,16 +74,24 @@ document.getElementById("param-lora-name").addEventListener("change", e => {
 document.getElementById("param-lora-scale").addEventListener("input", e => {
   mwState.lora_scale = parseFloat(e.target.value) || 1.0;
 });
+document.getElementById("param-lora2-name").addEventListener("change", e => {
+  mwState.lora2_name = e.target.value;
+});
+document.getElementById("param-lora2-scale").addEventListener("input", e => {
+  mwState.lora2_scale = parseFloat(e.target.value) || 1.0;
+});
 
 // Populate LoRA dropdown from ComfyUI
 async function _loadLoras() {
-  const sel = document.getElementById("param-lora-name");
+  const sel  = document.getElementById("param-lora-name");
+  const sel2 = document.getElementById("param-lora2-name");
   const countEl = document.getElementById("lora-count");
   try {
     const data = await fetch("/loras").then(r => r.json());
     const loras = data.loras || [];
-    sel.innerHTML = '<option value="">None</option>' +
-      loras.map(l => `<option value="${l}">${l}</option>`).join("");
+    const opts = '<option value="">None</option>' + loras.map(l => `<option value="${l}">${l}</option>`).join("");
+    sel.innerHTML  = opts;
+    sel2.innerHTML = opts;
     countEl.textContent = loras.length ? `${loras.length} available` : "(none installed)";
   } catch (_) {
     countEl.textContent = "(ComfyUI offline)";

@@ -134,11 +134,13 @@ class ComfyUIClient:
             if isinstance(node, dict) and node.get("class_type") == "UNETLoader":
                 node.setdefault("inputs", {})["unet_name"] = unet_name
 
-        # Insert LoraLoader if a LoRA is selected
-        lora_name = state.get("lora_name", "").strip()
+        # Insert LoraLoader chain if one or two LoRAs are selected
+        lora_name  = state.get("lora_name",  "").strip()
         lora_scale = float(state.get("lora_scale", 1.0))
+        lora2_name  = state.get("lora2_name", "").strip()
+        lora2_scale = float(state.get("lora2_scale", 1.0))
+
         if lora_name:
-            # Find UNETLoader and DualCLIPLoader node IDs
             unet_id = next((k for k, v in workflow.items() if isinstance(v, dict) and v.get("class_type") == "UNETLoader"), None)
             clip_id = next((k for k, v in workflow.items() if isinstance(v, dict) and v.get("class_type") == "DualCLIPLoader"), None)
             if unet_id and clip_id:
@@ -154,7 +156,7 @@ class ComfyUIClient:
                         "strength_clip": lora_scale,
                     },
                 }
-                # Redirect nodes that use UNETLoader output to LoraLoader model output
+                # Redirect downstream nodes from UNETLoader/DualCLIPLoader to LoraLoader outputs
                 for node in workflow.values():
                     if not isinstance(node, dict):
                         continue
@@ -163,9 +165,35 @@ class ComfyUIClient:
                             node["inputs"][ik] = [lora_id, 0]
                         elif isinstance(iv, list) and len(iv) == 2 and iv[0] == clip_id and iv[1] == 0:
                             node["inputs"][ik] = [lora_id, 1]
-                # Restore LoraLoader's own inputs (don't redirect them)
+                # Restore LoraLoader's own inputs
                 workflow[lora_id]["inputs"]["model"] = [unet_id, 0]
                 workflow[lora_id]["inputs"]["clip"] = [clip_id, 0]
+
+                # Chain second LoRA on top of first
+                if lora2_name:
+                    lora2_id = "_lora2_"
+                    workflow[lora2_id] = {
+                        "class_type": "LoraLoader",
+                        "_meta": {"title": f"LoRA2: {lora2_name}"},
+                        "inputs": {
+                            "model": [lora_id, 0],
+                            "clip": [lora_id, 1],
+                            "lora_name": lora2_name,
+                            "strength_model": lora2_scale,
+                            "strength_clip": lora2_scale,
+                        },
+                    }
+                    # Redirect from lora_id outputs to lora2_id outputs
+                    for node in workflow.values():
+                        if not isinstance(node, dict) or node is workflow[lora2_id]:
+                            continue
+                        for ik, iv in node.get("inputs", {}).items():
+                            if isinstance(iv, list) and len(iv) == 2 and iv[0] == lora_id and iv[1] == 0:
+                                node["inputs"][ik] = [lora2_id, 0]
+                            elif isinstance(iv, list) and len(iv) == 2 and iv[0] == lora_id and iv[1] == 1:
+                                node["inputs"][ik] = [lora2_id, 1]
+                    workflow[lora2_id]["inputs"]["model"] = [lora_id, 0]
+                    workflow[lora2_id]["inputs"]["clip"] = [lora_id, 1]
 
         # Swap audio save node to match requested format
         _fmt_map = {
