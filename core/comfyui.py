@@ -941,6 +941,7 @@ class ComfyUIClient:
         for node_output in outputs.values():
             for item in node_output.get("audio", []):
                 fname = item.get("filename", "")
+                subfolder = item.get("subfolder", "")
                 if fname:
-                    files.append(fname)
+                    files.append(f"{subfolder}/{fname}" if subfolder else fname)
         return files

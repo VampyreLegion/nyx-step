@@ -678,7 +678,7 @@ def _get_meta_for_file(filename: str) -> dict | None:
     return None
 
 
-@router.get("/download/{filename}")
+@router.get("/download/{filename:path}")
 async def download(filename: str, request: Request):
     user_email = get_user_email(request)
 
