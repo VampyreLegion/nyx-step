@@ -53,13 +53,12 @@ _watcher_started = False
 # ── Background watcher ─────────────────────────────────────────────────────────
 def _copy_output_to_input(filename: str) -> str | None:
     """Copy a ComfyUI output file into ComfyUI's input dir. Returns input filename."""
+    # Primary: COMFYUI_OUTPUT_DIR is output/audio/ so plain filenames live here
     src = config.COMFYUI_OUTPUT_DIR / filename
-    # radio outputs land in radio/ subdirectory
     if not src.exists():
-        src = config.COMFYUI_OUTPUT_DIR / "radio" / filename
-    if not src.exists():
-        # try scanning output tree
-        for p in config.COMFYUI_OUTPUT_DIR.rglob(filename):
+        # Search entire ComfyUI output tree (handles any subfolder)
+        base = config.COMFYUI_OUTPUT_DIR.parent
+        for p in base.rglob(filename):
             src = p
             break
     if not src.exists():
@@ -93,6 +92,13 @@ def _submit_radio_segment(user_email: str, prev_file: str | None, settings: dict
             "generate_audio_codes": True,
         }
         result = _client.build_workflow(caption, "", state_dict)
+        # Rename save node prefix so segment 0 also uses Nyx_radio naming
+        if "workflow" in result:
+            for node in result["workflow"].values():
+                if isinstance(node, dict) and node.get("class_type") in (
+                    "SaveAudioMP3", "SaveAudio", "SaveAudioOpus"
+                ):
+                    node.setdefault("inputs", {})["filename_prefix"] = "audio/Nyx_radio"
     else:
         input_name = _copy_output_to_input(prev_file)
         if input_name is None:
