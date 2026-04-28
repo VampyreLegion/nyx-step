@@ -35,7 +35,7 @@
     item.style.cssText = "font-size:11px;padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center";
     item.innerHTML = `
       <span style="color:var(--muted);min-width:24px">S${String(seg).padStart(3,"0")}</span>
-      <a href="/dl/${file}" target="_blank" download style="color:var(--accent);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file}</a>
+      <a href="/download/${file}" target="_blank" download style="color:var(--accent);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file}</a>
       <button onclick="playRadioFile('${file}')" style="font-size:10px;padding:2px 6px" title="Replay this segment">▶</button>
     `;
     el.prepend(item);
@@ -96,7 +96,7 @@
       try { msg = JSON.parse(e.data); } catch { return; }
 
       if (msg.type === "segment") {
-        const url = `/dl/${msg.file}`;
+        const url = `/download/${msg.file}`;
         _playlist.push({ file: msg.file, url, segment: msg.segment });
         _addHistory(msg.file, msg.segment);
         // Auto-start playback if nothing is playing
@@ -177,7 +177,7 @@
   window.playRadioFile = function (file) {
     const el = audio();
     if (!el) return;
-    el.src = `/dl/${file}`;
+    el.src = `/download/${file}`;
     el.play().catch(() => {});
     _setTitle("Replay: " + file);
     _playing = true;

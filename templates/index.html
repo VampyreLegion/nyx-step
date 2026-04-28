@@ -1456,8 +1456,22 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.5 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.6 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.6 — Radio, Extract, LRC, Quality Score &amp; NyxNodes</h3>
+        <ul>
+          <li><strong>📻 Radio tab</strong> — continuous AI music stream; each segment uses the previous as a <code>ReferenceTimbreAudio</code> timbre reference (denoise=1.0, fresh audio codes); SSE-driven playback queue with segment history and replay; watcher background thread auto-chains segments indefinitely</li>
+          <li><strong>Extract Mode</strong> (inner tab in Cover) — isolate/emphasize a sonic element from a mixed audio file; uses <code>generate_audio_codes=false</code> + denoise 0.98 + ReferenceTimbreAudio; tags describe what to reconstruct; XL Base model recommended</li>
+          <li><strong>🎵 LRC button</strong> on job cards (when lyrics present) — generates synchronized .lrc lyrics file via RMS phrase-boundary detection + BPM-based subdivision; downloads immediately; compatible with Poweramp, Musicolet, foobar2000, VLC</li>
+          <li><strong>📊 Quality Score button</strong> on all job cards — 5-dimension composite score (0–10) + letter grade A/B/C/D: Loudness (LUFS vs –14), Dynamics (LRA approximation), Spectral (band energy ratios), Saturation (clipping %), Coherence (RMS CV + silence %)</li>
+          <li><strong>Audio Codes Cache</strong> — NyxSaveAudioCodes saves Qwen LM output to cache/{name}.json; NyxLoadAudioCodes reinjects on next generation to skip the LM stage (Fast Variation mode)</li>
+          <li><strong>Multi-Mask Repaint</strong> — repaint up to 3 independent time regions in a single pass; NyxAudioOverlay nodes chain the regions back into the base audio; POST /multirepaint</li>
+          <li><strong>NyxNodes v1.2</strong> — ComfyUI custom nodes package updated: NyxAudioOverlay (paste audio at time offset), NyxSaveAudioCodes, NyxLoadAudioCodes registered alongside existing NyxsAudioConditioner and NyxBioInfusor</li>
+          <li><strong>Guide sections added</strong> — 📻 Radio Mode, Extract Mode, 📊 Quality Score, 🎵 LRC Synchronized Lyrics guide panels accessible from the Guide tab</li>
+        </ul>
       </div>
 
       <div class="about-section">
@@ -1615,6 +1629,9 @@
           <li>Fields: reference audio file, style tags, optional lyrics, song name, denoise (0.1–0.95), steps, CFG, duration</li>
           <li>Denoise 0.6–0.8 preserves melody well; 0.9+ loses structure in favour of style. SFT model recommended (50 steps, CFG 7.0)</li>
           <li>Backend: POST /cover uploads file to ComfyUI input dir, calls build_cover_workflow → ReferenceTimbreAudio node; job tracked and streamed same as normal generation</li>
+          <li><strong>Lego Mode</strong> (inner tab) — add an instrument layer on top of a reference track; <code>workflow_lego_template.json</code> + ReferenceTimbreAudio; POST /lego; denoise 0.5 preserves most of original</li>
+          <li><strong>Complete Mode</strong> (inner tab) — generate a backing track to fill out a reference; same workflow as Lego at denoise 0.8; POST /complete</li>
+          <li><strong>Extract Mode</strong> (inner tab) — isolate/reconstruct a sonic element; <code>generate_audio_codes=false</code>, denoise 0.98; POST /extract; XL Base model recommended</li>
         </ul>
       </div>
 
@@ -1669,6 +1686,26 @@
       </div>
 
       <div class="about-section">
+        <h3>📻 Radio Tab</h3>
+        <ul>
+          <li>Continuous AI music stream — segments chain via <code>ReferenceTimbreAudio</code> timbre reference; each segment inherits sonic character from the previous</li>
+          <li>First segment: standard generation (no reference); segments 1+: radio-continue workflow with copied audio reference + denoise=1.0 + fresh audio codes</li>
+          <li>Background watcher thread polls ComfyUI every 3 s; on completion copies output to input dir and auto-submits next segment</li>
+          <li>SSE stream (<code>GET /radio/events</code>) pushes segment events to browser; segments auto-queue for back-to-back playback</li>
+          <li>Segment history panel with replay (▶) and download (⬇) per segment; page-refresh reconnects in-progress stream automatically</li>
+          <li>POST /radio/start + POST /radio/stop + GET /radio/status + GET /radio/events</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>Job Cards — Score &amp; LRC</h3>
+        <ul>
+          <li><strong>📊 Score</strong> — appears on every job card; GET /quality/{file} returns composite 0–10 + letter grade; 5 dimensions: Loudness (LUFS), Dynamics (LRA), Spectral (band ratios), Saturation (clipping), Coherence (RMS CV)</li>
+          <li><strong>🎵 LRC</strong> — appears when lyrics were provided; POST /lrc/generate runs RMS phrase-boundary detection → BPM-based subdivision → .lrc file; GET /lrc/download/{file} serves saved .lrc; compatible with Poweramp, Musicolet, foobar2000, VLC</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
         <h3>Infrastructure</h3>
         <ul>
           <li>FastAPI + uvicorn on Nyx (192.168.1.236) port 8001, auto-starts on reboot via systemd</li>
@@ -1681,7 +1718,7 @@
           <li>Rate limiting: 20 generate/remix requests per 60s per user (sliding window, configurable)</li>
           <li>Generation history logged to history.jsonl — every completed job records caption, lyrics, seed, and output files; purges entries older than 7 days every 6 hours</li>
           <li>API docs available at /api/docs (Swagger UI) and /api/redoc</li>
-          <li>Frontend split into 18 focused JS modules (state, utils, bindings, genres, chips, tags, presets, jobs, easy, analyze, voice, quick, lint, stems, cover, train, midi, dropzone, tabs, init)</li>
+          <li>Frontend split into 20 focused JS modules (state, utils, bindings, genres, chips, tags, presets, jobs, easy, analyze, voice, quick, lint, stems, cover, lego, extract, radio, train, midi, dropzone, tabs, init)</li>
           <li>Sampler (er_sde) + Scheduler (linear_quadratic) — dedicated Sampler tab; Nyx-Step sweet spots wired directly to KSampler node inputs</li>
           <li>Dual LoRA stacking: LoRA 1 + LoRA 2 slots; chained as LoraLoader → LoraLoader2 in workflow</li>
           <li>Drag-and-drop file upload on Analyze, Stems, Cover, and MIDI tabs (shared dropzone.js utility)</li>

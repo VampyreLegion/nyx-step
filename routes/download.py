@@ -14,7 +14,7 @@ from musicweb import tracker, get_user_email
 
 router = APIRouter()
 
-_CHAPTER_IDS = ["starthere", "summary", "flowcharts", "scale", "midi", "analyze", "sampler", "presets", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
+_CHAPTER_IDS = ["starthere", "summary", "flowcharts", "scale", "midi", "analyze", "sampler", "presets", "radio", "extract", "quality", "lrc", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
 
 _STYLE = (
     "<style>"
@@ -348,6 +348,187 @@ _PRESETS_HTML = (
 )
 
 
+_RADIO_HTML = (
+    f"<html><head>{_STYLE}</head><body>"
+    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">📻 Continuous AI Radio</h2>'
+
+    '<h3>What It Does</h3>'
+    '<p>Radio mode generates an endless stream of music by chaining Nyx-Step generations. Each completed segment is automatically fed back '
+    'as a timbre reference for the next, so the stream stays sonically coherent while evolving creatively over time. '
+    'You can let it run in the background indefinitely — new segments queue automatically.</p>'
+
+    '<h3>How It Works</h3>'
+    '<ol>'
+    '<li><strong>Segment 0</strong> — generated fresh from your tags with no reference (standard generation workflow)</li>'
+    '<li><strong>Segments 1+</strong> — each uses the previous segment\'s audio as <code>ReferenceTimbreAudio</code> timbre input plus a fresh '
+    '<code>EmptyAceStep1.5LatentAudio</code> target; denoise = 1.0 (full generation, new audio codes each time)</li>'
+    '<li>A background watcher thread monitors ComfyUI job status every 3 s; on completion it copies the output to ComfyUI\'s input dir and submits the next segment</li>'
+    '<li>The browser receives new segment events over SSE (<code>GET /radio/events</code>) and queues them for playback automatically</li>'
+    '</ol>'
+
+    '<h3>Controls</h3>'
+    '<table>'
+    '<tr><th>Control</th><th>Purpose</th></tr>'
+    '<tr><td>Tags</td><td>Style tags for all segments — same prompt is used throughout the stream</td></tr>'
+    '<tr><td>BPM / Key / Scale</td><td>Tempo and harmonic anchor — kept consistent across segments via the timbre reference</td></tr>'
+    '<tr><td>Duration</td><td>Length of each segment in seconds (10–120 s recommended; shorter = faster turnaround)</td></tr>'
+    '<tr><td>Steps</td><td>Diffusion steps per segment — 20 is a good balance; fewer = faster generation</td></tr>'
+    '<tr><td>📻 Start / ⏹ Stop</td><td>Start begins segment 0 immediately; Stop halts the queue after the current segment finishes generating</td></tr>'
+    '</table>'
+
+    '<h3>Playback</h3>'
+    '<ul>'
+    '<li>Segments play back-to-back automatically; if the next segment isn\'t ready yet, the player shows "Generating next segment…"</li>'
+    '<li>History panel lists all completed segments; click ▶ on any entry to replay it; ⬇ link downloads the file</li>'
+    '<li>If you refresh the page while radio is running, the status reconnects automatically via <code>GET /radio/status</code></li>'
+    '</ul>'
+
+    '<h3>Settings Tip</h3>'
+    '<ul>'
+    '<li>Use <strong>XL Turbo model</strong> (8 steps) for minimal latency — segments complete in ~30 s per 30 s of audio</li>'
+    '<li>Keep Duration ≤ 45 s so the next segment is almost always ready before the current one ends</li>'
+    '<li>Sampler er_sde + Scheduler linear_quadratic (Parameters tab defaults) work well for continuous streams</li>'
+    '<li>Tags can be anything — lo-fi, ambient drone, jazz trio, energetic EDM; the timbre chain preserves sonic character even as random seeds change</li>'
+    '</ul>'
+    "</body></html>"
+)
+
+
+_EXTRACT_HTML = (
+    f"<html><head>{_STYLE}</head><body>"
+    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">Extract Mode — Single Stem Isolation</h2>'
+
+    '<h3>What It Does</h3>'
+    '<p>Extract Mode uses Nyx-Step\'s <code>ReferenceTimbreAudio</code> node to isolate or heavily emphasize a single sonic element from a '
+    'mixed audio file. Unlike Demucs (which uses a dedicated trained separator), Extract Mode works by guiding the diffusion model to '
+    'regenerate the audio while attending closely to one instrument\'s timbre — controlled entirely through your style tags.</p>'
+
+    '<h3>When To Use It</h3>'
+    '<table>'
+    '<tr><th>Goal</th><th>Approach</th></tr>'
+    '<tr><td>Isolate a vocal line from a generated track</td><td>Upload the track; use tags like <code>isolated vocals, a cappella, no instruments</code></td></tr>'
+    '<tr><td>Emphasize guitar melody in a full mix</td><td>Tags: <code>solo guitar, guitar melody, minimal, no drums, no bass</code></td></tr>'
+    '<tr><td>Create a clean instrumental bed</td><td>Tags: <code>instrumental, no vocals, ambient background</code></td></tr>'
+    '<tr><td>Isolate a specific texture</td><td>Tags: <code>synth pad only, atmospheric, spacious</code></td></tr>'
+    '</table>'
+
+    '<h3>How It Works</h3>'
+    '<p>The workflow uses <code>generate_audio_codes=false</code> (skips the Qwen LM stage — no new melodic/harmonic codes are generated) '
+    'and a high denoise value (default 0.98) which almost fully re-synthesises the audio. The <code>ReferenceTimbreAudio</code> node '
+    'anchors the timbre to the uploaded file while your tags steer what gets reconstructed. The result is a version of the audio '
+    'filtered through the lens of your style description.</p>'
+
+    '<h3>Parameters</h3>'
+    '<table>'
+    '<tr><th>Parameter</th><th>Default</th><th>Effect</th></tr>'
+    '<tr><td>Denoise</td><td>0.98</td><td>How much the audio is re-synthesised. 0.98 = aggressive; try 0.7–0.85 for gentler extraction</td></tr>'
+    '<tr><td>Steps</td><td>30</td><td>Higher steps = more refined extraction; 30–50 recommended for SFT/Base models</td></tr>'
+    '<tr><td>CFG</td><td>7.0</td><td>Higher CFG = stronger adherence to tags; 7.0 works well for extraction</td></tr>'
+    '<tr><td>Duration</td><td>auto</td><td>Set to match source audio length</td></tr>'
+    '</table>'
+
+    '<h3>vs. Demucs Separation</h3>'
+    '<ul>'
+    '<li><strong>Demucs</strong> — trained source separator; deterministic; produces 4–6 stems (vocals/drums/bass/other); best for standard separation</li>'
+    '<li><strong>Extract Mode</strong> — diffusion-guided; creative; can target any description (not just fixed stems); produces one output; best when you want a specific sonic quality, not a fixed instrument track</li>'
+    '<li>Use Demucs first if you want a clean vocal or drums track. Use Extract when Demucs doesn\'t give you what you want, or when you\'re targeting a texture rather than an instrument.</li>'
+    '</ul>'
+
+    '<h3>Model Recommendation</h3>'
+    '<p>Use the <strong>XL Base model</strong> (Parameters tab) for Extract Mode — it preserves the most structural detail. '
+    'XL Turbo at 0.98 denoise tends to over-generate and lose the reference. SFT is also good at 30–50 steps.</p>'
+    "</body></html>"
+)
+
+
+_QUALITY_HTML = (
+    f"<html><head>{_STYLE}</head><body>"
+    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">📊 Generation Quality Score</h2>'
+
+    '<h3>What It Measures</h3>'
+    '<p>Click 📊 Score on any job card to get a 0–10 composite quality score with per-dimension breakdowns and a letter grade (A/B/C/D).</p>'
+    '<table>'
+    '<tr><th>Dimension</th><th>Weight</th><th>Method</th><th>What It Catches</th></tr>'
+    '<tr><td><strong>Loudness</strong></td><td>25%</td><td>pyloudnorm ITU-R BS.1770-4 LUFS vs –14 target</td><td>Too quiet, too loud, off streaming target</td></tr>'
+    '<tr><td><strong>Dynamics</strong></td><td>20%</td><td>LRA approximation: 95th–10th percentile of active RMS</td><td>Over-compressed / brickwalled; lifeless dynamics</td></tr>'
+    '<tr><td><strong>Spectral</strong></td><td>25%</td><td>STFT band energy ratios lo/mid/hi + centroid range check</td><td>Bass-heavy mud; tinny treble; missing mids</td></tr>'
+    '<tr><td><strong>Saturation</strong></td><td>15%</td><td>Peak level + clipped sample count (samples > 0.999)</td><td>Digital clipping / distortion artifacts</td></tr>'
+    '<tr><td><strong>Coherence</strong></td><td>15%</td><td>RMS coefficient of variation + silence percentage</td><td>Abrupt dropouts; inconsistent energy; excessive silence</td></tr>'
+    '</table>'
+
+    '<h3>Grade Scale</h3>'
+    '<table>'
+    '<tr><th>Grade</th><th>Score</th><th>Meaning</th></tr>'
+    '<tr><td style="color:#4caf50"><strong>A</strong></td><td>≥ 8.0</td><td>Excellent — streaming-ready, well-balanced audio</td></tr>'
+    '<tr><td style="color:#8bc34a"><strong>B</strong></td><td>≥ 6.5</td><td>Good — minor issues but usable for most purposes</td></tr>'
+    '<tr><td style="color:#ff9800"><strong>C</strong></td><td>≥ 5.0</td><td>Acceptable — one or more dimensions need attention</td></tr>'
+    '<tr><td style="color:#f44336"><strong>D</strong></td><td>&lt; 5.0</td><td>Poor — retake or adjust generation parameters</td></tr>'
+    '</table>'
+
+    '<h3>How To Improve Scores</h3>'
+    '<ul>'
+    '<li><strong>Low Loudness</strong> — Nyx-Step outputs are typically –14 to –18 LUFS; if scoring low, check if your tags include '
+    '<code>quiet, ambient, whispered</code> — these intentionally reduce loudness. No intervention needed for streaming.</li>'
+    '<li><strong>Low Dynamics</strong> — try raising CFG slightly (3–4) or switching sampler to euler_ancestral for more variation</li>'
+    '<li><strong>Low Spectral</strong> — bass-heavy: add <code>bright, crisp, airy</code> tags or reduce bass instrument tags; '
+    'treble-heavy: add <code>warm, full, deep bass</code></li>'
+    '<li><strong>Low Saturation</strong> — clipping is rare in Nyx-Step outputs; if present, regenerate or reduce output volume before download</li>'
+    '<li><strong>Low Coherence</strong> — high CV means energy spikes/dropouts; try increasing Steps or switching to er_sde + linear_quadratic</li>'
+    '</ul>'
+
+    '<h3>Limitations</h3>'
+    '<p>The score is based on signal analysis of the output audio — it measures acoustic properties, not musical quality. '
+    'A perfectly scored track might sound boring; an adventurous track might score lower on dynamics. '
+    'Use the score as a sanity check for obvious problems, not as a creative filter.</p>'
+    "</body></html>"
+)
+
+
+_LRC_HTML = (
+    f"<html><head>{_STYLE}</head><body>"
+    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">🎵 LRC Synchronized Lyrics</h2>'
+
+    '<h3>What It Does</h3>'
+    '<p>Click 🎵 LRC on any job card (only shown when lyrics were provided at generation time) to generate a time-synchronized <code>.lrc</code> file. '
+    'LRC files are the standard format used by most music players (Poweramp, Musicolet, foobar2000, VLC, etc.) to display lyrics '
+    'scrolling in sync with the audio.</p>'
+
+    '<h3>How Timing Is Generated</h3>'
+    '<p>Since Nyx-Step doesn\'t expose its internal attention alignment, timing is approximated via audio signal analysis:</p>'
+    '<ol>'
+    '<li>Load audio and compute RMS energy envelope at ~43 Hz resolution</li>'
+    '<li>Detect silence→active transitions where silence gaps are ≥ 0.8 s (phrase boundaries)</li>'
+    '<li>If fewer boundaries than lyric lines: subdivide based on BPM (default 4 beats per line)</li>'
+    '<li>Map each lyric line to the nearest detected or estimated phrase start time</li>'
+    '<li>Output standard LRC format: <code>[MM:SS.cc]Lyric line</code></li>'
+    '</ol>'
+
+    '<h3>LRC File Format</h3>'
+    '<pre>[ti:Generated by Nyx-Step]\n[ar:Nyx Studios]\n[length:03:24.00]\n[00:00.00]First lyric line\n[00:14.32]Second lyric line\n[00:28.17]Chorus begins here</pre>'
+
+    '<h3>Tips</h3>'
+    '<ul>'
+    '<li>Accuracy improves when lyrics have clear phrase-boundary silences in the audio — instrumental intros/bridges help anchor the timing</li>'
+    '<li>Section markers like <code>[Verse]</code>, <code>[Chorus]</code> in your lyrics are stripped from LRC output (they don\'t display in players) but don\'t interfere with timing detection</li>'
+    '<li>Set the correct <strong>BPM</strong> before generating — this controls subdivision when silence-boundary detection doesn\'t find enough boundaries</li>'
+    '<li>The .lrc file is saved alongside the audio in the ComfyUI output dir (same name, .lrc extension) and downloaded immediately</li>'
+    '<li>For more accurate sync, import the LRC into your DAW and manually adjust timing against the waveform — the detection gives you a usable starting point, not frame-accurate alignment</li>'
+    '</ul>'
+
+    '<h3>Player Compatibility</h3>'
+    '<table>'
+    '<tr><th>Player</th><th>LRC Support</th></tr>'
+    '<tr><td>Poweramp (Android)</td><td>Native — auto-detects .lrc in same folder</td></tr>'
+    '<tr><td>Musicolet (Android)</td><td>Native — same-folder detection</td></tr>'
+    '<tr><td>foobar2000</td><td>Via foo_uie_lyrics or ESLyric plugin</td></tr>'
+    '<tr><td>VLC</td><td>Load via Media &gt; Subtitle File</td></tr>'
+    '<tr><td>AIMP</td><td>Native LRC support</td></tr>'
+    '<tr><td>Clementine / Strawberry</td><td>Native in Lyrics panel</td></tr>'
+    '</table>'
+    "</body></html>"
+)
+
+
 def _parse_chapter(section_id: str) -> str:
     """Extract one <h2 id="section_id">...</h2> section from Aceuser.html."""
     if section_id == "starthere":
@@ -364,6 +545,14 @@ def _parse_chapter(section_id: str) -> str:
         return _SAMPLER_HTML
     if section_id == "presets":
         return _PRESETS_HTML
+    if section_id == "radio":
+        return _RADIO_HTML
+    if section_id == "extract":
+        return _EXTRACT_HTML
+    if section_id == "quality":
+        return _QUALITY_HTML
+    if section_id == "lrc":
+        return _LRC_HTML
     if not config.ACEUSER_HTML.exists():
         return "<p>Guide file not found.</p>"
     raw = config.ACEUSER_HTML.read_text(encoding="utf-8")
