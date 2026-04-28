@@ -190,6 +190,14 @@
 
     b.addEventListener("click", () => (_active ? _stop() : _start()));
 
+    const clearBtn = document.getElementById("btn-radio-clear-history");
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        const el = hist();
+        if (el) el.innerHTML = "";
+      });
+    }
+
     const a = audio();
     if (a) {
       a.addEventListener("ended", _onEnded);
