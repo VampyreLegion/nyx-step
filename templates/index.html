@@ -1459,8 +1459,20 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.6 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.7 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.7 — Radio Fixes &amp; Stability</h3>
+        <ul>
+          <li><strong>Radio workflow fix</strong> — all ReferenceTimbreAudio workflows (radio, lego, extract, multirepaint) were using output index 1 of <code>TextEncodeAceStepAudio1.5</code> for negative conditioning; that node only has one output. Fixed by adding a <code>ConditioningZeroOut</code> node (standard ComfyUI pattern) for negative in all four templates</li>
+          <li><strong>Radio file naming</strong> — all radio segments (including segment 0) now save as <code>Nyx_radio_XXXXX_.mp3</code> inside the standard output/audio/ directory; previously segment 0 used <code>Nyx_music_</code> prefix and segments 1+ wrote to a <code>radio/</code> subdirectory outside <code>COMFYUI_OUTPUT_DIR</code></li>
+          <li><strong>Radio audio playback</strong> — download route changed from <code>{filename}</code> to <code>{filename:path}</code> so URLs with subdirectory paths resolve correctly; audio element src was returning 404 for any file not in the root output dir</li>
+          <li><strong>Radio segment copy</strong> — <code>_copy_output_to_input</code> now rglobs from <code>output/</code> parent directory so it finds reference files in any subdirectory</li>
+          <li><strong>🗑 Clear segment history</strong> — button added to Radio tab segment history panel; clears the displayed list without stopping the stream</li>
+          <li><strong>Extract template fix</strong> — <code>LoadAudio</code> input key corrected from <code>filename</code> to <code>audio</code> in extract and multirepaint templates</li>
+        </ul>
       </div>
 
       <div class="about-section">

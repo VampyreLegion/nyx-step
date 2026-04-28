@@ -380,6 +380,8 @@ _RADIO_HTML = (
     '<ul>'
     '<li>Segments play back-to-back automatically; if the next segment isn\'t ready yet, the player shows "Generating next segment…"</li>'
     '<li>History panel lists all completed segments; click ▶ on any entry to replay it; ⬇ link downloads the file</li>'
+    '<li>🗑 Clear button in the history panel removes the displayed list without stopping the stream — new segments continue to appear as they complete</li>'
+    '<li>Output files are named <code>Nyx_radio_XXXXX_.mp3</code> and saved alongside regular generations in the audio output directory</li>'
     '<li>If you refresh the page while radio is running, the status reconnects automatically via <code>GET /radio/status</code></li>'
     '</ul>'
 
