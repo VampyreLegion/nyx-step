@@ -1,8 +1,31 @@
+# MusicWeb Nyx-Step — Python Requirements
+
+# Web framework
 fastapi
 uvicorn[standard]
-sse-starlette
 jinja2
 python-multipart
 requests
-pytest
 httpx
+
+# Audio analysis (BPM, key, LUFS, spectral, LRC, quality score)
+librosa>=0.11.0
+soundfile>=0.13.0
+pyloudnorm>=0.2.0
+mutagen>=1.47.0
+
+# Speech-to-text (lyrics transcription + Analyze tab)
+faster-whisper>=1.0.0
+
+# Stem separation (Demucs tab)
+demucs>=4.0.0
+
+# MIDI extraction (MIDI tab — melody mode)
+pretty-midi>=0.2.10
+mido>=1.3.0
+
+# MIDI extraction (MIDI tab — polyphonic piano mode, requires CUDA GPU)
+# piano-transcription-inference
+
+# Dev / test
+pytest
