@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Streamin
 from pydantic import BaseModel
 
 import config
-from musicweb import tracker, get_user_email
+from nyx-step import tracker, get_user_email
 
 router = APIRouter()
 
@@ -56,9 +56,13 @@ _FLOWCHARTS_HTML = (
 
 _START_HERE_HTML = (
     f"<html><head>{_STYLE}</head><body>"
-    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">Start Here — Nyx-Step MusicWeb</h2>'
+    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">Start Here — Nyx-Step Nyx-Step</h2>'
 
-    '<p>Nyx-Step MusicWeb is a browser-based AI music studio powered by ACE-Step v1.5 running on ComfyUI. '
+    '<div style="margin-bottom:20px;text-align:center">'
+    '<img src="/static/images/nyx-start-here.png" alt="Nyx-Step overview" style="max-width:100%;border-radius:8px;border:1px solid #2d3041">'
+    '</div>'
+
+    '<p>Nyx-Step Nyx-Step is a browser-based AI music studio powered by ACE-Step v1.5 running on ComfyUI. '
     'It generates full audio — instruments, arrangement, and vocals — from text tags and lyrics. '
     'This guide covers every tab and feature.</p>'
 
@@ -122,9 +126,6 @@ _START_HERE_HTML = (
     '<li>Generate <strong>LRC</strong> if you added lyrics — download and load into your music player</li>'
     '</ol>'
 
-    '<div style="margin-top:20px;text-align:center">'
-    '<img src="/static/images/nyx-start-here.png" alt="Nyx-Step overview" style="max-width:100%;border-radius:8px;border:1px solid #2d3041">'
-    '</div>'
     "</body></html>"
 )
 
@@ -784,7 +785,7 @@ async def download(filename: str, request: Request):
 
 class _ZipRequest(BaseModel):
     filenames: list[str]
-    zip_name: str = "musicweb_batch.zip"
+    zip_name: str = "nyx-step_batch.zip"
 
 
 @router.post("/download/zip")

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 import config
-from musicweb import get_user_email
+from nyx_step import get_user_email
 
 router = APIRouter()
 

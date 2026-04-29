@@ -22,7 +22,7 @@ from core.job_tracker import JobTracker
 
 logging.basicConfig(level=logging.INFO)
 
-app = FastAPI(title="MusicWeb", docs_url="/api/docs", redoc_url="/api/redoc")
+app = FastAPI(title="Nyx-Step", docs_url="/api/docs", redoc_url="/api/redoc")
 
 @app.exception_handler(RequestValidationError)
 async def validation_error_handler(request: Request, exc: RequestValidationError):

@@ -12,7 +12,7 @@ from sse_starlette.sse import EventSourceResponse
 import config
 from core.comfyui import ComfyUIClient
 from core.demucs import run_demucs
-from musicweb import tracker, get_user_email
+from nyx_step import tracker, get_user_email
 
 router = APIRouter(prefix="/stems")
 _client = ComfyUIClient()

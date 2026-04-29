@@ -10,7 +10,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from core.comfyui import ComfyUIClient
 from core.rate_limit import check as rate_check
-from musicweb import tracker, get_user_email
+from nyx_step import tracker, get_user_email
 
 router = APIRouter()
 _client = ComfyUIClient()

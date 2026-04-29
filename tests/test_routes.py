@@ -2,7 +2,7 @@ import json
 from unittest.mock import patch, MagicMock
 
 from fastapi.testclient import TestClient
-from musicweb import app
+from nyx_step import app
 
 client = TestClient(app, headers={"Cf-Access-Authenticated-User-Email": "test@test.com"})
 
