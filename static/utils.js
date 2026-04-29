@@ -136,6 +136,7 @@ function updateTagTokenCount() {
     const badge = document.getElementById(id);
     if (!badge) return;
     badge.textContent = n;
+    badge.style.display = n > 0 ? "" : "none";
     badge.className = "tab-token-badge" + (n >= 15 ? " error" : n >= 12 ? " warn" : "");
   });
 }
