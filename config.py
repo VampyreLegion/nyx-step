@@ -28,6 +28,7 @@ PRESETS_DIR = pathlib.Path("/home/legion/legionprojects/musicweb/presets")
 PRESETS_DIR.mkdir(exist_ok=True)
 
 HISTORY_LOG = pathlib.Path("/home/legion/legionprojects/musicweb/history.jsonl")
+DB_PATH = pathlib.Path("/home/legion/legionprojects/nyx-step/nyx_step.db")
 
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB
 

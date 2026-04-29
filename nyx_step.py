@@ -22,6 +22,10 @@ from core.job_tracker import JobTracker
 
 logging.basicConfig(level=logging.INFO)
 
+import config as _config
+import core.db as _db
+_db.init_db(_config.DB_PATH)
+
 app = FastAPI(title="Nyx-Step", docs_url="/api/docs", redoc_url="/api/redoc")
 
 @app.exception_handler(RequestValidationError)

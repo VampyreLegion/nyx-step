@@ -1,11 +1,11 @@
 from __future__ import annotations
-import json
 import logging
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import config
+import core.db as db
 from core.comfyui import ComfyUIClient
 
 _JOB_TTL_DAYS = 7
@@ -29,11 +29,31 @@ class JobInfo:
     params: dict = field(default_factory=dict)
 
 
+def _dict_to_jobinfo(d: dict) -> JobInfo:
+    submitted_at = d.get("submitted_at", "")
+    try:
+        submitted_at = datetime.fromisoformat(submitted_at)
+    except (ValueError, TypeError):
+        submitted_at = datetime.utcnow()
+    return JobInfo(
+        prompt_id=d["prompt_id"],
+        user_email=d["user_email"],
+        song_name=d.get("song_name", ""),
+        submitted_at=submitted_at,
+        status=d.get("status", "queued"),
+        output_files=d.get("output_files", []),
+        error_msg=d.get("error_msg", ""),
+        seed=d.get("seed", 0),
+        caption=d.get("caption", ""),
+        lyrics=d.get("lyrics", ""),
+        params=d.get("params", {}),
+    )
+
+
 class JobTracker:
 
     def __init__(self, poll_interval: int = 3):
-        self._jobs: dict[str, JobInfo] = {}
-        self._lock = threading.Lock()
+        db.init_db(config.DB_PATH)
         self._client = ComfyUIClient()
         self._poll_interval = poll_interval
         self._last_purge = 0.0
@@ -50,47 +70,36 @@ class JobTracker:
         lyrics: str = "",
         params: dict = None,
     ):
-        with self._lock:
-            self._jobs[prompt_id] = JobInfo(
-                prompt_id=prompt_id,
-                user_email=user_email,
-                song_name=song_name,
-                seed=seed,
-                caption=caption,
-                lyrics=lyrics,
-                params=params or {},
-            )
+        db.upsert_job(
+            prompt_id=prompt_id,
+            user_email=user_email,
+            song_name=song_name,
+            seed=seed,
+            caption=caption,
+            lyrics=lyrics,
+            params=params,
+        )
 
     def get(self, prompt_id: str) -> JobInfo | None:
-        with self._lock:
-            return self._jobs.get(prompt_id)
+        d = db.get_job(prompt_id)
+        return _dict_to_jobinfo(d) if d else None
 
     def update(self, prompt_id: str, **kwargs):
-        with self._lock:
-            job = self._jobs.get(prompt_id)
-            if job:
-                for k, v in kwargs.items():
-                    setattr(job, k, v)
+        db.update_job(prompt_id, **kwargs)
 
     def get_user_jobs(self, user_email: str) -> list[JobInfo]:
-        with self._lock:
-            return [j for j in self._jobs.values() if j.user_email == user_email]
+        return [_dict_to_jobinfo(d) for d in db.get_user_jobs(user_email)]
 
     def get_all_jobs(self) -> list[JobInfo]:
-        with self._lock:
-            return list(self._jobs.values())
+        with db._get_conn() as conn:
+            rows = conn.execute("SELECT * FROM jobs").fetchall()
+        return [_dict_to_jobinfo(db._row_to_job(r)) for r in rows]
 
     def user_owns_file(self, user_email: str, filename: str) -> bool:
-        with self._lock:
-            return any(
-                filename in j.output_files and j.user_email == user_email
-                for j in self._jobs.values()
-            )
+        return db.user_owns_file(user_email, filename)
 
     def user_owns(self, user_email: str, prompt_id: str) -> bool:
-        with self._lock:
-            job = self._jobs.get(prompt_id)
-            return job is not None and job.user_email == user_email
+        return db.user_owns_job(user_email, prompt_id)
 
     def get_queue_counts(self) -> dict:
         q = self._client.get_queue()
@@ -100,31 +109,24 @@ class JobTracker:
         }
 
     def purge_old_jobs(self):
-        cutoff = datetime.utcnow() - timedelta(days=_JOB_TTL_DAYS)
-        with self._lock:
-            old = [pid for pid, j in self._jobs.items() if j.submitted_at < cutoff]
-            for pid in old:
-                del self._jobs[pid]
-        if old:
-            logger.info("Purged %d jobs older than %d days", len(old), _JOB_TTL_DAYS)
+        n = db.purge_old_jobs(_JOB_TTL_DAYS)
+        if n:
+            logger.info("Purged %d jobs older than %d days", n, _JOB_TTL_DAYS)
 
     def _write_history(self, job: JobInfo):
         try:
-            record = {
-                "timestamp": datetime.utcnow().isoformat(),
-                "prompt_id": job.prompt_id,
-                "song_name": job.song_name,
-                "user_email": job.user_email,
-                "caption": job.caption,
-                "lyrics": job.lyrics,
-                "seed": job.seed,
-                "output_files": job.output_files,
-                "params": job.params,
-            }
-            with open(config.HISTORY_LOG, "a") as f:
-                f.write(json.dumps(record) + "\n")
+            db.append_history(
+                prompt_id=job.prompt_id,
+                user_email=job.user_email,
+                song_name=job.song_name,
+                caption=job.caption,
+                lyrics=job.lyrics,
+                seed=job.seed,
+                output_files=job.output_files,
+                params=job.params,
+            )
         except Exception as exc:
-            logger.warning("Failed to write history log: %s", exc)
+            logger.warning("Failed to write history: %s", exc)
 
     def _poll_loop(self):
         import time
@@ -146,8 +148,7 @@ class JobTracker:
         running_ids = {item[1] for item in q.get("queue_running", [])}
         pending_ids = {item[1] for item in q.get("queue_pending", [])}
 
-        with self._lock:
-            active = [j for j in self._jobs.values() if j.status in ("queued", "running")]
+        active = [_dict_to_jobinfo(d) for d in db.get_active_jobs()]
 
         for job in active:
             pid = job.prompt_id
@@ -163,8 +164,7 @@ class JobTracker:
                         files = self._client.find_cached_output_files(history, pid)
                     if files:
                         self.update(pid, status="done", output_files=files)
-                        with self._lock:
-                            completed = self._jobs.get(pid)
+                        completed = self.get(pid)
                         if completed:
                             self._write_history(completed)
                     else:
