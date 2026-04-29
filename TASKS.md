@@ -2,54 +2,49 @@
 
 Forked from MusicWeb. All improvements identified in the April 2026 codebase audit.
 
-**Status legend:** 🔲 todo · 🔄 in progress · ✅ done
+**Status legend:** 🔲 todo · ✅ done
 
 ---
 
-## Phase 1 — Quick Wins
+## Phase 1 — Quick Wins ✅
 
-| # | Area | Task | Status |
-|---|------|------|--------|
-| 1 | Backend | Extract `_SCALE_MAP` and `_FMT_MAP` to module constants in `core/comfyui.py` | ✅ |
-| 2 | Backend | Extract `_find_nodes()`, `_apply_*()` helpers — node-finding loops refactored out of all 7 build methods | ✅ |
-| 3 | Backend | Cache workflow templates on first load via `_load_template()` | ✅ |
-| 4 | Backend | Add retry logic to Ollama calls — `_post_with_retry()` with 3 retries / 1s backoff | ✅ |
-| 5 | Frontend | Reorder tabs by workflow priority; tool tabs moved to end with separator | ✅ |
-| 6 | Frontend | Cap visible job cards at 5 with "View all in History" link | ✅ |
-| 7 | Frontend | Add progress indicators for long operations (Analyze, Ollama artist lookup) | ✅ |
-| 8 | Frontend | Add toast system — `showToast()` with info/success/error/warning; wired to presets | ✅ |
-| 9 | Frontend | Improve error messages — removed 120-char truncation | ✅ |
-| 10 | Backend | Add timeout protection to Whisper transcription — 120s ThreadPoolExecutor timeout | ✅ |
-
----
-
-## Phase 2 — Medium Effort
-
-| # | Area | Task | Status |
-|---|------|------|--------|
-| 11 | Backend | History pagination — `GET /api/history?limit=N&offset=M`, tail-read log | ✅ |
-| 12 | Backend | Async history file I/O with aiofiles | ✅ |
-| 13 | Backend | Centralize ThreadPoolExecutor — 3 separate pools currently | 🔲 |
-| 14 | Frontend | Show tag token count on Style/Instruments/Vocals tabs | 🔲 |
-| 15 | Frontend | History tab pagination UI — "Load older" button | ✅ |
+| # | Area | Task |
+|---|------|------|
+| 1 | Backend | Extract `_SCALE_MAP`/`_FMT_MAP`/`_DIT_MODELS` module constants in `core/comfyui.py` |
+| 2 | Backend | Extract `_find_nodes()`, `_apply_*()` helpers — all 7 build methods refactored |
+| 3 | Backend | Cache workflow templates on first load via `_load_template()` |
+| 4 | Backend | `_post_with_retry()` in `core/ollama.py` — 3 retries / 1s backoff |
+| 5 | Frontend | Tab reorder: Generate→Style→Instruments→Vocals→Parameters→Lyrics first; tools at end |
+| 6 | Frontend | Job card cap at 5 + "View all in History" link |
+| 7 | Frontend | Elapsed-time progress on Analyze and Ollama artist lookup |
+| 8 | Frontend | `showToast()` system wired to preset save/load/delete and errors |
+| 9 | Frontend | Full error messages — removed 120-char truncation |
+| 10 | Backend | Whisper transcription wrapped with 120s `ThreadPoolExecutor` timeout |
 
 ---
 
-## Phase 3 — Foundational
+## Phase 2 — Medium Effort ✅
 
-| # | Area | Task | Status |
-|---|------|------|--------|
-| 16 | Backend | Streaming file uploads — replace .read() with request.stream() | 🔲 |
-| 17 | Backend | Circuit breaker for ComfyUI/Ollama/Brave | 🔲 |
-| 18 | Backend | SQLite-backed job state — replace in-memory dict | 🔲 |
-| 19 | Backend | SQLite history log — replace append-only .jsonl | 🔲 |
+| # | Area | Task |
+|---|------|------|
+| 11 | Backend | History pagination — `GET /api/history?limit=N&offset=M` |
+| 12 | Backend | Async history file I/O via `aiofiles` (superseded by SQLite in Phase 3) |
+| 13 | Backend | Centralized `ThreadPoolExecutor` via `core/executor.py` — shared 4-worker pool |
+| 14 | Frontend | Tag token count badge on Style/Instruments/Vocals tab buttons |
+| 15 | Frontend | "Load older" button in History tab |
 
 ---
 
-## Completed
+## Phase 3 — Foundational ✅
 
-| # | Task | Commit |
-|---|------|--------|
-| 1–10 | Phase 1 quick wins — comfyui refactor, ollama retry, analyze timeout, tab reorder, job cap, toasts, error messages, progress indicators | 30370b1, a9122cd |
-| 11–12, 15 | History pagination + async I/O + Load Older button | 4d3b117 |
-| — | Fork MusicWeb → Nyx-Step; rebrand throughout | ea1ea04 |
+| # | Area | Task |
+|---|------|------|
+| 16 | Backend | Streaming uploads — 64 KB chunked reads via `stream_upload()` in `core/executor.py` |
+| 17 | Backend | Circuit breakers for ComfyUI / Ollama / Brave — `core/circuit_breaker.py` |
+| 18 | Backend | SQLite-backed job state — `core/db.py` with WAL mode; jobs survive restarts |
+| 19 | Backend | SQLite history log — replaces `.jsonl`; indexed, paginated, per-user delete |
+
+---
+
+## All 19 tasks complete — `github.com/VampyreLegion/nyx-step`
+## Live at `music-ai.nyxstudios.net` (port 8001, systemd managed)
