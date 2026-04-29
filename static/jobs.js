@@ -4,6 +4,24 @@ let _genProgressTimer = null;
 let _jobPayloads = {};
 const _waveInstances = {};  // filename → WaveSurfer instance
 
+// ── Dismissed jobs (persisted across page loads) ───────────────────────────
+const _LS_KEY = "nyx_dismissed_jobs";
+let _dismissedJobs = new Set(JSON.parse(localStorage.getItem(_LS_KEY) || "[]"));
+
+function _saveDismissed() {
+  localStorage.setItem(_LS_KEY, JSON.stringify([..._dismissedJobs]));
+}
+
+function clearJobList() {
+  const list = document.getElementById("jobs-list");
+  list.querySelectorAll(".job-card").forEach(c => {
+    _dismissedJobs.add(c.id.replace("job-", ""));
+  });
+  _saveDismissed();
+  list.innerHTML = "";
+  _updateJobsHistoryLink();
+}
+
 function setGenProgress(state, label) {
   const wrap = document.getElementById("gen-progress-wrap");
   const bar = document.getElementById("gen-progress-bar");
@@ -60,6 +78,8 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
     }
     _activeGenPromptId = data.prompt_id;
     _jobPayloads[data.prompt_id] = {...payload};
+    _dismissedJobs.delete(data.prompt_id);
+    _saveDismissed();
     addJobCard(data.prompt_id, songName, "queued", []);
     status.textContent = `Queued — ${data.prompt_id}`;
     status.style.color = "var(--muted)";
@@ -102,6 +122,7 @@ function connectSSE() {
 
 // ── Job cards ─────────────────────────────────────────────────────────────────
 function addJobCard(promptId, songName, status, files) {
+  if (_dismissedJobs.has(promptId)) return;
   if (document.getElementById("job-" + promptId)) {
     updateJobCard(promptId, status, files);
     return;

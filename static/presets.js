@@ -255,7 +255,4 @@ document.getElementById("btn-clear-overview").addEventListener("click", () => {
   updatePayloadPreview();
 });
 
-document.getElementById("btn-clear-jobs").addEventListener("click", () => {
-  document.getElementById("jobs-list").innerHTML = "";
-  _updateJobsHistoryLink();
-});
+document.getElementById("btn-clear-jobs").addEventListener("click", clearJobList);

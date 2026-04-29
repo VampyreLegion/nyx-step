@@ -650,9 +650,7 @@ document.getElementById("btn-clear-overview").addEventListener("click", () => {
   updatePayloadPreview();
 });
 
-document.getElementById("btn-clear-jobs").addEventListener("click", () => {
-  document.getElementById("jobs-list").innerHTML = "";
-});
+document.getElementById("btn-clear-jobs").addEventListener("click", clearJobList);
 
 // ── Generate ──────────────────────────────────────────────────────────────────
 let _activeGenPromptId = null;
