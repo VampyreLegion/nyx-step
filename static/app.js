@@ -420,7 +420,7 @@ function updateLintStatePreview() {
 }
 
 // ── Overview editable fields ──────────────────────────────────────────────────
-document.getElementById("overview-tags").addEventListener("input", updatePayloadPreview);
+document.getElementById("overview-tags").addEventListener("input", () => { updateTagTokenCount(); updatePayloadPreview(); });
 document.getElementById("overview-lyrics").addEventListener("input", updatePayloadPreview);
 document.getElementById("btn-sync-overview").addEventListener("click", syncOverviewFromState);
 

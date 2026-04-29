@@ -20,6 +20,24 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 .tab-btn:hover { color: var(--text); }
 .tab-btn.tab-separator { cursor: default; padding: 10px 6px; color: var(--border); pointer-events: none; }
+.tab-token-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  vertical-align: middle;
+  margin-left: 3px;
+  min-width: 18px;
+  text-align: center;
+  transition: color 0.2s, border-color 0.2s;
+}
+.tab-token-badge.warn { color: #f0a500; border-color: #f0a500; }
+.tab-token-badge.error { color: var(--error); border-color: var(--error); }
 #tab-content { padding: 16px; max-width: 1000px; margin: 0 auto; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }

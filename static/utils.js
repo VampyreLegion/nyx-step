@@ -125,12 +125,19 @@ function syncOverviewFromState() {
 
 function updateTagTokenCount() {
   const el = document.getElementById("tag-token-count");
-  if (!el) return;
   const tags = document.getElementById("overview-tags").value;
   const tokens = tags.split(",").map(t => t.trim()).filter(t => t.length > 0);
   const n = tokens.length;
-  el.textContent = n + (n === 1 ? " token" : " tokens");
-  el.style.color = n >= 15 ? "var(--error)" : n >= 12 ? "var(--warning, #f0a500)" : "var(--muted)";
+  if (el) {
+    el.textContent = n + (n === 1 ? " token" : " tokens");
+    el.style.color = n >= 15 ? "var(--error)" : n >= 12 ? "var(--warning, #f0a500)" : "var(--muted)";
+  }
+  ["token-badge-style", "token-badge-instruments", "token-badge-vocals"].forEach(id => {
+    const badge = document.getElementById(id);
+    if (!badge) return;
+    badge.textContent = n;
+    badge.className = "tab-token-badge" + (n >= 15 ? " error" : n >= 12 ? " warn" : "");
+  });
 }
 
 function updatePayloadPreview() {
