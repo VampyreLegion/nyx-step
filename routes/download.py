@@ -56,7 +56,7 @@ _FLOWCHARTS_HTML = (
 
 _START_HERE_HTML = (
     f"<html><head>{_STYLE}</head><body>"
-    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">Start Here — Nyx-Step Nyx-Step</h2>'
+    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">Start Here — Nyx-Step</h2>'
 
     '<div style="margin-bottom:20px;text-align:center">'
     '<img src="/static/images/nyx-start-here.png" alt="Nyx-Step overview" style="max-width:100%;border-radius:8px;border:1px solid #2d3041">'
@@ -645,34 +645,11 @@ async def meta(filename: str, request: Request):
     if not tracker.user_owns_file(user_email, filename):
         return JSONResponse({"error": "File not found or access denied"}, status_code=404)
 
-    # Search history.jsonl for the record that contains this file
-    try:
-        if config.HISTORY_LOG.exists():
-            with open(config.HISTORY_LOG) as f:
-                for line in reversed(f.readlines()):
-                    try:
-                        record = json.loads(line)
-                        if filename in record.get("output_files", []):
-                            record.pop("user_email", None)
-                            return JSONResponse(record)
-                    except Exception:
-                        continue
-    except Exception:
-        pass
-
-    # Fall back to in-memory tracker if history doesn't have it yet
-    with tracker._lock:
-        for job in tracker._jobs.values():
-            if filename in job.output_files and job.user_email == user_email:
-                return JSONResponse({
-                    "prompt_id": job.prompt_id,
-                    "song_name": job.song_name,
-                    "caption": job.caption,
-                    "seed": job.seed,
-                    "params": job.params,
-                    "output_files": job.output_files,
-                    "timestamp": job.submitted_at.isoformat(),
-                })
+    import core.db as db
+    job = db.get_job_by_filename(filename)
+    if job:
+        job.pop("user_email", None)
+        return JSONResponse(job)
 
     return JSONResponse({"error": "Metadata not found"}, status_code=404)
 
@@ -724,24 +701,9 @@ def _tag_audio(file_path: Path, meta: dict | None) -> bytes | None:
 
 
 def _get_meta_for_file(filename: str) -> dict | None:
-    """Look up job metadata for a filename from history or in-memory tracker."""
-    try:
-        if config.HISTORY_LOG.exists():
-            with open(config.HISTORY_LOG) as f:
-                for line in reversed(f.readlines()):
-                    try:
-                        record = json.loads(line)
-                        if filename in record.get("output_files", []):
-                            return record
-                    except Exception:
-                        continue
-    except Exception:
-        pass
-    with tracker._lock:
-        for job in tracker._jobs.values():
-            if filename in job.output_files:
-                return {"song_name": job.song_name, "caption": job.caption, "seed": job.seed}
-    return None
+    """Look up job metadata for a filename from DB."""
+    import core.db as db
+    return db.get_job_by_filename(filename)
 
 
 @router.get("/download/{filename:path}")

@@ -115,6 +115,16 @@ def get_active_jobs() -> list[dict]:
     return [_row_to_job(r) for r in rows]
 
 
+def get_job_by_filename(filename: str) -> dict | None:
+    with _get_conn() as conn:
+        rows = conn.execute("SELECT * FROM jobs").fetchall()
+    for row in rows:
+        job = _row_to_job(row)
+        if filename in job.get("output_files", []):
+            return job
+    return None
+
+
 def user_owns_file(user_email: str, filename: str) -> bool:
     with _get_conn() as conn:
         rows = conn.execute(

@@ -48,6 +48,11 @@ def get_user_email(request: Request) -> str:
     return request.headers.get("Cf-Access-Authenticated-User-Email", "dev@local")
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok", "version": "3.8"}
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(request, "index.html")

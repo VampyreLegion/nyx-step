@@ -208,10 +208,13 @@ function addDownloadLinks(container, files) {
     container.appendChild(waveWrap);
     const audioSrc = "/download/" + encodeURIComponent(f) + bust;
     if (typeof WaveSurfer !== "undefined") {
+      const cs = getComputedStyle(document.documentElement);
+      const waveColor = cs.getPropertyValue("--border").trim() || "#444";
+      const progressColor = cs.getPropertyValue("--accent").trim() || "#7c3aed";
       const ws = WaveSurfer.create({ /* jshint ignore:line */
         container: waveDiv,
-        waveColor: "var(--border)",
-        progressColor: "var(--accent)",
+        waveColor,
+        progressColor,
         height: 40,
         barWidth: 2,
         barGap: 1,

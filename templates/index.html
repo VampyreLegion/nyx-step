@@ -1464,8 +1464,27 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.7 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.8 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.8 — Performance, Reliability &amp; Bug Fixes</h3>
+        <ul>
+          <li><strong>SQLite job store</strong> — all job state and generation history migrated from an in-memory dict + <code>history.jsonl</code> to SQLite with WAL mode; jobs survive service restarts; indexed on user, status, and timestamp; paginated history API (<code>limit</code> + <code>offset</code>)</li>
+          <li><strong>ComfyUI refactor</strong> — <code>core/comfyui.py</code> reduced from 946 → 659 lines; extracted <code>_SCALE_MAP</code>, <code>_FMT_MAP</code>, <code>_DIT_MODELS</code> constants; shared <code>_find_nodes()</code>, <code>_apply_text_encoder()</code>, <code>_apply_ksampler()</code>, <code>_apply_dit_model()</code>, <code>_apply_audio_format()</code> helpers used across all 7 build methods; workflow templates cached in-process with <code>deepcopy</code></li>
+          <li><strong>Circuit breakers</strong> — three-state breaker (closed → open → half-open) for ComfyUI (3 failures / 30 s recovery), Ollama (3 / 20 s), and Brave Search (2 / 60 s); fast-fail on open circuit prevents request pile-up</li>
+          <li><strong>Streaming uploads</strong> — all file uploads read in 64 KB chunks via <code>aiofiles</code>; 50 MB cap returns clean 413 error; shared 4-worker <code>ThreadPoolExecutor</code> in <code>core/executor.py</code> replaces per-route pools</li>
+          <li><strong>Ollama retry logic</strong> — <code>_post_with_retry()</code> with 3 attempts and 1 s backoff; artist lookup and prompt expansion both wrapped</li>
+          <li><strong>Waveform player fix</strong> — CSS variables (<code>var(--border)</code>, <code>var(--accent)</code>) now resolved via <code>getComputedStyle</code> before being passed to WaveSurfer; canvas contexts do not resolve CSS vars so the waveform was rendering invisible</li>
+          <li><strong>Download / meta crash fix</strong> — <code>tracker._lock</code> and <code>tracker._jobs</code> references removed from <code>routes/download.py</code>; both were eliminated when the SQLite migration dropped the in-memory dict; <code>/download/</code> and <code>/meta/</code> endpoints now query <code>db.get_job_by_filename()</code> directly</li>
+          <li><strong>Token badges hidden when zero</strong> — Style, Instruments, and Vocals tab badges are hidden when the tag count is 0; they were always showing "0" before</li>
+          <li><strong>Job card cap</strong> — overview job list capped at 5 visible cards; oldest removed when exceeded; "View all in History →" link appears at ≥ 5 cards</li>
+          <li><strong>Legion's BioInfusor → 2nd tab</strong> — moved from after Style to the second position in tab order for faster access</li>
+          <li><strong>Presets migrated</strong> — preset files moved from <code>musicweb/presets/</code> to <code>nyx-step/presets/</code>; all 18 existing <code>.nyx</code> files preserved</li>
+          <li><strong>Health endpoint</strong> — <code>GET /health</code> returns <code>{"status":"ok","version":"3.8"}</code> for Cloudflare and uptime monitors</li>
+          <li><strong>Service stability</strong> — systemd unit updated with <code>KillMode=mixed</code> + <code>TimeoutStopSec=10</code>; prevents port 8001 from staying locked between restarts</li>
+        </ul>
       </div>
 
       <div class="about-section">
@@ -1688,8 +1707,8 @@
           <li>Searchable log of all completed generations — search by song name or tags</li>
           <li>Each record shows: song name, tags, BPM/key/scale, seed, timestamp, output files with ⬇ download links</li>
           <li>📥 Load button restores all parameters (tags, lyrics, BPM, key, scale, steps, CFG, duration, seed, format, language, model, batch size, LoRA) back into generation state</li>
-          <li>🗑 Clear All — permanently deletes all user history with confirmation; DELETE /api/history rewrites history.jsonl removing only the current user's records</li>
-          <li>Backend: GET /api/history reads history.jsonl; purges records older than 7 days every 6 hours</li>
+          <li>🗑 Clear All — permanently deletes all user history with confirmation; DELETE /api/history removes only the current user's records from SQLite</li>
+          <li>Backend: GET /api/history queries SQLite with limit/offset pagination; purges records older than 7 days every 6 hours</li>
           <li>↺ Refresh button re-fetches from server; search filters client-side in real time</li>
         </ul>
       </div>
@@ -1733,10 +1752,11 @@
           <li>Exposed via Cloudflare Tunnel at music-ai.nyxstudios.net</li>
           <li>Protected by Cloudflare Access — Google OAuth (invite-only; multi-user support via Cloudflare Access email policies)</li>
           <li>Brave Search API for real web-grounded artist lookups (httpx, key loaded from .env)</li>
-          <li>Presets stored server-side in ~/legionprojects/musicweb/presets/ as .nyx JSON files; exportable as local file downloads, importable from disk via file picker in preset modal</li>
+          <li>Presets stored server-side in <code>nyx-step/presets/</code> as .nyx JSON files; exportable as local file downloads, importable from disk via file picker in preset modal</li>
           <li>ComfyUI on port 8188, Ollama on port 11434 — model selectable per request</li>
-          <li>Rate limiting: 20 generate/remix requests per 60s per user (sliding window, configurable)</li>
-          <li>Generation history logged to history.jsonl — every completed job records caption, lyrics, seed, and output files; purges entries older than 7 days every 6 hours</li>
+          <li>Rate limiting: 20 generate/remix requests per 60 s per user (sliding window, in-process)</li>
+          <li><code>GET /health</code> — health check endpoint; returns version string; used by Cloudflare and uptime monitors</li>
+          <li>Generation history in SQLite (<code>nyx_step.db</code>) — WAL mode; indexed on user and timestamp; jobs survive restarts; old entries purged after 7 days every 6 hours</li>
           <li>API docs available at /api/docs (Swagger UI) and /api/redoc</li>
           <li>Frontend split into 20 focused JS modules (state, utils, bindings, genres, chips, tags, presets, jobs, easy, analyze, voice, quick, lint, stems, cover, lego, extract, radio, train, midi, dropzone, tabs, init)</li>
           <li>Sampler (er_sde) + Scheduler (linear_quadratic) — dedicated Sampler tab; Nyx-Step sweet spots wired directly to KSampler node inputs</li>
@@ -1783,7 +1803,7 @@
 <script src="/static/chips.js?v=1"></script>
 <script src="/static/tags.js?v=1"></script>
 <script src="/static/presets.js?v=3"></script>
-<script src="/static/jobs.js?v=9"></script>
+<script src="/static/jobs.js?v=10"></script>
 <script src="/static/easy.js?v=2"></script>
 <script src="/static/analyze.js?v=4"></script>
 <script src="/static/voice.js?v=1"></script>
