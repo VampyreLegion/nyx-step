@@ -1,3 +1,71 @@
+// ── Toast notifications ───────────────────────────────────────────────────────
+let _toastStyleInjected = false;
+let _toastContainer = null;
+
+function _ensureToastInfra() {
+  if (!_toastStyleInjected) {
+    const style = document.createElement("style");
+    style.textContent = `
+      #nyx-toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 8px;
+        pointer-events: none;
+      }
+      .nyx-toast {
+        padding: 10px 16px;
+        border-radius: 7px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        opacity: 0;
+        transform: translateX(30px);
+        transition: opacity 0.25s, transform 0.25s;
+        pointer-events: auto;
+        max-width: 320px;
+        word-break: break-word;
+        cursor: default;
+      }
+      .nyx-toast.show { opacity: 1; transform: translateX(0); }
+      .nyx-toast.info    { background: #2563eb; }
+      .nyx-toast.success { background: #16a34a; }
+      .nyx-toast.error   { background: #dc2626; }
+      .nyx-toast.warning { background: #d97706; }
+    `;
+    document.head.appendChild(style);
+    _toastStyleInjected = true;
+  }
+  if (!_toastContainer) {
+    _toastContainer = document.createElement("div");
+    _toastContainer.id = "nyx-toast-container";
+    document.body.appendChild(_toastContainer);
+  }
+}
+
+function showToast(message, type = "info") {
+  _ensureToastInfra();
+  const toast = document.createElement("div");
+  toast.className = "nyx-toast " + type;
+  toast.textContent = message;
+  _toastContainer.appendChild(toast);
+  // Trigger show animation
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => toast.classList.add("show"));
+  });
+  // Auto-dismiss after 3s
+  setTimeout(() => {
+    toast.classList.remove("show");
+    toast.addEventListener("transitionend", () => toast.remove(), { once: true });
+    // Fallback removal
+    setTimeout(() => toast.remove(), 400);
+  }, 3000);
+}
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 const _debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 

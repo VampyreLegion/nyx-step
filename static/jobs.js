@@ -43,7 +43,7 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
     let data = {};
     try { data = await resp.json(); } catch (_) {
       const text = await resp.text().catch(() => resp.statusText);
-      const msg = resp.status === 502 ? "ComfyUI is offline or unreachable" : (text.slice(0, 120) || resp.statusText);
+      const msg = resp.status === 502 ? "ComfyUI is offline or unreachable" : (text || resp.statusText);
       status.textContent = "Error: " + msg;
       status.style.color = "var(--error)";
       setGenProgress("error", "Error: " + msg);
@@ -116,7 +116,35 @@ function addJobCard(promptId, songName, status, files) {
     <div class="job-files" style="margin-top:6px"></div>
   `;
   if (files && files.length) addDownloadLinks(card.querySelector(".job-files"), files);
-  document.getElementById("jobs-list").prepend(card);
+  const list = document.getElementById("jobs-list");
+  list.prepend(card);
+  // Cap at 5 visible job cards
+  const cards = list.querySelectorAll(".job-card");
+  if (cards.length > 5) cards[cards.length - 1].remove();
+  // Show/hide "View all in History" link
+  _updateJobsHistoryLink();
+}
+
+function _updateJobsHistoryLink() {
+  const list = document.getElementById("jobs-list");
+  const count = list.querySelectorAll(".job-card").length;
+  let link = document.getElementById("jobs-history-link");
+  if (count >= 5) {
+    if (!link) {
+      link = document.createElement("div");
+      link.id = "jobs-history-link";
+      link.style.cssText = "text-align:center;margin-top:8px;font-size:12px;";
+      link.innerHTML = '<a href="#" style="color:var(--muted);text-decoration:none" id="jobs-history-anchor">View all in History →</a>';
+      list.after(link);
+      document.getElementById("jobs-history-anchor").addEventListener("click", e => {
+        e.preventDefault();
+        document.querySelector('[data-tab="history"]').click();
+      });
+    }
+    link.style.display = "";
+  } else if (link) {
+    link.style.display = "none";
+  }
 }
 
 function updateJobCard(promptId, status, files) {

@@ -18,15 +18,24 @@ document.getElementById("btn-analyze").addEventListener("click", async () => {
   applyBtn.style.display = "none";
   _lastAnalysis = null;
 
+  // Elapsed-time counter
+  const _analyzeStart = Date.now();
+  const _analyzeTimer = setInterval(() => {
+    const elapsed = Math.round((Date.now() - _analyzeStart) / 1000);
+    status.textContent = `Analyzing… ${elapsed}s`;
+  }, 1000);
+
   const form = new FormData();
   form.append("audio", fileEl.files[0]);
 
   try {
     const resp = await fetch("/analyze", { method: "POST", body: form });
+    clearInterval(_analyzeTimer);
     const data = await resp.json();
     if (!resp.ok || data.error) {
       status.textContent = "Error: " + (data.error || resp.statusText);
       status.style.color = "var(--error)";
+      showToast("Analyze failed: " + (data.error || resp.statusText), "error");
       return;
     }
     _lastAnalysis = data;
@@ -44,8 +53,10 @@ document.getElementById("btn-analyze").addEventListener("click", async () => {
     status.textContent = "Analysis complete.";
     status.style.color = "var(--accent2)";
   } catch (e) {
+    clearInterval(_analyzeTimer);
     status.textContent = "Error: " + e.message;
     status.style.color = "var(--error)";
+    showToast("Analyze error: " + e.message, "error");
   } finally {
     btn.disabled = false;
     btn.textContent = "🔍 Analyze";

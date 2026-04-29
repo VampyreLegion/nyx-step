@@ -63,13 +63,20 @@ function _resetOtherApply(otherInfoId) {
 }
 
 async function _doArtistLookup(artist, infoEl, stateObj, useWeb = false, applyType = "artist") {
-  infoEl.textContent = useWeb ? "Searching web + looking up…" : "Looking up…";
+  const _lookupStart = Date.now();
+  const _lookupBaseMsg = useWeb ? "Searching web + looking up" : "Looking up";
+  infoEl.textContent = _lookupBaseMsg + "…";
+  const _lookupTimer = setInterval(() => {
+    const elapsed = Math.round((Date.now() - _lookupStart) / 1000);
+    infoEl.textContent = `${_lookupBaseMsg}… ${elapsed}s`;
+  }, 1000);
   try {
     const resp = await fetch("/ollama/artist-info", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({artist, model: document.getElementById("easy-model").value, use_web: useWeb}),
     });
+    clearInterval(_lookupTimer);
     const data = await resp.json();
     if (data.error) { infoEl.textContent = "Error: " + data.error; return; }
     Object.assign(stateObj, data);
@@ -120,7 +127,9 @@ async function _doArtistLookup(artist, infoEl, stateObj, useWeb = false, applyTy
       e.target.disabled = true;
     });
   } catch(err) {
+    clearInterval(_lookupTimer);
     infoEl.textContent = "Lookup failed: " + err.message;
+    showToast("Artist lookup failed: " + err.message, "error");
   }
 }
 

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Nyx's ai Music Studio by Legion</title>
-  <link rel="stylesheet" href="/static/style.css?v=11">
+  <link rel="stylesheet" href="/static/style.css?v=12">
 </head>
 <body>
 
@@ -15,22 +15,23 @@
 </div>
 
 <div id="tab-bar">
-  <button class="tab-btn active" data-tab="overview" title="Main workspace — tags, lyrics, payload preview, generate">Overview</button>
-  <button class="tab-btn" data-tab="easy" title="Legion's BioInfusor — Quick Idea Starter + AI-assisted prompt building; describe your music in plain English">Legion's BioInfusor</button>
-  <button class="tab-btn" data-tab="style" title="Style Infusor — BPM, key, scale, mode, time signature, chord progression">Style Infusor</button>
+  <button class="tab-btn active" data-tab="overview" title="Main workspace — tags, lyrics, payload preview, generate">Generate</button>
+  <button class="tab-btn" data-tab="style" title="Style Infusor — BPM, key, scale, mode, time signature, chord progression">Style</button>
   <button class="tab-btn" data-tab="instruments" title="Instruments — select and stack instrument tags">Instruments</button>
   <button class="tab-btn" data-tab="vocals" title="Vocals — voice type, register, effects, vocal style tags">Vocals</button>
-  <button class="tab-btn" data-tab="lyrics" title="Tagging — structured lyrics editor with section markers">Tagging</button>
   <button class="tab-btn" data-tab="parameters" title="Parameters — steps, CFG, duration, seed, batch, temperature, format, model, LoRA">Parameters</button>
+  <button class="tab-btn" data-tab="lyrics" title="Tagging — structured lyrics editor with section markers">Lyrics</button>
+  <button class="tab-btn" data-tab="easy" title="Legion's BioInfusor — Quick Idea Starter + AI-assisted prompt building; describe your music in plain English">BioInfusor</button>
   <button class="tab-btn" data-tab="sampler" title="Sampler &amp; Scheduler — diffusion algorithm and noise schedule; controls sonic character of generation">Sampler</button>
-  <button class="tab-btn" data-tab="analyze" title="Analyze Audio — detect BPM, key, scale, LUFS, chord progression, and lyrics from any audio file">Analyze</button>
-  <button class="tab-btn" data-tab="lint" title="Lint — validate tags and lyrics for errors before generating">Lint</button>
-  <button class="tab-btn" data-tab="stems" title="Stems — extract stems from Nyx-Step output or separate audio with Demucs">Stems</button>
-  <button class="tab-btn" data-tab="cover" title="Cover — generate a stylistic cover preserving the melody of a reference track">Cover</button>
-  <button class="tab-btn" data-tab="radio" title="Radio — continuous AI-generated music stream; each segment inherits the timbre of the previous">📻 Radio</button>
-  <button class="tab-btn" data-tab="train" title="Train LoRA — train a custom LoRA adapter on your own audio dataset">Train LoRA</button>
-  <button class="tab-btn" data-tab="midi" title="MIDI — extract MIDI notes from any audio file (melody or piano polyphonic)">MIDI</button>
   <button class="tab-btn" data-tab="history" title="History — searchable log of all your completed generations with reload and download">History</button>
+  <button class="tab-btn tab-separator" disabled>·</button>
+  <button class="tab-btn" data-tab="lint" title="Lint — validate tags and lyrics for errors before generating">Lint</button>
+  <button class="tab-btn" data-tab="cover" title="Cover — generate a stylistic cover preserving the melody of a reference track">Cover</button>
+  <button class="tab-btn" data-tab="stems" title="Stems — extract stems from Nyx-Step output or separate audio with Demucs">Stems</button>
+  <button class="tab-btn" data-tab="radio" title="Radio — continuous AI-generated music stream; each segment inherits the timbre of the previous">📻 Radio</button>
+  <button class="tab-btn" data-tab="analyze" title="Analyze Audio — detect BPM, key, scale, LUFS, chord progression, and lyrics from any audio file">Analyze</button>
+  <button class="tab-btn" data-tab="midi" title="MIDI — extract MIDI notes from any audio file (melody or piano polyphonic)">MIDI</button>
+  <button class="tab-btn" data-tab="train" title="Train LoRA — train a custom LoRA adapter on your own audio dataset">Train LoRA</button>
   <button class="tab-btn" data-tab="guide" title="Guide — full documentation, flowcharts, scales reference, and workflow tips">Guide</button>
   <button class="tab-btn" data-tab="about" title="About — version notes and feature changelog">About</button>
 </div>
@@ -1776,15 +1777,15 @@
 
 <script src="/static/wavesurfer.min.js"></script>
 <script src="/static/state.js?v=9"></script>
-<script src="/static/utils.js?v=3"></script>
+<script src="/static/utils.js?v=4"></script>
 <script src="/static/bindings.js?v=12"></script>
 <script src="/static/genres.js?v=2"></script>
 <script src="/static/chips.js?v=1"></script>
 <script src="/static/tags.js?v=1"></script>
-<script src="/static/presets.js?v=2"></script>
-<script src="/static/jobs.js?v=8"></script>
-<script src="/static/easy.js?v=1"></script>
-<script src="/static/analyze.js?v=3"></script>
+<script src="/static/presets.js?v=3"></script>
+<script src="/static/jobs.js?v=9"></script>
+<script src="/static/easy.js?v=2"></script>
+<script src="/static/analyze.js?v=4"></script>
 <script src="/static/voice.js?v=1"></script>
 <script src="/static/quick.js?v=1"></script>
 <script src="/static/lint.js?v=1"></script>

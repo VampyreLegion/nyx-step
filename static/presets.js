@@ -122,6 +122,7 @@ async function _refreshPresetList() {
         _closePresetModal();
         document.getElementById("generate-status").textContent = `Loaded: ${el.dataset.load}`;
         document.getElementById("generate-status").style.color = "var(--accent2)";
+        showToast("Preset loaded", "success");
       });
     });
     list.querySelectorAll("[data-export]").forEach(el => {
@@ -141,6 +142,7 @@ async function _refreshPresetList() {
       el.addEventListener("click", async () => {
         if (!confirm(`Delete "${el.dataset.delete}"?`)) return;
         await fetch(`/presets/${encodeURIComponent(el.dataset.delete)}`, {method: "DELETE"});
+        showToast("Preset deleted", "info");
         _refreshPresetList();
       });
     });
@@ -164,6 +166,7 @@ document.getElementById("btn-preset-save-named").addEventListener("click", async
     });
     const data = await resp.json();
     document.getElementById("preset-modal-status").textContent = `Saved as "${data.saved || name}"`;
+    showToast("Preset saved", "success");
     nameInput.value = "";
     _refreshPresetList();
   } finally {
@@ -254,4 +257,5 @@ document.getElementById("btn-clear-overview").addEventListener("click", () => {
 
 document.getElementById("btn-clear-jobs").addEventListener("click", () => {
   document.getElementById("jobs-list").innerHTML = "";
+  _updateJobsHistoryLink();
 });

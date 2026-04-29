@@ -19,6 +19,7 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
            font-size: 13px; }
 .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 .tab-btn:hover { color: var(--text); }
+.tab-btn.tab-separator { cursor: default; padding: 10px 6px; color: var(--border); pointer-events: none; }
 #tab-content { padding: 16px; max-width: 1000px; margin: 0 auto; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
