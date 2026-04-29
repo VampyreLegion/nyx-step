@@ -14,7 +14,7 @@ from nyx_step import tracker, get_user_email
 
 router = APIRouter()
 
-_CHAPTER_IDS = ["starthere", "summary", "flowcharts", "scale", "midi", "analyze", "sampler", "presets", "radio", "extract", "quality", "lrc", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
+_CHAPTER_IDS = ["starthere", "summary", "flowcharts", "scale", "midi", "analyze", "sampler", "lm", "presets", "radio", "extract", "quality", "lrc", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
 
 _STYLE = (
     "<style>"
@@ -86,6 +86,7 @@ _START_HERE_HTML = (
     '<tr><td><strong>Tagging</strong></td><td>Full lyrics editor; structural brackets; voice recorder → Whisper transcription</td><td>3. Lyrics</td></tr>'
     '<tr><td><strong>Parameters</strong></td><td>Steps, CFG, Duration, Batch Size, DiT model, Format, Language, Seed, LoRA (dual stacking)</td><td>—</td></tr>'
     '<tr><td><strong>Sampler</strong></td><td>Sampler (er_sde) + Scheduler (linear_quadratic) — controls diffusion character</td><td>Sampler</td></tr>'
+    '<tr><td><strong>LM Stage toggle</strong></td><td>Enable/disable the Qwen LM pre-pass that generates audio codes before diffusion; improves coherence, adds ~10–30s overhead</td><td>LM Stage</td></tr>'
     '<tr><td><strong>Cover</strong></td><td>Upload reference audio → preserve melody, rewrite style. Inner tabs: Cover / Lego / Complete / Extract</td><td>6. Operations</td></tr>'
     '<tr><td><strong>📻 Radio</strong></td><td>Continuous AI stream — each segment inherits timbre from the previous; auto-chains indefinitely</td><td>📻 Radio</td></tr>'
     '<tr><td><strong>Analyze</strong></td><td>Auto-detect BPM, Key, Scale, LUFS, Chords, Language, Lyrics from any audio file</td><td>Analyze</td></tr>'
@@ -595,6 +596,81 @@ _LRC_HTML = (
 )
 
 
+_LM_HTML = (
+    f"<html><head>{_STYLE}</head><body>"
+    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">LM Stage &amp; Audio Codes</h2>'
+
+    '<h3>What Is the LM Stage?</h3>'
+    '<p>Nyx-Step generation runs two model passes back to back:</p>'
+    '<ol>'
+    '<li><strong>LM Stage</strong> — the Qwen language model reads your tags and lyrics and generates a sequence of discrete '
+    '<em>audio code tokens</em> at ~5 Hz (one code per 0.2 s of audio). For a 30-second track this produces ~150 tokens; '
+    'for 60 seconds, ~300. These codes are a low-resolution "semantic blueprint" of the sound over time — '
+    'not audible audio, just numbers that describe what should happen when.</li>'
+    '<li><strong>Diffusion Stage</strong> — the DiT (diffusion transformer) denoises random noise into a full waveform, '
+    'conditioned on both your text tags <em>and</em> the audio codes from step 1. '
+    'The codes act as an additional timeline roadmap for the diffusion process.</li>'
+    '</ol>'
+    '<p>No sound plays during the LM stage. You hear nothing until the diffusion stage completes and the full audio is ready.</p>'
+
+    '<h3>What Does It Actually Improve?</h3>'
+    '<ul>'
+    '<li><strong>Structural coherence</strong> — verse/chorus transitions, drops, and instrumental sections tend to stay '
+    'organised through the full duration. Without the codes, the diffusion model can wander harmonically in longer generations.</li>'
+    '<li><strong>Lyric timing</strong> — the Qwen model has read your lyrics and encoded phrase boundaries into the codes, '
+    'so sung words land more consistently at the right moments relative to the music structure.</li>'
+    '<li><strong>Tonal consistency</strong> — the code sequence "locks in" a harmonic direction early, reducing the chance '
+    'of unexpected key shifts or tonal drift mid-track.</li>'
+    '</ul>'
+    '<p>The tradeoff is time: the Qwen LM runs before diffusion starts, adding <strong>~10–30 s of overhead</strong> '
+    'regardless of your steps setting. The diffusion step count does not affect LM speed.</p>'
+
+    '<h3>No Carry Sound or Preview Audio</h3>'
+    '<p>The LM stage is a silent backend computation. There is no audio output from the Qwen model — '
+    'it outputs integer token IDs, not waveforms. You will not hear anything until the diffusion stage finishes '
+    'and the complete file is ready. The overhead is pure GPU compute time.</p>'
+
+    '<h3>When to Turn It Off</h3>'
+    '<table>'
+    '<tr><th>Situation</th><th>Recommendation</th><th>Why</th></tr>'
+    '<tr><td>Cover / Remix / Repaint / Extract</td><td>Off (forced automatically)</td>'
+    '<td>A reference audio is already providing the timeline structure. Running the LM would generate competing codes that fight the reference.</td></tr>'
+    '<tr><td>Radio streaming (Turbo model)</td><td>Off or On with caution</td>'
+    '<td>Each radio segment takes ~8 diffusion steps (~10–15 s). Adding 10–30 s of LM overhead per segment defeats the point of fast chaining. '
+    'Radio already uses the previous segment as a timbre reference, which provides continuity without LM codes.</td></tr>'
+    '<tr><td>Short previews / rapid iteration</td><td>Off</td>'
+    '<td>When testing tag changes at 8 steps and 15–20 s duration, the LM overhead is often longer than the diffusion itself.</td></tr>'
+    '<tr><td>Final quality renders (SFT or Base model, 30–60 s)</td><td>On</td>'
+    '<td>The structural benefit is most noticeable at longer durations. The overhead is proportionally small against a 30–50 step generation.</td></tr>'
+    '<tr><td>Vocal tracks with detailed lyrics</td><td>On</td>'
+    '<td>Lyric phrase boundaries are encoded into the audio codes — syllable timing and section structure improve meaningfully.</td></tr>'
+    '</table>'
+
+    '<h3>The Audio Codes Cache (NyxNodes)</h3>'
+    '<p>NyxNodes includes two custom ComfyUI nodes for advanced use:</p>'
+    '<ul>'
+    '<li><strong>NyxSaveAudioCodes</strong> — after a generation, saves the Qwen LM output (the audio code sequence) to '
+    '<code>cache/{name}.json</code>.</li>'
+    '<li><strong>NyxLoadAudioCodes</strong> — on the next generation, reinjects those saved codes directly into the conditioning, '
+    'skipping the Qwen LM pass entirely. The diffusion model uses the previously generated codes.</li>'
+    '</ul>'
+    '<p>This is called <em>Fast Variation mode</em>: you can change tags, BPM, or sampler settings and regenerate with '
+    'exactly the same structural blueprint. Useful for iterating on sound while keeping the arrangement locked.</p>'
+
+    '<h3>Sampling Parameters (Temperature, Top-P, Top-K, Min-P)</h3>'
+    '<p>These controls in the Parameters tab affect <em>only the Qwen LM</em>, not the diffusion model:</p>'
+    '<table>'
+    '<tr><th>Parameter</th><th>Effect on Qwen LM</th><th>Default</th></tr>'
+    '<tr><td>Temperature</td><td>Higher = more varied/creative code sequences; lower = more predictable/literal structure</td><td>0.85</td></tr>'
+    '<tr><td>Top-P</td><td>Nucleus sampling threshold — limits tokens to those covering P% of probability mass</td><td>0.9</td></tr>'
+    '<tr><td>Top-K</td><td>Hard cap on candidate tokens per step (0 = off)</td><td>0</td></tr>'
+    '<tr><td>Min-P</td><td>Filters tokens below P × max-token probability (0 = off)</td><td>0.0</td></tr>'
+    '</table>'
+    '<p>The diffusion model is controlled by Steps, CFG Scale, and the Sampler/Scheduler settings instead.</p>'
+    "</body></html>"
+)
+
+
 def _parse_chapter(section_id: str) -> str:
     """Extract one <h2 id="section_id">...</h2> section from Aceuser.html."""
     if section_id == "starthere":
@@ -609,6 +685,8 @@ def _parse_chapter(section_id: str) -> str:
         return _ANALYZE_HTML
     if section_id == "sampler":
         return _SAMPLER_HTML
+    if section_id == "lm":
+        return _LM_HTML
     if section_id == "presets":
         return _PRESETS_HTML
     if section_id == "radio":

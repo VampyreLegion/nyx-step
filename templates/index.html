@@ -835,7 +835,10 @@
       </div>
     </div>
     <div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
-      <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px">LM Stage</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:600;color:var(--accent)">LM Stage</div>
+        <button class="secondary small" onclick="openGuideSection('lm')" title="Open LM Stage guide" style="font-size:10px;padding:1px 6px">📖</button>
+      </div>
       <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px"
         title="Enable the 5Hz Language Model that pre-generates audio codes before diffusion. When ON: higher quality, slower start (~10–30s overhead). When OFF: faster but lower coherence — use when providing a reference audio. Default: ON.">
         <input type="checkbox" id="param-gen-audio-codes" checked style="margin-top:2px">
@@ -1352,6 +1355,7 @@
       <button class="inner-tab-btn" data-guide="midi">MIDI</button>
       <button class="inner-tab-btn" data-guide="analyze">Analyze</button>
       <button class="inner-tab-btn" data-guide="sampler">Sampler</button>
+      <button class="inner-tab-btn" data-guide="lm">LM Stage</button>
       <button class="inner-tab-btn" data-guide="presets">Presets</button>
       <button class="inner-tab-btn" data-guide="radio">📻 Radio</button>
       <button class="inner-tab-btn" data-guide="extract">Extract</button>
