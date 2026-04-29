@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Streamin
 from pydantic import BaseModel
 
 import config
-from nyx-step import tracker, get_user_email
+from nyx_step import tracker, get_user_email
 
 router = APIRouter()
 
