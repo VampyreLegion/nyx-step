@@ -1,4 +1,5 @@
 from __future__ import annotations
+import copy
 import json
 import logging
 import random
@@ -10,6 +11,140 @@ import requests
 import config
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Module-level constants
+# ---------------------------------------------------------------------------
+
+_SCALE_MAP = {
+    "major": "major", "minor": "minor",
+    "harmonic minor": "minor", "melodic minor": "minor",
+    "pentatonic major": "major", "pentatonic minor": "minor",
+}
+_FMT_MAP = {
+    "mp3":  ("SaveAudioMP3",  "Save Audio"),
+    "flac": ("SaveAudio",     "Save Audio"),
+    "opus": ("SaveAudioOpus", "Save Audio"),
+}
+_DIT_MODELS = {
+    "turbo": "acestep_v1.5_xl_turbo_bf16.safetensors",
+    "sft":   "acestep_v1.5_xl_sft_bf16.safetensors",
+    "base":  "acestep_v1.5_xl_base_bf16.safetensors",
+}
+_AUDIO_SAVE_CLASSES = frozenset(("SaveAudioMP3", "SaveAudio", "SaveAudioOpus"))
+_TEMPLATE_CACHE: dict[str, dict] = {}
+
+# ---------------------------------------------------------------------------
+# Module-level helpers
+# ---------------------------------------------------------------------------
+
+
+def _load_template(path: pathlib.Path) -> dict:
+    key = str(path)
+    if key not in _TEMPLATE_CACHE:
+        with open(path) as f:
+            _TEMPLATE_CACHE[key] = json.load(f)
+    return copy.deepcopy(_TEMPLATE_CACHE[key])
+
+
+def _find_nodes(workflow: dict, class_type: str) -> list[dict]:
+    return [v for v in workflow.values() if isinstance(v, dict) and v.get("class_type") == class_type]
+
+
+def _find_node_id(workflow: dict, class_type: str) -> str | None:
+    return next(
+        (k for k, v in workflow.items() if isinstance(v, dict) and v.get("class_type") == class_type),
+        None,
+    )
+
+
+def _gen_seed(state: dict) -> int:
+    seed = state.get("seed", 0)
+    if not state.get("lock_seed", False) or seed == 0:
+        seed = random.randint(0, 2**32 - 1)
+    return seed
+
+
+def _apply_text_encoder(
+    inputs: dict,
+    caption: str,
+    lyrics: str,
+    state: dict,
+    override_duration: float | None = None,
+) -> None:
+    inputs["tags"] = caption
+    inputs["lyrics"] = lyrics
+    inputs["bpm"] = state.get("bpm", 120)
+    inputs["duration"] = override_duration if override_duration is not None else float(state.get("duration", 30))
+    inputs["cfg_scale"] = state.get("cfg_scale", 2.0)
+    inputs["temperature"] = state.get("temperature", 0.85)
+    inputs["top_p"] = state.get("top_p", 0.9)
+    inputs["top_k"] = state.get("top_k", 0)
+    inputs["min_p"] = state.get("min_p", 0.0)
+    key = state.get("key", "")
+    scale = state.get("scale", "")
+    if key and scale:
+        mapped = _SCALE_MAP.get(scale.lower())
+        if mapped:
+            inputs["keyscale"] = f"{key} {mapped}"
+        if scale.lower() not in ("major", "minor"):
+            inputs["tags"] = f"{inputs['tags']}, {scale.lower()} scale"
+    time_sig = state.get("time_sig", "4/4")
+    if time_sig:
+        inputs["timesignature"] = time_sig.split("/")[0]
+
+
+def _apply_ksampler(
+    workflow: dict,
+    state: dict,
+    seed: int,
+    denoise: float = 1.0,
+    default_steps: int = 8,
+) -> None:
+    sampler_name = state.get("sampler_name", "er_sde") or "er_sde"
+    scheduler = state.get("scheduler", "linear_quadratic") or "linear_quadratic"
+    for node in _find_nodes(workflow, "KSampler"):
+        inp = node.setdefault("inputs", {})
+        inp["steps"] = state.get("steps", default_steps)
+        inp["denoise"] = float(denoise)
+        inp["seed"] = seed
+        inp["sampler_name"] = sampler_name
+        inp["scheduler"] = scheduler
+
+
+def _apply_seed_to_encoder(workflow: dict, seed: int) -> None:
+    for node in _find_nodes(workflow, "TextEncodeAceStepAudio1.5"):
+        node.setdefault("inputs", {})["seed"] = seed
+
+
+def _apply_dit_model(workflow: dict, state: dict, default: str = "turbo") -> None:
+    dit_key = state.get("dit_model", default).lower()
+    unet_name = _DIT_MODELS.get(dit_key, _DIT_MODELS[default])
+    for node in _find_nodes(workflow, "UNETLoader"):
+        node.setdefault("inputs", {})["unet_name"] = unet_name
+
+
+def _apply_audio_format(workflow: dict, state: dict, label: str = "Save Audio") -> None:
+    audio_format = state.get("audio_format", "mp3").lower()
+    audio_quality = state.get("audio_quality", "V0")
+    cls, _ = _FMT_MAP.get(audio_format, _FMT_MAP["mp3"])
+    for node in workflow.values():
+        if isinstance(node, dict) and node.get("class_type") in _AUDIO_SAVE_CLASSES:
+            node["class_type"] = cls
+            node["_meta"] = {"title": f"{label} ({audio_format.upper()})"}
+            inp = node.setdefault("inputs", {})
+            inp.pop("quality", None)
+            inp.pop("audioUI", None)
+            if audio_format == "mp3":
+                inp["quality"] = audio_quality or "V0"
+                inp["audioUI"] = ""
+            elif audio_format == "opus":
+                inp["quality"] = audio_quality or "128k"
+
+
+# ---------------------------------------------------------------------------
+# Client
+# ---------------------------------------------------------------------------
 
 
 class ComfyUIClient:
@@ -55,84 +190,30 @@ class ComfyUIClient:
         if not template_path.exists():
             return {"error": f"Workflow template not found: {template_path}"}
 
-        with open(template_path) as f:
-            workflow = json.load(f)
+        workflow = _load_template(template_path)
 
+        # TextEncoder — find nodes and fill
         filled = False
-        for node in workflow.values():
-            if not isinstance(node, dict):
-                continue
-            if node.get("class_type") == "TextEncodeAceStepAudio1.5":
-                inputs = node.setdefault("inputs", {})
-                inputs["tags"] = caption
-                inputs["lyrics"] = lyrics
-                lang = state.get("vocal_language", "auto")
-                if lang and lang != "auto":
-                    inputs["language"] = lang
-                inputs["generate_audio_codes"] = state.get("generate_audio_codes", True)
-                inputs["bpm"] = state.get("bpm", 120)
-                inputs["duration"] = float(state.get("duration", 30))
-                inputs["cfg_scale"] = state.get("cfg_scale", 2.0)
-                inputs["temperature"] = state.get("temperature", 0.85)
-                inputs["top_p"] = state.get("top_p", 0.9)
-                inputs["top_k"] = state.get("top_k", 0)
-                inputs["min_p"] = state.get("min_p", 0.0)
-                key = state.get("key", "")
-                scale = state.get("scale", "")
-                _scale_map = {
-                    "major": "major", "minor": "minor",
-                    "harmonic minor": "minor", "melodic minor": "minor",
-                    "pentatonic major": "major", "pentatonic minor": "minor",
-                }
-                if key and scale:
-                    mapped = _scale_map.get(scale.lower())
-                    if mapped:
-                        inputs["keyscale"] = f"{key} {mapped}"
-                    if scale.lower() not in ("major", "minor"):
-                        inputs["tags"] = f"{inputs['tags']}, {scale.lower()} scale"
-                time_sig = state.get("time_sig", "4/4")
-                if time_sig:
-                    inputs["timesignature"] = time_sig.split("/")[0]
-                filled = True
+        for node in _find_nodes(workflow, "TextEncodeAceStepAudio1.5"):
+            inputs = node.setdefault("inputs", {})
+            _apply_text_encoder(inputs, caption, lyrics, state)
+            lang = state.get("vocal_language", "auto")
+            if lang and lang != "auto":
+                inputs["language"] = lang
+            inputs["generate_audio_codes"] = state.get("generate_audio_codes", True)
+            filled = True
 
         if not filled:
             return {"error": "No TextEncodeAceStepAudio1.5 node found in template"}
 
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "EmptyAceStep1.5LatentAudio":
-                node.setdefault("inputs", {})["seconds"] = float(state.get("duration", 30))
-                node["inputs"]["batch_size"] = max(1, min(8, int(state.get("batch_size", 1))))
+        for node in _find_nodes(workflow, "EmptyAceStep1.5LatentAudio"):
+            node.setdefault("inputs", {})["seconds"] = float(state.get("duration", 30))
+            node["inputs"]["batch_size"] = max(1, min(8, int(state.get("batch_size", 1))))
 
-        sampler_name = state.get("sampler_name", "er_sde") or "er_sde"
-        scheduler    = state.get("scheduler", "linear_quadratic") or "linear_quadratic"
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "KSampler":
-                inp = node.setdefault("inputs", {})
-                inp["steps"]        = state.get("steps", 8)
-                inp["sampler_name"] = sampler_name
-                inp["scheduler"]    = scheduler
-
-        seed = state.get("seed", 0)
-        if not state.get("lock_seed", False) or seed == 0:
-            seed = random.randint(0, 2**32 - 1)
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "KSampler":
-                node.setdefault("inputs", {})["seed"] = seed
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "TextEncodeAceStepAudio1.5":
-                node.setdefault("inputs", {})["seed"] = seed
-
-        # Swap DiT model in UNETLoader
-        _dit_models = {
-            "turbo": "acestep_v1.5_xl_turbo_bf16.safetensors",
-            "sft":   "acestep_v1.5_xl_sft_bf16.safetensors",
-            "base":  "acestep_v1.5_xl_base_bf16.safetensors",
-        }
-        dit_key = state.get("dit_model", "turbo").lower()
-        unet_name = _dit_models.get(dit_key, _dit_models["turbo"])
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "UNETLoader":
-                node.setdefault("inputs", {})["unet_name"] = unet_name
+        seed = _gen_seed(state)
+        _apply_ksampler(workflow, state, seed, denoise=1.0, default_steps=8)
+        _apply_seed_to_encoder(workflow, seed)
+        _apply_dit_model(workflow, state, default="turbo")
 
         # Insert LoraLoader chain if one or two LoRAs are selected
         lora_name  = state.get("lora_name",  "").strip()
@@ -141,8 +222,8 @@ class ComfyUIClient:
         lora2_scale = float(state.get("lora2_scale", 1.0))
 
         if lora_name:
-            unet_id = next((k for k, v in workflow.items() if isinstance(v, dict) and v.get("class_type") == "UNETLoader"), None)
-            clip_id = next((k for k, v in workflow.items() if isinstance(v, dict) and v.get("class_type") == "DualCLIPLoader"), None)
+            unet_id = _find_node_id(workflow, "UNETLoader")
+            clip_id = _find_node_id(workflow, "DualCLIPLoader")
             if unet_id and clip_id:
                 lora_id = "_lora_"
                 workflow[lora_id] = {
@@ -195,30 +276,7 @@ class ComfyUIClient:
                     workflow[lora2_id]["inputs"]["model"] = [lora_id, 0]
                     workflow[lora2_id]["inputs"]["clip"] = [lora_id, 1]
 
-        # Swap audio save node to match requested format
-        _fmt_map = {
-            "mp3":  ("SaveAudioMP3",  "Save Audio (MP3)"),
-            "flac": ("SaveAudio",     "Save Audio (FLAC)"),
-            "opus": ("SaveAudioOpus", "Save Audio (Opus)"),
-        }
-        audio_format = state.get("audio_format", "mp3").lower()
-        audio_quality = state.get("audio_quality", "V0")
-        cls, title = _fmt_map.get(audio_format, _fmt_map["mp3"])
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") in (
-                "SaveAudioMP3", "SaveAudio", "SaveAudioOpus"
-            ):
-                node["class_type"] = cls
-                node["_meta"] = {"title": title}
-                inp = node.setdefault("inputs", {})
-                inp.pop("quality", None)
-                inp.pop("audioUI", None)
-                if audio_format == "mp3":
-                    inp["quality"] = audio_quality or "V0"
-                    inp["audioUI"] = ""
-                elif audio_format == "opus":
-                    inp["quality"] = audio_quality or "128k"
-
+        _apply_audio_format(workflow, state)
         return {"workflow": workflow, "seed": seed}
 
     def build_cover_workflow(
@@ -266,58 +324,17 @@ class ComfyUIClient:
         if not config.WORKFLOW_REMIX_TEMPLATE.exists():
             return {"error": f"Remix template not found: {config.WORKFLOW_REMIX_TEMPLATE}"}
 
-        with open(config.WORKFLOW_REMIX_TEMPLATE) as f:
-            workflow = json.load(f)
+        workflow = _load_template(config.WORKFLOW_REMIX_TEMPLATE)
 
-        for node in workflow.values():
-            if not isinstance(node, dict):
-                continue
-            if node.get("class_type") == "LoadAudio":
-                node["inputs"]["audio"] = input_name
+        for node in _find_nodes(workflow, "LoadAudio"):
+            node["inputs"]["audio"] = input_name
 
-        _scale_map = {
-            "major": "major", "minor": "minor",
-            "harmonic minor": "minor", "melodic minor": "minor",
-            "pentatonic major": "major", "pentatonic minor": "minor",
-        }
-        for node in workflow.values():
-            if not isinstance(node, dict):
-                continue
-            if node.get("class_type") == "TextEncodeAceStepAudio1.5":
-                inputs = node.setdefault("inputs", {})
-                inputs["tags"] = caption
-                inputs["lyrics"] = lyrics
-                inputs["bpm"] = state.get("bpm", 120)
-                inputs["duration"] = float(state.get("duration", 30))
-                inputs["cfg_scale"] = state.get("cfg_scale", 2.0)
-                inputs["temperature"] = state.get("temperature", 0.85)
-                inputs["top_p"] = state.get("top_p", 0.9)
-                inputs["top_k"] = state.get("top_k", 0)
-                inputs["min_p"] = state.get("min_p", 0.0)
-                key = state.get("key", "")
-                scale = state.get("scale", "")
-                if key and scale:
-                    mapped = _scale_map.get(scale.lower())
-                    if mapped:
-                        inputs["keyscale"] = f"{key} {mapped}"
-                    if scale.lower() not in ("major", "minor"):
-                        inputs["tags"] = f"{inputs['tags']}, {scale.lower()} scale"
-                time_sig = state.get("time_sig", "4/4")
-                if time_sig:
-                    inputs["timesignature"] = time_sig.split("/")[0]
+        for node in _find_nodes(workflow, "TextEncodeAceStepAudio1.5"):
+            _apply_text_encoder(node.setdefault("inputs", {}), caption, lyrics, state)
 
-        seed = state.get("seed", 0)
-        if not state.get("lock_seed", False) or seed == 0:
-            seed = random.randint(0, 2**32 - 1)
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "KSampler":
-                inputs = node.setdefault("inputs", {})
-                inputs["steps"] = state.get("steps", 8)
-                inputs["denoise"] = float(denoise)
-                inputs["seed"] = seed
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "TextEncodeAceStepAudio1.5":
-                node.setdefault("inputs", {})["seed"] = seed
+        seed = _gen_seed(state)
+        _apply_ksampler(workflow, state, seed, denoise=denoise, default_steps=8)
+        _apply_seed_to_encoder(workflow, seed)
 
         return {"workflow": workflow, "seed": seed}
 
@@ -343,8 +360,7 @@ class ComfyUIClient:
         input_name = self.copy_to_input(source_path)
         repaint_duration = round(end_time - start_time, 3)
 
-        with open(config.WORKFLOW_REPAINT_TEMPLATE) as f:
-            workflow = json.load(f)
+        workflow = _load_template(config.WORKFLOW_REPAINT_TEMPLATE)
 
         for node in workflow.values():
             if not isinstance(node, dict):
@@ -365,49 +381,12 @@ class ComfyUIClient:
                     inputs["start_index"] = float(end_time)
                     inputs["duration"] = 10000.0
 
-        _scale_map = {
-            "major": "major", "minor": "minor",
-            "harmonic minor": "minor", "melodic minor": "minor",
-            "pentatonic major": "major", "pentatonic minor": "minor",
-        }
-        for node in workflow.values():
-            if not isinstance(node, dict):
-                continue
-            if node.get("class_type") == "TextEncodeAceStepAudio1.5":
-                inputs = node.setdefault("inputs", {})
-                inputs["tags"] = caption
-                inputs["lyrics"] = lyrics
-                inputs["bpm"] = state.get("bpm", 120)
-                inputs["duration"] = repaint_duration
-                inputs["cfg_scale"] = state.get("cfg_scale", 2.0)
-                inputs["temperature"] = state.get("temperature", 0.85)
-                inputs["top_p"] = state.get("top_p", 0.9)
-                inputs["top_k"] = state.get("top_k", 0)
-                inputs["min_p"] = state.get("min_p", 0.0)
-                key = state.get("key", "")
-                scale = state.get("scale", "")
-                if key and scale:
-                    mapped = _scale_map.get(scale.lower())
-                    if mapped:
-                        inputs["keyscale"] = f"{key} {mapped}"
-                    if scale.lower() not in ("major", "minor"):
-                        inputs["tags"] = f"{inputs['tags']}, {scale.lower()} scale"
-                time_sig = state.get("time_sig", "4/4")
-                if time_sig:
-                    inputs["timesignature"] = time_sig.split("/")[0]
+        for node in _find_nodes(workflow, "TextEncodeAceStepAudio1.5"):
+            _apply_text_encoder(node.setdefault("inputs", {}), caption, lyrics, state, override_duration=repaint_duration)
 
-        seed = state.get("seed", 0)
-        if not state.get("lock_seed", False) or seed == 0:
-            seed = random.randint(0, 2**32 - 1)
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "KSampler":
-                inputs = node.setdefault("inputs", {})
-                inputs["steps"] = state.get("steps", 8)
-                inputs["denoise"] = 1.0
-                inputs["seed"] = seed
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "TextEncodeAceStepAudio1.5":
-                node.setdefault("inputs", {})["seed"] = seed
+        seed = _gen_seed(state)
+        _apply_ksampler(workflow, state, seed, denoise=1.0, default_steps=8)
+        _apply_seed_to_encoder(workflow, seed)
 
         return {"workflow": workflow, "seed": seed}
 
@@ -422,98 +401,24 @@ class ComfyUIClient:
         if not config.WORKFLOW_LEGO_TEMPLATE.exists():
             return {"error": f"Lego template not found: {config.WORKFLOW_LEGO_TEMPLATE}"}
 
-        with open(config.WORKFLOW_LEGO_TEMPLATE) as f:
-            workflow = json.load(f)
+        workflow = _load_template(config.WORKFLOW_LEGO_TEMPLATE)
 
-        _scale_map = {
-            "major": "major", "minor": "minor",
-            "harmonic minor": "minor", "melodic minor": "minor",
-            "pentatonic major": "major", "pentatonic minor": "minor",
-        }
+        for node in _find_nodes(workflow, "LoadAudio"):
+            node["inputs"]["audio"] = input_name
 
-        for node in workflow.values():
-            if not isinstance(node, dict):
-                continue
-            if node.get("class_type") == "LoadAudio":
-                node["inputs"]["audio"] = input_name
-            elif node.get("class_type") == "TextEncodeAceStepAudio1.5":
-                inp = node.setdefault("inputs", {})
-                inp["tags"] = caption
-                inp["lyrics"] = lyrics
-                inp["bpm"] = state.get("bpm", 120)
-                inp["duration"] = float(state.get("duration", 30))
-                inp["cfg_scale"] = state.get("cfg_scale", 2.0)
-                inp["temperature"] = state.get("temperature", 0.85)
-                inp["top_p"] = state.get("top_p", 0.9)
-                inp["top_k"] = state.get("top_k", 0)
-                inp["min_p"] = state.get("min_p", 0.0)
-                lang = state.get("vocal_language", "auto")
-                if lang and lang != "auto":
-                    inp["language"] = lang
-                key = state.get("key", "")
-                scale = state.get("scale", "")
-                if key and scale:
-                    mapped = _scale_map.get(scale.lower())
-                    if mapped:
-                        inp["keyscale"] = f"{key} {mapped}"
-                    if scale.lower() not in ("major", "minor"):
-                        inp["tags"] = f"{inp['tags']}, {scale.lower()} scale"
-                time_sig = state.get("time_sig", "4/4")
-                if time_sig:
-                    inp["timesignature"] = time_sig.split("/")[0]
-                inp["generate_audio_codes"] = state.get("generate_audio_codes", True)
+        for node in _find_nodes(workflow, "TextEncodeAceStepAudio1.5"):
+            inp = node.setdefault("inputs", {})
+            _apply_text_encoder(inp, caption, lyrics, state)
+            lang = state.get("vocal_language", "auto")
+            if lang and lang != "auto":
+                inp["language"] = lang
+            inp["generate_audio_codes"] = state.get("generate_audio_codes", True)
 
-        seed = state.get("seed", 0)
-        if not state.get("lock_seed", False) or seed == 0:
-            seed = random.randint(0, 2**32 - 1)
-
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "KSampler":
-                inp = node.setdefault("inputs", {})
-                inp["steps"] = state.get("steps", 20)
-                inp["denoise"] = float(denoise)
-                inp["seed"] = seed
-                inp["sampler_name"] = state.get("sampler_name", "er_sde") or "er_sde"
-                inp["scheduler"] = state.get("scheduler", "linear_quadratic") or "linear_quadratic"
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "TextEncodeAceStepAudio1.5":
-                node.setdefault("inputs", {})["seed"] = seed
-
-        # DiT model
-        _dit_models = {
-            "turbo": "acestep_v1.5_xl_turbo_bf16.safetensors",
-            "sft":   "acestep_v1.5_xl_sft_bf16.safetensors",
-            "base":  "acestep_v1.5_xl_base_bf16.safetensors",
-        }
-        dit_key = state.get("dit_model", "sft").lower()
-        unet_name = _dit_models.get(dit_key, _dit_models["sft"])
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "UNETLoader":
-                node.setdefault("inputs", {})["unet_name"] = unet_name
-
-        # Audio format
-        _fmt_map = {
-            "mp3":  ("SaveAudioMP3",  "Save Audio (MP3)"),
-            "flac": ("SaveAudio",     "Save Audio (FLAC)"),
-            "opus": ("SaveAudioOpus", "Save Audio (Opus)"),
-        }
-        audio_format = state.get("audio_format", "mp3").lower()
-        audio_quality = state.get("audio_quality", "V0")
-        cls, title = _fmt_map.get(audio_format, _fmt_map["mp3"])
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") in (
-                "SaveAudioMP3", "SaveAudio", "SaveAudioOpus"
-            ):
-                node["class_type"] = cls
-                node["_meta"] = {"title": title}
-                inp = node.setdefault("inputs", {})
-                inp.pop("quality", None)
-                inp.pop("audioUI", None)
-                if audio_format == "mp3":
-                    inp["quality"] = audio_quality or "V0"
-                    inp["audioUI"] = ""
-                elif audio_format == "opus":
-                    inp["quality"] = audio_quality or "128k"
+        seed = _gen_seed(state)
+        _apply_ksampler(workflow, state, seed, denoise=denoise, default_steps=20)
+        _apply_seed_to_encoder(workflow, seed)
+        _apply_dit_model(workflow, state, default="sft")
+        _apply_audio_format(workflow, state)
 
         return {"workflow": workflow, "seed": seed}
 
@@ -527,14 +432,8 @@ class ComfyUIClient:
         if not config.WORKFLOW_RADIO_CONTINUE_TEMPLATE.exists():
             return {"error": f"Radio continue template not found: {config.WORKFLOW_RADIO_CONTINUE_TEMPLATE}"}
 
-        with open(config.WORKFLOW_RADIO_CONTINUE_TEMPLATE) as f:
-            workflow = json.load(f)
+        workflow = _load_template(config.WORKFLOW_RADIO_CONTINUE_TEMPLATE)
 
-        _scale_map = {
-            "major": "major", "minor": "minor",
-            "harmonic minor": "minor", "melodic minor": "minor",
-            "pentatonic major": "major", "pentatonic minor": "minor",
-        }
         duration = float(state.get("duration", 30))
 
         for node in workflow.values():
@@ -544,73 +443,18 @@ class ComfyUIClient:
                 node["inputs"]["audio"] = prev_input_name
             elif node.get("class_type") == "TextEncodeAceStepAudio1.5":
                 inp = node.setdefault("inputs", {})
-                inp["tags"] = caption
-                inp["lyrics"] = ""
-                inp["bpm"] = state.get("bpm", 120)
-                inp["duration"] = duration
-                inp["cfg_scale"] = state.get("cfg_scale", 2.0)
-                inp["temperature"] = state.get("temperature", 0.85)
-                inp["top_p"] = state.get("top_p", 0.9)
-                inp["top_k"] = state.get("top_k", 0)
-                inp["min_p"] = state.get("min_p", 0.0)
+                _apply_text_encoder(inp, caption, "", state, override_duration=duration)
                 inp["generate_audio_codes"] = True
-                key = state.get("key", "")
-                scale = state.get("scale", "")
-                if key and scale:
-                    mapped = _scale_map.get(scale.lower())
-                    if mapped:
-                        inp["keyscale"] = f"{key} {mapped}"
-                time_sig = state.get("time_sig", "4/4")
-                if time_sig:
-                    inp["timesignature"] = time_sig.split("/")[0]
+                # radio continue doesn't add scale suffix to tags — clear lyrics override
+                inp["lyrics"] = ""
             elif node.get("class_type") == "EmptyAceStep1.5LatentAudio":
                 node.setdefault("inputs", {})["seconds"] = duration
 
         seed = random.randint(0, 2**32 - 1)
-        sampler_name = state.get("sampler_name", "er_sde") or "er_sde"
-        scheduler = state.get("scheduler", "linear_quadratic") or "linear_quadratic"
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "KSampler":
-                inp = node.setdefault("inputs", {})
-                inp["steps"] = state.get("steps", 20)
-                inp["denoise"] = 1.0
-                inp["seed"] = seed
-                inp["sampler_name"] = sampler_name
-                inp["scheduler"] = scheduler
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "TextEncodeAceStepAudio1.5":
-                node.setdefault("inputs", {})["seed"] = seed
-
-        _dit_models = {
-            "turbo": "acestep_v1.5_xl_turbo_bf16.safetensors",
-            "sft":   "acestep_v1.5_xl_sft_bf16.safetensors",
-            "base":  "acestep_v1.5_xl_base_bf16.safetensors",
-        }
-        dit_key = state.get("dit_model", "turbo").lower()
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "UNETLoader":
-                node.setdefault("inputs", {})["unet_name"] = _dit_models.get(dit_key, _dit_models["turbo"])
-
-        _fmt_map = {
-            "mp3":  ("SaveAudioMP3",  "Save Radio Segment (MP3)"),
-            "flac": ("SaveAudio",     "Save Radio Segment (FLAC)"),
-            "opus": ("SaveAudioOpus", "Save Radio Segment (Opus)"),
-        }
-        audio_format = state.get("audio_format", "mp3").lower()
-        audio_quality = state.get("audio_quality", "V0")
-        cls, title = _fmt_map.get(audio_format, _fmt_map["mp3"])
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") in ("SaveAudioMP3", "SaveAudio", "SaveAudioOpus"):
-                node["class_type"] = cls
-                node["_meta"] = {"title": title}
-                inp = node.setdefault("inputs", {})
-                inp.pop("quality", None)
-                inp.pop("audioUI", None)
-                if audio_format == "mp3":
-                    inp["quality"] = audio_quality or "V0"
-                    inp["audioUI"] = ""
-                elif audio_format == "opus":
-                    inp["quality"] = audio_quality or "128k"
+        _apply_ksampler(workflow, state, seed, denoise=1.0, default_steps=20)
+        _apply_seed_to_encoder(workflow, seed)
+        _apply_dit_model(workflow, state, default="turbo")
+        _apply_audio_format(workflow, state, label="Save Radio Segment")
 
         return {"workflow": workflow, "seed": seed}
 
@@ -626,90 +470,21 @@ class ComfyUIClient:
         if not config.WORKFLOW_EXTRACT_TEMPLATE.exists():
             return {"error": f"Extract template not found: {config.WORKFLOW_EXTRACT_TEMPLATE}"}
 
-        with open(config.WORKFLOW_EXTRACT_TEMPLATE) as f:
-            workflow = json.load(f)
+        workflow = _load_template(config.WORKFLOW_EXTRACT_TEMPLATE)
 
-        _scale_map = {
-            "major": "major", "minor": "minor",
-            "harmonic minor": "minor", "melodic minor": "minor",
-            "pentatonic major": "major", "pentatonic minor": "minor",
-        }
+        for node in _find_nodes(workflow, "LoadAudio"):
+            node["inputs"]["audio"] = input_name
 
-        for node in workflow.values():
-            if not isinstance(node, dict):
-                continue
-            if node.get("class_type") == "LoadAudio":
-                node["inputs"]["audio"] = input_name
-            elif node.get("class_type") == "TextEncodeAceStepAudio1.5":
-                inp = node.setdefault("inputs", {})
-                inp["tags"] = caption
-                inp["lyrics"] = lyrics
-                inp["bpm"] = state.get("bpm", 120)
-                inp["duration"] = float(state.get("duration", 30))
-                inp["cfg_scale"] = state.get("cfg_scale", 2.0)
-                inp["temperature"] = state.get("temperature", 0.85)
-                inp["top_p"] = state.get("top_p", 0.9)
-                inp["top_k"] = state.get("top_k", 0)
-                inp["min_p"] = state.get("min_p", 0.0)
-                inp["generate_audio_codes"] = False  # always skip LM for extraction
-                key = state.get("key", "")
-                scale = state.get("scale", "")
-                if key and scale:
-                    mapped = _scale_map.get(scale.lower())
-                    if mapped:
-                        inp["keyscale"] = f"{key} {mapped}"
-                time_sig = state.get("time_sig", "4/4")
-                if time_sig:
-                    inp["timesignature"] = time_sig.split("/")[0]
+        for node in _find_nodes(workflow, "TextEncodeAceStepAudio1.5"):
+            inp = node.setdefault("inputs", {})
+            _apply_text_encoder(inp, caption, lyrics, state)
+            inp["generate_audio_codes"] = False  # always skip LM for extraction
 
-        seed = state.get("seed", 0)
-        if not state.get("lock_seed", False) or seed == 0:
-            seed = random.randint(0, 2**32 - 1)
-
-        sampler_name = state.get("sampler_name", "er_sde") or "er_sde"
-        scheduler = state.get("scheduler", "linear_quadratic") or "linear_quadratic"
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "KSampler":
-                inp = node.setdefault("inputs", {})
-                inp["steps"] = state.get("steps", 20)
-                inp["denoise"] = float(denoise)
-                inp["seed"] = seed
-                inp["sampler_name"] = sampler_name
-                inp["scheduler"] = scheduler
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "TextEncodeAceStepAudio1.5":
-                node.setdefault("inputs", {})["seed"] = seed
-
-        _dit_models = {
-            "turbo": "acestep_v1.5_xl_turbo_bf16.safetensors",
-            "sft":   "acestep_v1.5_xl_sft_bf16.safetensors",
-            "base":  "acestep_v1.5_xl_base_bf16.safetensors",
-        }
-        dit_key = state.get("dit_model", "sft").lower()
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "UNETLoader":
-                node.setdefault("inputs", {})["unet_name"] = _dit_models.get(dit_key, _dit_models["sft"])
-
-        _fmt_map = {
-            "mp3":  ("SaveAudioMP3",  "Save Audio (MP3)"),
-            "flac": ("SaveAudio",     "Save Audio (FLAC)"),
-            "opus": ("SaveAudioOpus", "Save Audio (Opus)"),
-        }
-        audio_format = state.get("audio_format", "mp3").lower()
-        audio_quality = state.get("audio_quality", "V0")
-        cls, title = _fmt_map.get(audio_format, _fmt_map["mp3"])
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") in ("SaveAudioMP3", "SaveAudio", "SaveAudioOpus"):
-                node["class_type"] = cls
-                node["_meta"] = {"title": title}
-                inp = node.setdefault("inputs", {})
-                inp.pop("quality", None)
-                inp.pop("audioUI", None)
-                if audio_format == "mp3":
-                    inp["quality"] = audio_quality or "V0"
-                    inp["audioUI"] = ""
-                elif audio_format == "opus":
-                    inp["quality"] = audio_quality or "128k"
+        seed = _gen_seed(state)
+        _apply_ksampler(workflow, state, seed, denoise=denoise, default_steps=20)
+        _apply_seed_to_encoder(workflow, seed)
+        _apply_dit_model(workflow, state, default="sft")
+        _apply_audio_format(workflow, state)
 
         return {"workflow": workflow, "seed": seed}
 
@@ -737,49 +512,17 @@ class ComfyUIClient:
         if not regions:
             return {"error": "All regions have end <= start"}
 
-        with open(config.WORKFLOW_MULTIREPAINT_TEMPLATE) as f:
-            workflow = json.load(f)
+        workflow = _load_template(config.WORKFLOW_MULTIREPAINT_TEMPLATE)
 
-        _scale_map = {
-            "major": "major", "minor": "minor",
-            "harmonic minor": "minor", "melodic minor": "minor",
-            "pentatonic major": "major", "pentatonic minor": "minor",
-        }
+        for node in _find_nodes(workflow, "LoadAudio"):
+            node["inputs"]["audio"] = input_name
 
-        for node in workflow.values():
-            if not isinstance(node, dict):
-                continue
-            if node.get("class_type") == "LoadAudio":
-                node["inputs"]["audio"] = input_name
+        for node in _find_nodes(workflow, "TextEncodeAceStepAudio1.5"):
+            inp = node.setdefault("inputs", {})
+            _apply_text_encoder(inp, caption, lyrics, state)
+            inp["generate_audio_codes"] = False
 
-        for node in workflow.values():
-            if not isinstance(node, dict):
-                continue
-            if node.get("class_type") == "TextEncodeAceStepAudio1.5":
-                inp = node.setdefault("inputs", {})
-                inp["tags"] = caption
-                inp["lyrics"] = lyrics
-                inp["bpm"] = state.get("bpm", 120)
-                inp["cfg_scale"] = state.get("cfg_scale", 2.0)
-                inp["temperature"] = state.get("temperature", 0.85)
-                inp["top_p"] = state.get("top_p", 0.9)
-                inp["top_k"] = state.get("top_k", 0)
-                inp["min_p"] = state.get("min_p", 0.0)
-                inp["generate_audio_codes"] = False
-                key = state.get("key", "")
-                scale = state.get("scale", "")
-                if key and scale:
-                    mapped = _scale_map.get(scale.lower())
-                    if mapped:
-                        inp["keyscale"] = f"{key} {mapped}"
-                time_sig = state.get("time_sig", "4/4")
-                if time_sig:
-                    inp["timesignature"] = time_sig.split("/")[0]
-
-        seed = state.get("seed", 0)
-        if not state.get("lock_seed", False) or seed == 0:
-            seed = random.randint(0, 2**32 - 1)
-
+        seed = _gen_seed(state)
         sampler_name = state.get("sampler_name", "er_sde") or "er_sde"
         scheduler = state.get("scheduler", "linear_quadratic") or "linear_quadratic"
 
@@ -817,45 +560,15 @@ class ComfyUIClient:
                 for nid in (trim_id, enc_id, ks_id, dec_id, ov_id):
                     workflow.pop(nid, None)
 
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "TextEncodeAceStepAudio1.5":
-                node.setdefault("inputs", {})["seed"] = seed
+        _apply_seed_to_encoder(workflow, seed)
 
         # Point save node at the last overlay in the chain
         for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") in ("SaveAudioMP3", "SaveAudio", "SaveAudioOpus"):
+            if isinstance(node, dict) and node.get("class_type") in _AUDIO_SAVE_CLASSES:
                 node["inputs"]["audio"] = [overlay_chain_input, 0]
 
-        _dit_models = {
-            "turbo": "acestep_v1.5_xl_turbo_bf16.safetensors",
-            "sft":   "acestep_v1.5_xl_sft_bf16.safetensors",
-            "base":  "acestep_v1.5_xl_base_bf16.safetensors",
-        }
-        dit_key = state.get("dit_model", "sft").lower()
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") == "UNETLoader":
-                node.setdefault("inputs", {})["unet_name"] = _dit_models.get(dit_key, _dit_models["sft"])
-
-        _fmt_map = {
-            "mp3":  ("SaveAudioMP3",  "Save Audio (MP3)"),
-            "flac": ("SaveAudio",     "Save Audio (FLAC)"),
-            "opus": ("SaveAudioOpus", "Save Audio (Opus)"),
-        }
-        audio_format = state.get("audio_format", "mp3").lower()
-        audio_quality = state.get("audio_quality", "V0")
-        cls, title = _fmt_map.get(audio_format, _fmt_map["mp3"])
-        for node in workflow.values():
-            if isinstance(node, dict) and node.get("class_type") in ("SaveAudioMP3", "SaveAudio", "SaveAudioOpus"):
-                node["class_type"] = cls
-                node["_meta"] = {"title": title}
-                inp = node.setdefault("inputs", {})
-                inp.pop("quality", None)
-                inp.pop("audioUI", None)
-                if audio_format == "mp3":
-                    inp["quality"] = audio_quality or "V0"
-                    inp["audioUI"] = ""
-                elif audio_format == "opus":
-                    inp["quality"] = audio_quality or "128k"
+        _apply_dit_model(workflow, state, default="sft")
+        _apply_audio_format(workflow, state)
 
         return {"workflow": workflow, "seed": seed}
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import json
 import logging
+import time
 from typing import Generator
 
 import requests
@@ -8,6 +9,20 @@ import requests
 import config
 
 logger = logging.getLogger(__name__)
+
+
+def _post_with_retry(url: str, payload: dict, timeout: int = 120, retries: int = 3) -> requests.Response:
+    last_exc: Exception | None = None
+    for attempt in range(retries):
+        try:
+            resp = requests.post(url, json=payload, timeout=timeout)
+            resp.raise_for_status()
+            return resp
+        except Exception as exc:
+            last_exc = exc
+            if attempt < retries - 1:
+                time.sleep(1)
+    raise last_exc
 
 
 def list_models() -> list[str]:
@@ -57,8 +72,7 @@ def lookup_artist(artist: str, model: str = "gemma4:latest", use_web: bool = Fal
 
     payload = {"model": model, "prompt": "\n".join(prompt_parts), "stream": False}
     try:
-        resp = requests.post(f"{config.OLLAMA_URL}/api/generate", json=payload, timeout=120)
-        resp.raise_for_status()
+        resp = _post_with_retry(f"{config.OLLAMA_URL}/api/generate", payload)
         text = resp.json().get("response", "").strip()
         logger.info("Artist lookup raw response for %r: %s", artist, text[:300])
 
@@ -110,8 +124,7 @@ def expand_prompt(description: str, model: str = "gemma4:latest") -> dict:
         "stream": False,
     }
     try:
-        resp = requests.post(f"{config.OLLAMA_URL}/api/generate", json=payload, timeout=120)
-        resp.raise_for_status()
+        resp = _post_with_retry(f"{config.OLLAMA_URL}/api/generate", payload)
         text = resp.json().get("response", "").strip()
         text = re.sub(r'^```[a-z]*\s*', '', text, flags=re.MULTILINE)
         text = re.sub(r'```\s*$', '', text, flags=re.MULTILINE)

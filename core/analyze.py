@@ -73,28 +73,38 @@ def estimate_key(mono: np.ndarray, sr: int) -> tuple[str, str]:
     return best_key, best_scale
 
 
+def _transcribe_impl(path: pathlib.Path, language: str | None = None) -> dict:
+    from faster_whisper import WhisperModel
+    model = WhisperModel("base", device="auto", compute_type="auto")
+    segments, info = model.transcribe(
+        str(path),
+        language=language,
+        word_timestamps=False,
+        vad_filter=True,
+    )
+    lyrics_lines = []
+    for seg in segments:
+        start = f"{int(seg.start // 60):02d}:{seg.start % 60:05.2f}"
+        lyrics_lines.append(f"[{start}] {seg.text.strip()}")
+    return {
+        "lyrics": "\n".join(lyrics_lines),
+        "language": info.language,
+        "language_probability": round(info.language_probability, 3),
+    }
+
+
 def transcribe(path: pathlib.Path, language: str | None = None) -> dict:
-    try:
-        from faster_whisper import WhisperModel
-        model = WhisperModel("base", device="auto", compute_type="auto")
-        segments, info = model.transcribe(
-            str(path),
-            language=language,
-            word_timestamps=False,
-            vad_filter=True,
-        )
-        lyrics_lines = []
-        for seg in segments:
-            start = f"{int(seg.start // 60):02d}:{seg.start % 60:05.2f}"
-            lyrics_lines.append(f"[{start}] {seg.text.strip()}")
-        return {
-            "lyrics": "\n".join(lyrics_lines),
-            "language": info.language,
-            "language_probability": round(info.language_probability, 3),
-        }
-    except Exception as exc:
-        logger.warning("Transcription failed: %s", exc)
-        return {"lyrics": "", "language": "en", "language_probability": 0.0}
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+        future = ex.submit(_transcribe_impl, path, language)
+        try:
+            return future.result(timeout=120)
+        except concurrent.futures.TimeoutError:
+            logger.warning("Transcription timed out for %s", path.name)
+            return {"lyrics": "", "language": "en", "language_probability": 0.0}
+        except Exception as exc:
+            logger.warning("Transcription failed: %s", exc)
+            return {"lyrics": "", "language": "en", "language_probability": 0.0}
 
 
 _CHORD_TEMPLATES: dict[str, list[float]] = {}
