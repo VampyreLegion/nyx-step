@@ -1,6 +1,6 @@
 from __future__ import annotations
+import asyncio
 import json
-import tempfile
 from contextlib import suppress
 from pathlib import Path
 from typing import AsyncGenerator
@@ -12,6 +12,7 @@ from sse_starlette.sse import EventSourceResponse
 import config
 from core.comfyui import ComfyUIClient
 from core.demucs import run_demucs
+from core.executor import get_audio_pool, stream_upload
 from nyx_step import tracker, get_user_email
 
 router = APIRouter(prefix="/stems")
@@ -28,13 +29,10 @@ async def stems_extract(
     song_name: str = Form("Stem Extract"),
 ):
     user_email = get_user_email(request)
-    content = await audio.read()
-    if len(content) > config.MAX_UPLOAD_BYTES:
-        return JSONResponse({"error": f"File too large (max {config.MAX_UPLOAD_BYTES // 1024 // 1024} MB)"}, status_code=413)
-    suffix = Path(audio.filename).suffix
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
-        f.write(content)
-        tmp = Path(f.name)
+    suffix = Path(audio.filename).suffix or ".mp3"
+    tmp = await stream_upload(audio, suffix)
+    if isinstance(tmp, JSONResponse):
+        return tmp
     try:
         filename = _client.copy_to_input(tmp)
     finally:
@@ -74,12 +72,13 @@ async def list_audio_files():
 @router.post("/demucs/upload")
 async def demucs_upload(audio: UploadFile = File(...)):
     """Upload a local file into COMFYUI_OUTPUT_DIR for demucs processing."""
-    content = await audio.read()
-    if len(content) > config.MAX_UPLOAD_BYTES:
-        return JSONResponse({"error": f"File too large (max {config.MAX_UPLOAD_BYTES // 1024 // 1024} MB)"}, status_code=413)
+    suffix = Path(audio.filename).suffix or ".mp3"
+    tmp = await stream_upload(audio, suffix)
+    if isinstance(tmp, JSONResponse):
+        return tmp
     safe_name = Path(audio.filename).name
     dest = config.COMFYUI_OUTPUT_DIR / safe_name
-    dest.write_bytes(content)
+    tmp.rename(dest)
     return {"filename": safe_name}
 
 
@@ -92,16 +91,12 @@ async def demucs_stream(
     input_path = config.COMFYUI_OUTPUT_DIR / filename
 
     async def log_gen() -> AsyncGenerator[dict, None]:
-        import asyncio
-        import concurrent.futures
-
         loop = asyncio.get_event_loop()
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
         def _run():
             return list(run_demucs(input_path, model))
 
-        lines = await loop.run_in_executor(executor, _run)
+        lines = await loop.run_in_executor(get_audio_pool(), _run)
         for line in lines:
             if await request.is_disconnected():
                 break

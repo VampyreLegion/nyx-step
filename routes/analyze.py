@@ -1,7 +1,5 @@
 from __future__ import annotations
 import asyncio
-import concurrent.futures
-import tempfile
 from contextlib import suppress
 from pathlib import Path
 
@@ -10,31 +8,24 @@ from fastapi.responses import JSONResponse
 
 import config
 from core.analyze import analyze, transcribe
+from core.executor import get_audio_pool, stream_upload
 from nyx_step import get_user_email
 
 router = APIRouter()
-_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
 
 @router.post("/analyze")
 async def analyze_audio(request: Request, audio: UploadFile = File(...)):
     get_user_email(request)  # auth check
 
-    content = await audio.read()
-    if len(content) > config.MAX_UPLOAD_BYTES:
-        return JSONResponse(
-            {"error": f"File too large (max {config.MAX_UPLOAD_BYTES // 1024 // 1024} MB)"},
-            status_code=413,
-        )
-
     suffix = Path(audio.filename).suffix or ".mp3"
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
-        f.write(content)
-        tmp = Path(f.name)
+    tmp = await stream_upload(audio, suffix)
+    if isinstance(tmp, JSONResponse):
+        return tmp
 
     try:
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(_executor, lambda: analyze(tmp))
+        result = await loop.run_in_executor(get_audio_pool(), lambda: analyze(tmp))
     finally:
         with suppress(FileNotFoundError):
             tmp.unlink()
@@ -52,14 +43,10 @@ async def transcribe_voice(
 ):
     get_user_email(request)
 
-    content = await audio.read()
-    if len(content) > 50 * 1024 * 1024:
-        return JSONResponse({"error": "File too large (max 50 MB)"}, status_code=413)
-
     suffix = Path(audio.filename).suffix or ".webm"
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
-        f.write(content)
-        tmp = Path(f.name)
+    tmp = await stream_upload(audio, suffix, max_bytes=50 * 1024 * 1024)
+    if isinstance(tmp, JSONResponse):
+        return tmp
 
     def _run():
         from faster_whisper import WhisperModel
@@ -70,7 +57,7 @@ async def transcribe_voice(
 
     try:
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(_executor, _run)
+        result = await loop.run_in_executor(get_audio_pool(), _run)
     finally:
         with suppress(FileNotFoundError):
             tmp.unlink()

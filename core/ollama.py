@@ -7,6 +7,7 @@ from typing import Generator
 import requests
 
 import config
+from core.circuit_breaker import ollama_breaker, CircuitOpenError
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,7 @@ def lookup_artist(artist: str, model: str = "gemma4:latest", use_web: bool = Fal
 
     payload = {"model": model, "prompt": "\n".join(prompt_parts), "stream": False}
     try:
-        resp = _post_with_retry(f"{config.OLLAMA_URL}/api/generate", payload)
+        resp = ollama_breaker.call(_post_with_retry, f"{config.OLLAMA_URL}/api/generate", payload)
         text = resp.json().get("response", "").strip()
         logger.info("Artist lookup raw response for %r: %s", artist, text[:300])
 
@@ -91,6 +92,8 @@ def lookup_artist(artist: str, model: str = "gemma4:latest", use_web: bool = Fal
                 return {"error": f"Model returned malformed JSON: {text[:120]}"}
         logger.error("No JSON found in response for %r: %s", artist, text[:200])
         return {"error": f"No results found. Model said: {text[:120]}"}
+    except CircuitOpenError:
+        return {"error": "Ollama unavailable (circuit open)"}
     except Exception as exc:
         logger.error("Artist lookup failed: %s", exc)
         return {"error": str(exc)}
@@ -124,7 +127,7 @@ def expand_prompt(description: str, model: str = "gemma4:latest") -> dict:
         "stream": False,
     }
     try:
-        resp = _post_with_retry(f"{config.OLLAMA_URL}/api/generate", payload)
+        resp = ollama_breaker.call(_post_with_retry, f"{config.OLLAMA_URL}/api/generate", payload)
         text = resp.json().get("response", "").strip()
         text = re.sub(r'^```[a-z]*\s*', '', text, flags=re.MULTILINE)
         text = re.sub(r'```\s*$', '', text, flags=re.MULTILINE)
@@ -136,6 +139,8 @@ def expand_prompt(description: str, model: str = "gemma4:latest") -> dict:
             except json.JSONDecodeError:
                 return {"error": f"Model returned malformed JSON: {text[:120]}"}
         return {"error": f"No JSON found. Model said: {text[:120]}"}
+    except CircuitOpenError:
+        return {"error": "Ollama unavailable (circuit open)"}
     except Exception as exc:
         logger.error("expand_prompt failed: %s", exc)
         return {"error": str(exc)}
@@ -193,9 +198,12 @@ def stream_lyrics(
         )
     payload = {"model": model, "prompt": f"{system}\n\nTask: {prompt}", "stream": True}
     try:
-        with requests.post(
-            f"{config.OLLAMA_URL}/api/generate", json=payload, stream=True, timeout=120
-        ) as resp:
+        def _open_stream():
+            return requests.post(
+                f"{config.OLLAMA_URL}/api/generate", json=payload, stream=True, timeout=120
+            )
+        resp = ollama_breaker.call(_open_stream)
+        with resp:
             resp.raise_for_status()
             for line in resp.iter_lines():
                 if not line:
@@ -209,6 +217,9 @@ def stream_lyrics(
                         break
                 except json.JSONDecodeError:
                     continue
+    except CircuitOpenError as exc:
+        logger.warning("stream_lyrics: %s", exc)
+        yield f"\n[Error: Ollama unavailable (circuit open)]"
     except Exception as exc:
         logger.error("Ollama failed: %s", exc)
         yield f"\n[Error: {exc}]"

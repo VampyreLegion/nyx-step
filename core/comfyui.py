@@ -9,6 +9,7 @@ import pathlib
 import requests
 
 import config
+from core.circuit_breaker import comfyui_breaker, CircuitOpenError
 
 logger = logging.getLogger(__name__)
 
@@ -161,9 +162,13 @@ class ComfyUIClient:
 
     def get_queue(self) -> dict:
         try:
-            r = requests.get(f"{self.base_url}/queue", timeout=5)
-            r.raise_for_status()
-            return r.json()
+            def _get():
+                r = requests.get(f"{self.base_url}/queue", timeout=5)
+                r.raise_for_status()
+                return r.json()
+            return comfyui_breaker.call(_get)
+        except CircuitOpenError:
+            return {"queue_running": [], "queue_pending": []}
         except Exception as exc:
             logger.warning("get_queue failed: %s", exc)
             return {"queue_running": [], "queue_pending": []}
@@ -574,16 +579,20 @@ class ComfyUIClient:
 
     def send_workflow(self, workflow: dict) -> dict:
         try:
-            resp = requests.post(
-                f"{self.base_url}/prompt",
-                json={"prompt": workflow},
-                timeout=10,
-            )
-            if not resp.ok:
-                body = resp.text[:500]
-                logger.error("ComfyUI /prompt %s: %s", resp.status_code, body)
-                return {"error": f"{resp.status_code} {resp.reason}: {body}"}
-            return resp.json()
+            def _post():
+                resp = requests.post(
+                    f"{self.base_url}/prompt",
+                    json={"prompt": workflow},
+                    timeout=10,
+                )
+                if not resp.ok:
+                    body = resp.text[:500]
+                    logger.error("ComfyUI /prompt %s: %s", resp.status_code, body)
+                    raise RuntimeError(f"{resp.status_code} {resp.reason}: {body}")
+                return resp.json()
+            return comfyui_breaker.call(_post)
+        except CircuitOpenError:
+            return {"error": "ComfyUI unavailable (circuit open)"}
         except Exception as exc:
             return {"error": str(exc)}
 

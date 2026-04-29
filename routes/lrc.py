@@ -15,7 +15,6 @@ standard music players.
 """
 from __future__ import annotations
 import asyncio
-import concurrent.futures
 import re
 from pathlib import Path
 
@@ -24,10 +23,10 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel
 
 import config
+from core.executor import get_audio_pool
 from nyx_step import get_user_email
 
 router = APIRouter()
-_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
 
 def _fmt_lrc_time(seconds: float) -> str:
@@ -156,7 +155,7 @@ async def generate_lrc(request: Request, body: LRCRequest):
 
     loop = asyncio.get_event_loop()
     lrc_content = await loop.run_in_executor(
-        _executor, lambda: _generate_lrc(audio_path, body.lyrics, body.bpm)
+        get_audio_pool(), lambda: _generate_lrc(audio_path, body.lyrics, body.bpm)
     )
 
     if body.save:

@@ -12,17 +12,16 @@ Dimensions scored:
 """
 from __future__ import annotations
 import asyncio
-import concurrent.futures
 from pathlib import Path
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 import config
+from core.executor import get_audio_pool
 from nyx_step import get_user_email
 
 router = APIRouter()
-_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
 
 def _score_quality(audio_path: Path) -> dict:
@@ -171,7 +170,7 @@ async def quality_score(filename: str, request: Request):
         return JSONResponse({"error": f"File not found: {filename}"}, status_code=404)
 
     loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(_executor, lambda: _score_quality(audio_path))
+    result = await loop.run_in_executor(get_audio_pool(), lambda: _score_quality(audio_path))
 
     if "error" in result:
         return JSONResponse({"error": result["error"]}, status_code=400)

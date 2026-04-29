@@ -1,6 +1,5 @@
 from __future__ import annotations
 import asyncio
-import concurrent.futures
 import json
 from typing import AsyncGenerator
 
@@ -8,10 +7,10 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+from core.executor import get_audio_pool
 from core.ollama import list_models, lookup_artist, stream_lyrics, expand_prompt
 
 router = APIRouter(prefix="/ollama")
-_executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 
 @router.get("/models")
@@ -31,7 +30,7 @@ async def artist_info(req: ArtistInfoRequest):
         return {"error": "artist required"}
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(
-        _executor,
+        get_audio_pool(),
         lambda: lookup_artist(req.artist, req.model, req.use_web),
     )
     return result
@@ -48,7 +47,7 @@ async def expand(req: ExpandRequest):
         return {"error": "description required"}
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(
-        _executor,
+        get_audio_pool(),
         lambda: expand_prompt(req.description.strip(), req.model),
     )
     return result
@@ -74,7 +73,7 @@ async def ollama_stream(
 ):
     async def token_gen() -> AsyncGenerator[dict, None]:
         loop = asyncio.get_event_loop()
-        executor = _executor
+        executor = get_audio_pool()
 
         def _stream():
             return list(stream_lyrics(
