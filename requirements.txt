@@ -7,6 +7,7 @@ jinja2
 python-multipart
 requests
 httpx
+aiofiles>=23.0.0
 
 # Audio analysis (BPM, key, LUFS, spectral, LRC, quality score)
 librosa>=0.11.0

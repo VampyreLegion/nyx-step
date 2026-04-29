@@ -1,16 +1,38 @@
 // ── History Tab ───────────────────────────────────────────────────────────────
 let _historyRecords = [];
+let _historyOffset = 0;
+let _historyHasMore = false;
 
 async function loadHistory() {
+  _historyOffset = 0;
+  _historyRecords = [];
+  _historyHasMore = false;
+
   const list = document.getElementById("history-list");
   const empty = document.getElementById("history-empty");
   list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">Loading…</div>';
   empty.style.display = "none";
 
+  await _fetchHistoryPage(0, true);
+}
+
+async function _fetchHistoryPage(offset, replace) {
+  const list = document.getElementById("history-list");
+  const empty = document.getElementById("history-empty");
+
   try {
-    const resp = await fetch("/api/history?limit=200");
+    const resp = await fetch(`/api/history?limit=20&offset=${offset}`);
     const data = await resp.json();
-    _historyRecords = data.records || [];
+    const newRecords = data.records || [];
+    _historyHasMore = !!data.has_more;
+    _historyOffset = offset + newRecords.length;
+
+    if (replace) {
+      _historyRecords = newRecords;
+    } else {
+      _historyRecords = _historyRecords.concat(newRecords);
+    }
+
     _renderHistory(document.getElementById("history-search").value.trim().toLowerCase());
   } catch (e) {
     list.innerHTML = `<div style="color:var(--error);font-size:12px">Failed to load history: ${e.message}</div>`;
@@ -75,6 +97,20 @@ function _renderHistory(query) {
 
     list.appendChild(card);
   });
+
+  // Append "Load older" button if more pages exist and no active search filter
+  if (_historyHasMore && !query) {
+    const btn = document.createElement("button");
+    btn.className = "secondary small";
+    btn.textContent = "Load older";
+    btn.style.cssText = "margin-top:10px;width:100%;font-size:12px;";
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      btn.textContent = "Loading…";
+      await _fetchHistoryPage(_historyOffset, false);
+    });
+    list.appendChild(btn);
+  }
 }
 
 function _loadHistoryRecord(r) {
@@ -126,9 +162,10 @@ document.getElementById("btn-history-clear").addEventListener("click", async () 
     const data = await resp.json();
     if (data.error) { alert("Error: " + data.error); return; }
     _historyRecords = [];
+    _historyOffset = 0;
+    _historyHasMore = false;
     _renderHistory("");
   } catch (e) {
     alert("Failed to clear history: " + e.message);
   }
 });
-
