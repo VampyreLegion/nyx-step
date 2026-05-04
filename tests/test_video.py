@@ -82,3 +82,23 @@ def test_parse_lyrics_sections():
 def test_parse_lyrics_sections_empty():
     from core.beat_analyser import parse_sections
     assert parse_sections("") == ["Main"]
+
+def test_workflow_t2v_template_valid():
+    import json
+    import config
+    assert config.WORKFLOW_VIDEO_T2V.exists(), "workflow_video_t2v.json missing"
+    wf = json.loads(config.WORKFLOW_VIDEO_T2V.read_text())
+    class_types = {v["class_type"] for v in wf.values() if isinstance(v, dict) and "class_type" in v}
+    assert "UNETLoader" in class_types
+    assert "WanImageToVideo" in class_types
+    assert "VHS_VideoCombine" in class_types
+    assert "LoadImage" not in class_types
+
+def test_workflow_i2v_template_valid():
+    import json
+    import config
+    assert config.WORKFLOW_VIDEO_I2V.exists(), "workflow_video_i2v.json missing"
+    wf = json.loads(config.WORKFLOW_VIDEO_I2V.read_text())
+    class_types = {v["class_type"] for v in wf.values() if isinstance(v, dict) and "class_type" in v}
+    assert "LoadImage" in class_types
+    assert "WanImageToVideo" in class_types
