@@ -3,6 +3,7 @@ const mwState = {
   genre: "", bpm: 120, key: "C", scale: "Major", mode: "",
   time_sig: "4/4", chords: "", notes: "",
   instruments: [], vocal_tags: [], lyrics: "",
+  lastAudioFile: null,
   steps: 8, cfg_scale: 2.0, duration: 30.0, seed: 0, lock_seed: false,
   temperature: 0.85, top_p: 0.9, top_k: 0, min_p: 0.0,
 };
@@ -737,6 +738,7 @@ function connectSSE() {
     const data = JSON.parse(e.data);
     addJobCard(data.prompt_id, data.song_name || "Song", "done", data.files);
     if (data.prompt_id === _activeGenPromptId) setGenProgress("done", "✓ Done — audio ready");
+    if (data.files && data.files.length) mwState.lastAudioFile = data.files[0];
   });
   es.addEventListener("job_running", e => {
     const data = JSON.parse(e.data);

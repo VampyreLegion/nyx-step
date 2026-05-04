@@ -45,11 +45,17 @@ class SuggestPromptsRequest(BaseModel):
 async def analyse_audio(request: Request, body: AnalyseRequest):
     get_user_email(request)
     loop = asyncio.get_running_loop()
+    import pathlib as _pathlib
+    audio_path = _pathlib.Path(body.audio_file)
+    if not audio_path.is_absolute():
+        audio_path = config.COMFYUI_OUTPUT_DIR / body.audio_file
+    _audio_file = str(audio_path)
+
     try:
         schedule = await loop.run_in_executor(
             get_audio_pool(),
             lambda: analyse(
-                body.audio_file,
+                _audio_file,
                 chunk_seconds=body.chunk_seconds,
                 fps=body.fps,
                 sync_mode=body.sync_mode,
