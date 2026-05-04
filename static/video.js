@@ -84,6 +84,7 @@ async function analyseVideoAudio() {
   const btn = document.getElementById("video-analyse-btn");
   const result = document.getElementById("video-analyse-result");
   const genBtn = document.getElementById("video-generate-btn");
+  if (!btn || !result || !genBtn) return;
 
   const audioFile = (typeof mwState !== "undefined" && mwState.lastAudioFile)
     ? mwState.lastAudioFile : null;
@@ -136,6 +137,7 @@ async function generateVideo() {
   const progressLabel = document.getElementById("video-progress-label");
   const downloadWrap = document.getElementById("video-download-wrap");
   const errorDiv = document.getElementById("video-error");
+  if (!genBtn || !progressWrap || !progressBar || !progressLabel || !downloadWrap || !errorDiv) return;
 
   genBtn.disabled = true;
   progressWrap.style.display = "block";
@@ -213,7 +215,10 @@ function pollVideoStatus(total) {
         errorDiv.style.display = "block";
         genBtn.disabled = false;
       }
-    } catch (_) {}
+    } catch (err) {
+      progressLabel.textContent = "Poll error — retrying…";
+      console.warn("Video poll error:", err);
+    }
   }, 3000);
 }
 
