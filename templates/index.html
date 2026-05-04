@@ -30,6 +30,7 @@
   <button class="tab-btn" data-tab="stems" title="Stems — extract stems from Nyx-Step output or separate audio with Demucs">Stems</button>
   <button class="tab-btn" data-tab="radio" title="Radio — continuous AI-generated music stream; each segment inherits the timbre of the previous">📻 Radio</button>
   <button class="tab-btn" data-tab="analyze" title="Analyze Audio — detect BPM, key, scale, LUFS, chord progression, and lyrics from any audio file">Analyze</button>
+  <button class="tab-btn" data-tab="video" title="Video — generate a beat-synced music video from your song using Wan AI">🎬 Video</button>
   <button class="tab-btn" data-tab="midi" title="MIDI — extract MIDI notes from any audio file (melody or piano polyphonic)">MIDI</button>
   <button class="tab-btn" data-tab="train" title="Train LoRA — train a custom LoRA adapter on your own audio dataset">Train LoRA</button>
   <button class="tab-btn" data-tab="guide" title="Guide — full documentation, flowcharts, scales reference, and workflow tips">Guide</button>
@@ -1463,6 +1464,95 @@
 
 
   <!-- ABOUT -->
+  <!-- ── Video Tab ──────────────────────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-video">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;padding:1rem">
+
+      <!-- Left: Scene Prompts -->
+      <div>
+        <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem">
+          <h3 style="margin:0">Scene Prompts</h3>
+          <button id="video-regen-prompts" class="btn-sm">↻ Regenerate All</button>
+        </div>
+
+        <div style="margin-bottom:1rem">
+          <label style="font-weight:600;display:block;margin-bottom:0.4rem">Style</label>
+          <div style="display:flex;gap:1rem">
+            <label><input type="radio" name="video-style" value="abstract"> Abstract</label>
+            <label><input type="radio" name="video-style" value="cinematic" checked> Cinematic</label>
+            <label><input type="radio" name="video-style" value="artistic"> Artistic</label>
+          </div>
+        </div>
+
+        <div style="margin-bottom:1rem">
+          <label style="font-weight:600;display:block;margin-bottom:0.4rem">Sync Mode</label>
+          <div style="display:flex;gap:1rem">
+            <label><input type="radio" name="video-sync" value="section_only"> A — Section-based</label>
+            <label><input type="radio" name="video-sync" value="beat_only"> B — Beat-reactive</label>
+            <label><input type="radio" name="video-sync" value="both" checked> C — Both</label>
+          </div>
+        </div>
+
+        <div id="video-section-prompts">
+          <p style="color:var(--muted)">Generate or load a song first, then open this tab.</p>
+        </div>
+      </div>
+
+      <!-- Right: Settings + Actions -->
+      <div>
+        <h3 style="margin:0 0 1rem">Video Settings</h3>
+        <table style="width:100%;border-collapse:collapse">
+          <tr><td style="padding:0.4rem 0.6rem;color:var(--muted)">Resolution</td>
+              <td><select id="video-resolution">
+                <option value="832x480" selected>832×480 (480p)</option>
+                <option value="1280x720">1280×720 (720p)</option>
+                <option value="1024x576">1024×576</option>
+              </select></td></tr>
+          <tr><td style="padding:0.4rem 0.6rem;color:var(--muted)">Chunk Duration</td>
+              <td><select id="video-chunk-seconds">
+                <option value="4">4 seconds</option>
+                <option value="6" selected>6 seconds</option>
+                <option value="8">8 seconds</option>
+              </select></td></tr>
+          <tr><td style="padding:0.4rem 0.6rem;color:var(--muted)">FPS</td>
+              <td><select id="video-fps">
+                <option value="16" selected>16</option>
+                <option value="24">24</option>
+              </select></td></tr>
+          <tr><td style="padding:0.4rem 0.6rem;color:var(--muted)">Steps</td>
+              <td><input type="number" id="video-steps" value="20" min="5" max="50" style="width:5rem"></td></tr>
+          <tr><td style="padding:0.4rem 0.6rem;color:var(--muted)">CFG Base</td>
+              <td><input type="number" id="video-cfg" value="6.0" min="1" max="15" step="0.5" style="width:5rem"></td></tr>
+          <tr><td style="padding:0.4rem 0.6rem;color:var(--muted)">Negative Prompt</td>
+              <td><input type="text" id="video-negative" value="blurry, low quality, watermark, text, static, noise" style="width:100%"></td></tr>
+          <tr><td style="padding:0.4rem 0.6rem;color:var(--muted)">Wan Model</td>
+              <td><input type="text" id="video-model" value="wan2.1_t2v_1.3B_bf16.safetensors" style="width:100%"></td></tr>
+        </table>
+
+        <div style="margin-top:1.5rem;display:flex;flex-direction:column;gap:0.8rem">
+          <button id="video-analyse-btn" class="btn-primary">🔍 Analyse Audio</button>
+          <div id="video-analyse-result" style="color:var(--muted);font-size:0.9em"></div>
+
+          <button id="video-generate-btn" class="btn-primary" disabled>🎬 Generate Video</button>
+
+          <div id="video-progress-wrap" style="display:none">
+            <progress id="video-progress-bar" max="100" value="0" style="width:100%"></progress>
+            <div id="video-progress-label" style="color:var(--muted);font-size:0.85em;margin-top:0.3rem"></div>
+            <button id="video-cancel-btn" style="margin-top:0.4rem">✕ Cancel</button>
+          </div>
+
+          <div id="video-download-wrap" style="display:none">
+            <a id="video-download-link" class="btn-primary" style="text-decoration:none;text-align:center;display:block">
+              ⬇ Download MP4
+            </a>
+          </div>
+
+          <div id="video-error" style="color:var(--accent3);display:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="tab-panel" id="tab-about">
     <div style="max-width:700px;margin:0 auto;padding-top:16px">
       <div style="text-align:center;margin-bottom:24px">
@@ -1823,6 +1913,7 @@
 <script src="/static/history.js?v=2"></script>
 <script src="/static/dropzone.js?v=1"></script>
 <script src="/static/tabs.js?v=2"></script>
+<script src="/static/video.js"></script>
 <script src="/static/init.js?v=1"></script>
 </body>
 </html>
