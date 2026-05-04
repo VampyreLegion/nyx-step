@@ -102,3 +102,60 @@ def test_workflow_i2v_template_valid():
     class_types = {v["class_type"] for v in wf.values() if isinstance(v, dict) and "class_type" in v}
     assert "LoadImage" in class_types
     assert "WanImageToVideo" in class_types
+
+
+import pytest
+from unittest.mock import patch, MagicMock
+
+def test_fill_t2v_template():
+    from core.video_orchestrator import fill_template
+    import json, config
+    wf = fill_template(config.WORKFLOW_VIDEO_T2V, {
+        "model_name": "wan2.1_t2v_1.3B_bf16.safetensors",
+        "text_encoder_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+        "vae_name": "wan_2.1_vae.safetensors",
+        "positive_prompt": "dark forest, cinematic",
+        "negative_prompt": "blurry, ugly",
+        "width": 832, "height": 480, "frame_count": 97,
+        "fps": 16, "steps": 20, "cfg_scale": 6.5,
+        "seed": 42, "output_prefix": "video/chunks/test_000",
+    })
+    wf_str = json.dumps(wf)
+    assert "{{" not in wf_str
+    assert wf["4"]["inputs"]["text"] == "dark forest, cinematic"
+    assert wf["7"]["inputs"]["noise_seed"] == 42
+    assert wf["6"]["inputs"]["width"] == 832
+
+def test_fill_i2v_template():
+    from core.video_orchestrator import fill_template
+    import json, config
+    wf = fill_template(config.WORKFLOW_VIDEO_I2V, {
+        "model_name": "wan2.1_t2v_1.3B_bf16.safetensors",
+        "text_encoder_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+        "vae_name": "wan_2.1_vae.safetensors",
+        "positive_prompt": "bright sunrise, motion",
+        "negative_prompt": "blurry",
+        "width": 832, "height": 480, "frame_count": 65,
+        "fps": 16, "steps": 20, "cfg_scale": 7.0,
+        "seed": 99, "output_prefix": "video/chunks/test_001",
+        "start_image_filename": "chunk_abc_000_last.png",
+    })
+    wf_str = json.dumps(wf)
+    assert "{{" not in wf_str
+    assert wf["10"]["inputs"]["image"] == "chunk_abc_000_last.png"
+
+def test_video_job_state():
+    from core.video_orchestrator import create_job, get_job
+    job_id = create_job(total_chunks=5, user_email="test@test.com")
+    state = get_job(job_id)
+    assert state["status"] == "queued"
+    assert state["chunks_total"] == 5
+    assert state["chunks_done"] == 0
+
+def test_scale_cfg():
+    from core.video_orchestrator import scale_cfg
+    assert scale_cfg(6.0, 0.9, "section_only") == 6.0
+    result = scale_cfg(6.0, 1.0, "both")
+    assert result == pytest.approx(8.0, abs=0.1)
+    result = scale_cfg(6.0, 0.0, "both")
+    assert result == pytest.approx(6.0, abs=0.1)
