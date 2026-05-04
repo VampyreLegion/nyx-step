@@ -44,7 +44,7 @@ class SuggestPromptsRequest(BaseModel):
 @router.post("/analyse")
 async def analyse_audio(request: Request, body: AnalyseRequest):
     get_user_email(request)
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     try:
         schedule = await loop.run_in_executor(
             get_audio_pool(),
@@ -88,10 +88,11 @@ async def suggest_prompts(request: Request, body: SuggestPromptsRequest):
             )
             resp.raise_for_status()
             return resp.json().get("response", "").strip()[:200]
-        except Exception:
+        except Exception as exc:
+            logger.warning("Ollama prompt for section %r failed: %s", section, exc)
             return f"{section} visual scene"
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     results: dict[str, str] = {}
     for section in body.sections:
         s = section
