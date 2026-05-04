@@ -5,6 +5,7 @@ from pathlib import Path
 
 import librosa
 import numpy as np
+from scipy.ndimage import gaussian_filter1d
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,6 @@ def _per_frame_weights(beat_times: np.ndarray, total_frames: int, fps: float,
         frame = int(bt * fps)
         if 0 <= frame < total_frames:
             weights[frame] = 1.0
-    from scipy.ndimage import gaussian_filter1d
     weights = gaussian_filter1d(weights, sigma=2.0)
     mn, mx = weights.min(), weights.max()
     if mx > mn:
