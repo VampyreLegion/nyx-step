@@ -62,8 +62,8 @@ def fill_template(template_path: pathlib.Path, values: dict) -> dict:
     for key, val in values.items():
         placeholder = f"{{{{{key}}}}}"
         if isinstance(val, str):
-            # String values: just drop in the string; keep surrounding quotes.
-            raw = raw.replace(placeholder, val)
+            escaped = json.dumps(val)[1:-1]  # escapes quotes, backslashes, etc.
+            raw = raw.replace(placeholder, escaped)
         else:
             # Non-string values: replace the whole quoted placeholder with the
             # JSON-encoded literal so that integers stay integers, etc.
@@ -139,8 +139,9 @@ def _copy_to_comfyui_input(src: pathlib.Path) -> str:
 
 def ffmpeg_stitch(chunk_paths: list[pathlib.Path], audio_file: str, job_id: str) -> pathlib.Path:
     """Concatenate chunk videos and mux with original audio → final MP4."""
-    concat_list = pathlib.Path(tempfile.mktemp(suffix=".txt"))
-    concat_list.write_text("\n".join(f"file '{p}'" for p in chunk_paths))
+    with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", delete=False) as _f:
+        _f.write("\n".join(f"file '{p}'" for p in chunk_paths))
+        concat_list = pathlib.Path(_f.name)
     out_path = config.VIDEO_OUTPUT_DIR / f"{job_id}.mp4"
     cmd = [
         "ffmpeg", "-y",
@@ -178,8 +179,8 @@ async def run_video_job(
     chunk_paths: list[pathlib.Path] = []
     style_prefix = _STYLE_PREFIXES.get(settings.get("style", "cinematic"), "")
     neg = settings.get("negative_prompt", "blurry, low quality, watermark, text, static")
-    seed_base = settings.get("seed") or random.randint(0, 2**32 - 1)
-    loop = asyncio.get_event_loop()
+    seed_base = settings.get("seed") if settings.get("seed") is not None else random.randint(0, 2**32 - 1)
+    loop = asyncio.get_running_loop()
 
     try:
         for chunk in schedule["chunks"]:
