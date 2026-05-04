@@ -159,3 +159,45 @@ def test_scale_cfg():
     assert result == pytest.approx(8.0, abs=0.1)
     result = scale_cfg(6.0, 0.0, "both")
     assert result == pytest.approx(6.0, abs=0.1)
+
+
+from fastapi.testclient import TestClient
+
+@pytest.fixture
+def vclient():
+    from nyx_step import app
+    return TestClient(app, headers={"Cf-Access-Authenticated-User-Email": "test@test.com"})
+
+def test_video_status_unknown_job(vclient):
+    resp = vclient.get("/api/video/status/nonexistent-job-id")
+    assert resp.status_code == 404
+
+def test_video_download_unknown_job(vclient):
+    resp = vclient.get("/api/video/download/nonexistent-job-id")
+    assert resp.status_code == 404
+
+def test_video_analyse_no_file(vclient):
+    resp = vclient.post("/api/video/analyse", json={
+        "audio_file": "/nonexistent/file.mp3",
+        "chunk_seconds": 6.0, "fps": 16,
+        "sync_mode": "both", "lyrics": "", "bpm_hint": None
+    })
+    assert resp.status_code in (400, 422, 500)
+
+def test_video_generate_missing_schedule(vclient):
+    resp = vclient.post("/api/video/generate", json={
+        "schedule": {"chunks": [], "audio_file": "/nonexistent.mp3",
+                     "bpm": 120, "duration": 0, "beat_times": []},
+        "section_prompts": {},
+        "settings": {
+            "style": "cinematic", "sync_mode": "both",
+            "width": 832, "height": 480, "fps": 16,
+            "steps": 20, "cfg_base": 6.0,
+            "model_name": "wan2.1_t2v_1.3B_bf16.safetensors",
+            "text_encoder_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+            "vae_name": "wan_2.1_vae.safetensors",
+            "negative_prompt": "blurry", "seed": 0
+        }
+    })
+    assert resp.status_code == 200
+    assert "job_id" in resp.json()
