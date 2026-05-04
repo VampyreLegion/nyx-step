@@ -1362,6 +1362,7 @@
       <button class="inner-tab-btn" data-guide="extract">Extract</button>
       <button class="inner-tab-btn" data-guide="quality">📊 Quality</button>
       <button class="inner-tab-btn" data-guide="lrc">🎵 LRC</button>
+      <button class="inner-tab-btn" data-guide="video">🎬 Video</button>
       <button class="inner-tab-btn" data-guide="ch1">1. Philosophy</button>
       <button class="inner-tab-btn" data-guide="ch2">2. Tags</button>
       <button class="inner-tab-btn" data-guide="ch3">3. Lyrics</button>
@@ -1558,8 +1559,22 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.8 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; April 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.9 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; May 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.9 — Music Video Generator</h3>
+        <ul>
+          <li><strong>Video tab</strong> — new 🎬 Video tab generates beat-synced music videos from any completed song; scene prompts auto-generated per lyric section via Ollama</li>
+          <li><strong>Wan 2.1 T2V/I2V pipeline</strong> — first chunk uses text-to-video; subsequent chunks use image-to-video with the last frame for seamless continuity across chunks</li>
+          <li><strong>Beat analysis</strong> — librosa beat_track + Gaussian smoothing produces per-chunk beat weights; three sync modes: section-based, beat-reactive (CFG ±2.0), or both</li>
+          <li><strong>Three visual styles</strong> — Abstract, Cinematic, Artistic; selectable per video; style prefix prepended to each chunk's scene prompt</li>
+          <li><strong>Resolution &amp; duration controls</strong> — 832×480 / 1024×576 / 1280×720; 4 / 6 / 8 s chunks; 16 / 24 FPS; steps and CFG base configurable</li>
+          <li><strong>ffmpeg stitch</strong> — all chunks concatenated and muxed with the original audio into a final MP4 download</li>
+          <li><strong>NyxNodes</strong> — two new ComfyUI custom nodes: <code>NyxBeatScheduler</code> and <code>NyxSectionPromptRouter</code> for use in manual ComfyUI workflows</li>
+          <li><strong>Video guide</strong> — full documentation available in Guide → 🎬 Video</li>
+        </ul>
       </div>
 
       <div class="about-section">

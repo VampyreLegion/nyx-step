@@ -14,7 +14,7 @@ from nyx_step import tracker, get_user_email
 
 router = APIRouter()
 
-_CHAPTER_IDS = ["starthere", "summary", "flowcharts", "scale", "midi", "analyze", "sampler", "lm", "presets", "radio", "extract", "quality", "lrc", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
+_CHAPTER_IDS = ["starthere", "summary", "flowcharts", "scale", "midi", "analyze", "sampler", "lm", "presets", "radio", "extract", "quality", "lrc", "video", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
 
 _STYLE = (
     "<style>"
@@ -671,6 +671,71 @@ _LM_HTML = (
 )
 
 
+_VIDEO_HTML = (
+    f"<html><head>{_STYLE}</head><body>"
+    '<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">🎬 Music Video Generator</h2>'
+
+    '<h3>What It Does</h3>'
+    '<p>The Video tab generates a beat-synced music video for your current song using Wan 2.1 T2V/I2V 1.3B running locally in ComfyUI. '
+    'The pipeline analyses your audio with librosa, divides it into chunks aligned to your song\'s structure, generates each chunk as a video '
+    'clip using Wan\'s text-to-video (first chunk) or image-to-video (subsequent chunks, for seamless continuity), then stitches everything '
+    'together with ffmpeg into a final MP4 with your audio track.</p>'
+
+    '<h3>Workflow</h3>'
+    '<ol>'
+    '<li><strong>Generate your song first</strong> — the Video tab reads <code>mwState.lastAudioFile</code> set when the last generation completes.</li>'
+    '<li><strong>Open the Video tab</strong> — section prompt editors are auto-populated from your lyrics\' <code>[Section]</code> markers. '
+    'Ollama generates a 20-word visual scene description per section automatically.</li>'
+    '<li><strong>Click Analyse Audio</strong> — librosa detects BPM, beat times, and chunk boundaries. '
+    'The result shows BPM · chunk count · duration.</li>'
+    '<li><strong>Adjust settings</strong> — resolution, chunk duration, FPS, steps, CFG base, style, sync mode.</li>'
+    '<li><strong>Click Generate Video</strong> — the server queues ComfyUI jobs sequentially, showing chunk N of M progress. '
+    'When done, a Download MP4 link appears.</li>'
+    '</ol>'
+
+    '<h3>Style Options</h3>'
+    '<table>'
+    '<tr><th>Style</th><th>Visual character</th></tr>'
+    '<tr><td>Abstract</td><td>Flowing geometric shapes, colorful particles — no literal scenes</td></tr>'
+    '<tr><td>Cinematic</td><td>Film stills, dramatic lighting — realistic scenes</td></tr>'
+    '<tr><td>Artistic</td><td>Oil painting, detailed brushwork illustration</td></tr>'
+    '</table>'
+
+    '<h3>Sync Modes</h3>'
+    '<table>'
+    '<tr><th>Mode</th><th>How CFG varies</th></tr>'
+    '<tr><td>A — Section-based</td><td>CFG fixed at base value; each chunk uses the prompt for its lyric section</td></tr>'
+    '<tr><td>B — Beat-reactive</td><td>CFG scales +0–2 above base proportional to beat density in the chunk</td></tr>'
+    '<tr><td>C — Both</td><td>Section-based prompts AND beat-reactive CFG scaling</td></tr>'
+    '</table>'
+
+    '<h3>Resolution &amp; Performance</h3>'
+    '<ul>'
+    '<li><strong>832×480</strong> — fastest, recommended for testing</li>'
+    '<li><strong>1024×576</strong> — balanced</li>'
+    '<li><strong>1280×720</strong> — HD, significantly slower on 1.3B model</li>'
+    '<li>Chunk duration × FPS must yield a frame count satisfying <code>(n−1) % 4 == 0</code> (Wan alignment) — the server adjusts automatically</li>'
+    '<li>At 16 FPS with 6 s chunks: ~97 frames per chunk (approx. 30–60 s per chunk on GB10 Blackwell)</li>'
+    '</ul>'
+
+    '<h3>Models Required</h3>'
+    '<ul>'
+    '<li><code>models/diffusion_models/wan2.1_t2v_1.3B_bf16.safetensors</code></li>'
+    '<li><code>models/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors</code></li>'
+    '<li><code>models/vae/wan_2.1_vae.safetensors</code></li>'
+    '</ul>'
+    '<p>All three must be present in ComfyUI\'s model directories before generating.</p>'
+
+    '<h3>Custom ComfyUI Nodes</h3>'
+    '<p>Two new NyxNodes are available for use in manual ComfyUI workflows:</p>'
+    '<ul>'
+    '<li><strong>Nyx Beat Scheduler</strong> — takes an AUDIO input, returns schedule JSON, chunk count, and beat times JSON</li>'
+    '<li><strong>Nyx Section Prompt Router</strong> — takes schedule JSON + section prompts JSON, returns positive prompt, CFG scale, and is_first_chunk flag</li>'
+    '</ul>'
+    "</body></html>"
+)
+
+
 def _parse_chapter(section_id: str) -> str:
     """Extract one <h2 id="section_id">...</h2> section from Aceuser.html."""
     if section_id == "starthere":
@@ -697,6 +762,8 @@ def _parse_chapter(section_id: str) -> str:
         return _QUALITY_HTML
     if section_id == "lrc":
         return _LRC_HTML
+    if section_id == "video":
+        return _VIDEO_HTML
     if not config.ACEUSER_HTML.exists():
         return "<p>Guide file not found.</p>"
     raw = config.ACEUSER_HTML.read_text(encoding="utf-8")
