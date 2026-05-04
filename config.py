@@ -34,3 +34,18 @@ MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB
 # Rate limiting: max requests per window per user
 RATE_LIMIT_MAX = 20
 RATE_LIMIT_WINDOW = 60  # seconds
+
+# ── Video generation ──────────────────────────────────────────────────────────
+_NYX_STEP = pathlib.Path("/home/legion/legionprojects/nyx-step")
+
+WORKFLOW_VIDEO_T2V = _NYX_STEP / "workflow_video_t2v.json"
+WORKFLOW_VIDEO_I2V = _NYX_STEP / "workflow_video_i2v.json"
+
+VIDEO_OUTPUT_DIR = _COMFYUI / "output" / "video"
+VIDEO_CHUNK_DIR  = VIDEO_OUTPUT_DIR / "chunks"
+VIDEO_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+VIDEO_CHUNK_DIR.mkdir(parents=True, exist_ok=True)
+
+WAN_MODEL        = "wan2.1_t2v_1.3B_bf16.safetensors"
+WAN_TEXT_ENCODER = "umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+WAN_VAE          = "wan_2.1_vae.safetensors"
