@@ -83,7 +83,9 @@ def _post_prompt(workflow: dict) -> str:
         json={"prompt": workflow},
         timeout=15,
     )
-    resp.raise_for_status()
+    if not resp.ok:
+        body = resp.text[:800]
+        raise RuntimeError(f"ComfyUI {resp.status_code}: {body}")
     data = resp.json()
     if "error" in data:
         raise RuntimeError(f"ComfyUI error: {data['error']}")

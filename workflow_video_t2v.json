@@ -3,7 +3,7 @@
     "class_type": "UNETLoader",
     "inputs": {
       "unet_name": "{{model_name}}",
-      "weight_dtype": "bf16"
+      "weight_dtype": "default"
     }
   },
   "2": {
