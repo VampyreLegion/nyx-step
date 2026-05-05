@@ -1559,8 +1559,20 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.9 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; May 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.9.1 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; May 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.9.1 — Video Tab Bug Fixes</h3>
+        <ul>
+          <li><strong>Audio file detection fixed</strong> — <code>mwState.lastAudioFile</code> now populated on page load from the most recent completed job (<code>init.js</code>) and live via SSE <code>job_done</code> events (<code>jobs.js</code>); "No audio file found" error on Analyse Audio is resolved</li>
+          <li><strong>ComfyUI workflow fix</strong> — <code>UNETLoader</code> <code>weight_dtype</code> changed from invalid <code>"bf16"</code> to <code>"default"</code> in both T2V and I2V templates; was causing immediate 400 rejection from ComfyUI</li>
+          <li><strong>WebSocket → history polling</strong> — replaced fragile WebSocket listener with <code>GET /history/{prompt_id}</code> polling every 3 s; WebSocket approach missed events because no <code>client_id</code> was passed with the prompt POST</li>
+          <li><strong>Per-chunk progress notes</strong> — progress label now shows ComfyUI queue status and elapsed time per chunk (e.g. "Chunk 1: ComfyUI running (42s)"); chunk timeout raised from 600 s to 1800 s</li>
+          <li><strong>Regenerate All fixed</strong> — section prompt editors are now rebuilt before prompts are regenerated; previously the editors weren't present in the DOM on first click</li>
+          <li><strong>Video tab open hook</strong> — <code>onVideoTabOpen()</code> called reliably from <code>tabs.js</code> rather than racing with a separate DOMContentLoaded listener in <code>video.js</code></li>
+        </ul>
       </div>
 
       <div class="about-section">

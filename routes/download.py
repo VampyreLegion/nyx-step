@@ -711,11 +711,13 @@ _VIDEO_HTML = (
 
     '<h3>Resolution &amp; Performance</h3>'
     '<ul>'
-    '<li><strong>832×480</strong> — fastest, recommended for testing</li>'
-    '<li><strong>1024×576</strong> — balanced</li>'
+    '<li><strong>832×480</strong> — fastest, recommended for testing and most use cases</li>'
+    '<li><strong>1024×576</strong> — balanced quality/speed</li>'
     '<li><strong>1280×720</strong> — HD, significantly slower on 1.3B model</li>'
     '<li>Chunk duration × FPS must yield a frame count satisfying <code>(n−1) % 4 == 0</code> (Wan alignment) — the server adjusts automatically</li>'
-    '<li>At 16 FPS with 6 s chunks: ~97 frames per chunk (approx. 30–60 s per chunk on GB10 Blackwell)</li>'
+    '<li>At 16 FPS with 6 s chunks: ~97 frames per chunk (approx. 30–90 s per chunk on GB10 Blackwell)</li>'
+    '<li><strong>Steps tip</strong> — 4–8 steps gives good results much faster than the default 20; Wan 1.3B responds well to low step counts</li>'
+    '<li>The progress label updates every ~9 s showing ComfyUI queue status and elapsed time per chunk (e.g. "Chunk 1: ComfyUI running (42s)")</li>'
     '</ul>'
 
     '<h3>Models Required</h3>'
