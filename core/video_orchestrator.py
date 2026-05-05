@@ -93,30 +93,37 @@ def _post_prompt(workflow: dict) -> str:
 
 
 async def _wait_for_prompt(prompt_id: str, timeout: int = 600) -> list[str]:
-    """Wait for a ComfyUI prompt to finish via WebSocket. Returns output filenames."""
-    import websockets
-
-    ws_url = config.COMFYUI_URL.replace("http://", "ws://").replace("https://", "wss://")
-    ws_url = f"{ws_url}/ws?clientId=nyx_video_{prompt_id[:8]}"
-
-    async with websockets.connect(ws_url) as ws:
-        async def _recv():
-            async for raw in ws:
-                msg = json.loads(raw) if isinstance(raw, str) else {}
-                mtype = msg.get("type", "")
-                data = msg.get("data", {})
-                if mtype == "executed" and data.get("prompt_id") == prompt_id:
-                    outputs = data.get("output", {})
-                    files = []
-                    for node_out in outputs.values():
-                        for item in node_out.get("gifs", []):
-                            files.append(item.get("filename", ""))
-                        for item in node_out.get("videos", []):
-                            files.append(item.get("filename", ""))
-                    return [f for f in files if f]
-                if mtype == "execution_error" and data.get("prompt_id") == prompt_id:
-                    raise RuntimeError(data.get("exception_message", "ComfyUI execution error"))
-        return await asyncio.wait_for(_recv(), timeout=timeout)
+    """Poll /history/{prompt_id} until the prompt finishes. Returns output filenames."""
+    deadline = asyncio.get_event_loop().time() + timeout
+    while asyncio.get_event_loop().time() < deadline:
+        await asyncio.sleep(3)
+        try:
+            resp = requests.get(f"{config.COMFYUI_URL}/history/{prompt_id}", timeout=10)
+            if not resp.ok:
+                continue
+            history = resp.json()
+            if prompt_id not in history:
+                continue
+            entry = history[prompt_id]
+            status = entry.get("status", {})
+            if status.get("status_str") == "error":
+                msgs = status.get("messages", [])
+                detail = str(msgs[-1]) if msgs else "unknown"
+                raise RuntimeError(f"ComfyUI execution error: {detail}")
+            outputs = entry.get("outputs", {})
+            files: list[str] = []
+            for node_out in outputs.values():
+                for item in node_out.get("gifs", []):
+                    files.append(item.get("filename", ""))
+                for item in node_out.get("videos", []):
+                    files.append(item.get("filename", ""))
+            if files:
+                return [f for f in files if f]
+        except RuntimeError:
+            raise
+        except Exception as exc:
+            logger.warning("History poll error: %s", exc)
+    raise TimeoutError(f"Prompt {prompt_id} did not complete within {timeout}s")
 
 
 def extract_last_frame(video_path: pathlib.Path, dest: pathlib.Path) -> pathlib.Path:
