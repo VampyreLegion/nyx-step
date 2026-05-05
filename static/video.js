@@ -229,7 +229,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("video-generate-btn")?.addEventListener("click", generateVideo);
   document.getElementById("video-regen-prompts")?.addEventListener("click", () => {
     const lyrics = (typeof mwState !== "undefined") ? (mwState.lyrics || "") : "";
-    suggestVideoPrompts(parseLyricsSections(lyrics));
+    const sections = parseLyricsSections(lyrics);
+    buildSectionPromptEditors(sections);
+    suggestVideoPrompts(sections);
   });
   document.getElementById("video-cancel-btn")?.addEventListener("click", () => {
     clearInterval(_videoPollTimer);

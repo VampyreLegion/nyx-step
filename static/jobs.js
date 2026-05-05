@@ -100,6 +100,7 @@ function connectSSE() {
   es.addEventListener("job_done", e => {
     const data = JSON.parse(e.data);
     addJobCard(data.prompt_id, data.song_name || "Song", "done", data.files);
+    if (data.files && data.files.length) mwState.lastAudioFile = data.files[0];
     if (data.prompt_id === _activeGenPromptId) setGenProgress("done", "✓ Done — audio ready");
   });
   es.addEventListener("job_running", e => {
