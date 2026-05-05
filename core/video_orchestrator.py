@@ -29,6 +29,7 @@ def create_job(total_chunks: int, user_email: str) -> str:
         "status": "queued",
         "chunks_total": total_chunks,
         "chunks_done": 0,
+        "chunk_note": "",
         "output_file": None,
         "error": None,
     }
@@ -92,11 +93,42 @@ def _post_prompt(workflow: dict) -> str:
     return data["prompt_id"]
 
 
-async def _wait_for_prompt(prompt_id: str, timeout: int = 600) -> list[str]:
+def _comfyui_queue_status(prompt_id: str) -> str:
+    """Return 'running', 'pending', or 'waiting' for a given prompt_id."""
+    try:
+        data = requests.get(f"{config.COMFYUI_URL}/queue", timeout=5).json()
+        for entry in data.get("queue_running", []):
+            if isinstance(entry, list) and len(entry) > 1 and entry[1] == prompt_id:
+                return "running"
+        for entry in data.get("queue_pending", []):
+            if isinstance(entry, list) and len(entry) > 1 and entry[1] == prompt_id:
+                return "pending"
+    except Exception:
+        pass
+    return "waiting"
+
+
+async def _wait_for_prompt(
+    prompt_id: str,
+    job_id: str,
+    chunk_idx: int,
+    timeout: int = 1800,
+) -> list[str]:
     """Poll /history/{prompt_id} until the prompt finishes. Returns output filenames."""
-    deadline = asyncio.get_event_loop().time() + timeout
-    while asyncio.get_event_loop().time() < deadline:
+    loop = asyncio.get_event_loop()
+    deadline = loop.time() + timeout
+    start = loop.time()
+    tick = 0
+    while loop.time() < deadline:
         await asyncio.sleep(3)
+        tick += 1
+        elapsed = int(loop.time() - start)
+
+        # Check ComfyUI queue every ~9 s and update note
+        if tick % 3 == 1:
+            q = _comfyui_queue_status(prompt_id)
+            _update_job(job_id, chunk_note=f"Chunk {chunk_idx + 1}: ComfyUI {q} ({elapsed}s)")
+
         try:
             resp = requests.get(f"{config.COMFYUI_URL}/history/{prompt_id}", timeout=10)
             if not resp.ok:
@@ -118,12 +150,13 @@ async def _wait_for_prompt(prompt_id: str, timeout: int = 600) -> list[str]:
                 for item in node_out.get("videos", []):
                     files.append(item.get("filename", ""))
             if files:
+                _update_job(job_id, chunk_note=f"Chunk {chunk_idx + 1}: done ({elapsed}s)")
                 return [f for f in files if f]
         except RuntimeError:
             raise
         except Exception as exc:
             logger.warning("History poll error: %s", exc)
-    raise TimeoutError(f"Prompt {prompt_id} did not complete within {timeout}s")
+    raise TimeoutError(f"Chunk {chunk_idx} prompt {prompt_id} did not complete within {timeout}s")
 
 
 def extract_last_frame(video_path: pathlib.Path, dest: pathlib.Path) -> pathlib.Path:
@@ -223,8 +256,9 @@ async def run_video_job(
                 values["start_image_filename"] = last_frame_filename
                 workflow = fill_template(config.WORKFLOW_VIDEO_I2V, values)
 
+            _update_job(job_id, chunk_note=f"Chunk {i + 1}: submitting to ComfyUI…")
             prompt_id = await loop.run_in_executor(None, _post_prompt, workflow)
-            output_files = await _wait_for_prompt(prompt_id)
+            output_files = await _wait_for_prompt(prompt_id, job_id, i)
 
             if not output_files:
                 raise RuntimeError(f"Chunk {i}: ComfyUI returned no output files")

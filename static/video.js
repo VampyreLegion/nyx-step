@@ -202,7 +202,8 @@ function pollVideoStatus(total) {
       const done = state.chunks_done || 0;
       const pct = total > 0 ? Math.round((done / total) * 100) : 0;
       progressBar.value = pct;
-      progressLabel.textContent = `Chunk ${done} of ${total} · ${pct}%`;
+      const note = state.chunk_note ? ` — ${state.chunk_note}` : "";
+      progressLabel.textContent = `Chunk ${done} of ${total} · ${pct}%${note}`;
       if (state.status === "done") {
         clearInterval(_videoPollTimer);
         downloadLink.href = `/api/video/download/${_videoJobId}`;
