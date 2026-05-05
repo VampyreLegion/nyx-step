@@ -41,6 +41,18 @@ class SuggestPromptsRequest(BaseModel):
     ollama_model: str = "gemma4:latest"
 
 
+@router.get("/audio-files")
+async def list_audio_files(request: Request):
+    get_user_email(request)
+    exts = {".mp3", ".wav", ".flac", ".ogg", ".m4a"}
+    files = sorted(
+        (f.name for f in config.COMFYUI_OUTPUT_DIR.iterdir() if f.suffix.lower() in exts),
+        key=lambda n: (config.COMFYUI_OUTPUT_DIR / n).stat().st_mtime,
+        reverse=True,
+    )
+    return {"files": files}
+
+
 @router.post("/analyse")
 async def analyse_audio(request: Request, body: AnalyseRequest):
     get_user_email(request)

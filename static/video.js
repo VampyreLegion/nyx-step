@@ -49,9 +49,43 @@ function setSectionPrompts(promptsMap) {
   });
 }
 
+// ── Audio file selector ───────────────────────────────────────────────────────
+
+async function loadAudioFileList() {
+  const sel = document.getElementById("video-audio-select");
+  const note = document.getElementById("video-audio-note");
+  if (!sel) return;
+  try {
+    const resp = await fetch("/api/video/audio-files");
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const current = sel.value || (typeof mwState !== "undefined" ? mwState.lastAudioFile : "");
+    sel.innerHTML = '<option value="">— select audio file —</option>';
+    (data.files || []).forEach(f => {
+      const opt = document.createElement("option");
+      opt.value = f;
+      opt.textContent = f;
+      if (f === current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    // Auto-select mwState.lastAudioFile if nothing is selected yet
+    if (!sel.value && typeof mwState !== "undefined" && mwState.lastAudioFile) {
+      sel.value = mwState.lastAudioFile;
+    }
+    if (note) note.textContent = sel.value ? `Selected: ${sel.value}` : `${data.files.length} file(s) available`;
+  } catch (_) {}
+}
+
+function getSelectedAudioFile() {
+  const sel = document.getElementById("video-audio-select");
+  return (sel && sel.value) ? sel.value
+    : (typeof mwState !== "undefined" ? mwState.lastAudioFile : null);
+}
+
 // ── Tab open hook ─────────────────────────────────────────────────────────────
 
 function onVideoTabOpen() {
+  loadAudioFileList();
   const lyrics = (typeof mwState !== "undefined" && mwState.lyrics) ? mwState.lyrics : "";
   const sections = parseLyricsSections(lyrics);
   buildSectionPromptEditors(sections);
@@ -86,11 +120,10 @@ async function analyseVideoAudio() {
   const genBtn = document.getElementById("video-generate-btn");
   if (!btn || !result || !genBtn) return;
 
-  const audioFile = (typeof mwState !== "undefined" && mwState.lastAudioFile)
-    ? mwState.lastAudioFile : null;
+  const audioFile = getSelectedAudioFile();
 
   if (!audioFile) {
-    result.textContent = "No audio file found. Generate a song first.";
+    result.textContent = "No audio file selected. Choose a file from the Audio File dropdown.";
     return;
   }
 
@@ -228,6 +261,12 @@ function pollVideoStatus(total) {
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("video-analyse-btn")?.addEventListener("click", analyseVideoAudio);
   document.getElementById("video-generate-btn")?.addEventListener("click", generateVideo);
+  document.getElementById("video-audio-refresh")?.addEventListener("click", loadAudioFileList);
+  document.getElementById("video-audio-select")?.addEventListener("change", () => {
+    const sel = document.getElementById("video-audio-select");
+    const note = document.getElementById("video-audio-note");
+    if (note) note.textContent = sel.value ? `Selected: ${sel.value}` : "";
+  });
   document.getElementById("video-regen-prompts")?.addEventListener("click", () => {
     const lyrics = (typeof mwState !== "undefined") ? (mwState.lyrics || "") : "";
     const sections = parseLyricsSections(lyrics);

@@ -1502,6 +1502,17 @@
       <!-- Right: Settings + Actions -->
       <div>
         <h3 style="margin:0 0 1rem">Video Settings</h3>
+        <div style="margin-bottom:1rem">
+          <label style="font-weight:600;display:block;margin-bottom:0.4rem">Audio File</label>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <select id="video-audio-select" style="flex:1;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:0.4rem">
+              <option value="">— select audio file —</option>
+            </select>
+            <button id="video-audio-refresh" class="btn-sm" title="Refresh audio file list">↻</button>
+          </div>
+          <div id="video-audio-note" style="color:var(--muted);font-size:0.8em;margin-top:0.3rem"></div>
+        </div>
+
         <table style="width:100%;border-collapse:collapse">
           <tr><td style="padding:0.4rem 0.6rem;color:var(--muted)">Resolution</td>
               <td><select id="video-resolution">
@@ -1940,7 +1951,7 @@
 <script src="/static/history.js?v=2"></script>
 <script src="/static/dropzone.js?v=1"></script>
 <script src="/static/tabs.js?v=3"></script>
-<script src="/static/video.js"></script>
+<script src="/static/video.js?v=2"></script>
 <script src="/static/init.js?v=1"></script>
 </body>
 </html>
