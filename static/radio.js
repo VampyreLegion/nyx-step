@@ -233,22 +233,73 @@
   };
 
   // ── Init ──────────────────────────────────────────────────────────────────────
+  // ── Genre picker ──────────────────────────────────────────────────────────────
+  let _radioGenreMap = {};
+
+  function _loadGenres() {
+    fetch("/api/genres").then(r => r.json()).then(data => {
+      const genres = data.genres || [];
+      genres.forEach(g => { _radioGenreMap[g.name] = g; });
+      const sel = document.getElementById("radio-genre-select");
+      if (!sel) return;
+      const byParent = {};
+      genres.forEach(g => {
+        if (!byParent[g.parent]) byParent[g.parent] = [];
+        byParent[g.parent].push(g);
+      });
+      Object.keys(byParent).sort().forEach(cat => {
+        const og = document.createElement("optgroup");
+        og.label = cat;
+        byParent[cat].forEach(g => {
+          const opt = document.createElement("option");
+          opt.value = g.name; opt.textContent = g.name;
+          og.appendChild(opt);
+        });
+        sel.appendChild(og);
+      });
+    }).catch(() => {});
+  }
+
+  function _onGenreChange(val) {
+    const infoEl = document.getElementById("radio-genre-info");
+    const inp    = document.getElementById("radio-style-override");
+    if (!val) { if (infoEl) infoEl.textContent = ""; return; }
+    const g = _radioGenreMap[val];
+    if (!g) return;
+    if (inp) inp.value = (g.tags || []).join(", ");
+    const bpmEl = document.getElementById("radio-bpm");
+    const keyEl = document.getElementById("radio-key");
+    const scaleEl = document.getElementById("radio-scale");
+    if (bpmEl) bpmEl.value = Math.round((g.bpm_min + g.bpm_max) / 2);
+    if (keyEl) keyEl.value = g.default_key || "C";
+    if (scaleEl) scaleEl.value = g.default_scale || "Major";
+    if (infoEl) infoEl.textContent = g.description || "";
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     const b = btn();
     if (!b) return;
+
+    _loadGenres();
 
     b.addEventListener("click", () => (_active ? _stop() : _start()));
 
     document.getElementById("radio-mode-manual")?.addEventListener("click", () => _setMode("manual"));
     document.getElementById("radio-mode-auto")?.addEventListener("click",   () => _setMode("auto"));
 
+    document.getElementById("radio-genre-select")?.addEventListener("change", e => _onGenreChange(e.target.value));
+
     document.getElementById("radio-random-style")?.addEventListener("click", async () => {
       const inp = document.getElementById("radio-style-override");
+      const genSel = document.getElementById("radio-genre-select");
       if (!inp) return;
       try {
         const r = await fetch("/radio/random-style");
         const d = await r.json();
         inp.value = d.style || "";
+        if (genSel) genSel.value = "";
+        const infoEl = document.getElementById("radio-genre-info");
+        if (infoEl) infoEl.textContent = "";
       } catch {}
     });
 

@@ -1118,11 +1118,18 @@
 
     <!-- Auto DJ panel -->
     <div id="radio-panel-auto" style="display:none">
+      <div class="field-group" style="margin-bottom:0.5rem">
+        <label>Genre</label>
+        <select id="radio-genre-select" style="font-size:12px;width:100%">
+          <option value="">— pick a genre —</option>
+        </select>
+        <div id="radio-genre-info" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px"></div>
+      </div>
       <div class="field-group" style="margin-bottom:0.75rem">
-        <label title="Optional: lock the DJ to a genre or mood. Leave blank to let the AI pick randomly each segment.">Style Override <span style="color:var(--muted);font-weight:normal;font-size:0.85em">(optional — blank = fully random)</span></label>
+        <label title="Style tags sent to Ollama. Filled from genre picker above — edit freely or leave blank for fully random.">Style Prompt <span style="color:var(--muted);font-weight:normal;font-size:0.85em">(editable — blank = fully random)</span></label>
         <div style="display:flex;gap:0.5rem;align-items:center">
           <input type="text" id="radio-style-override" placeholder="e.g. jazz, synthwave, indie folk…" style="flex:1">
-          <button id="radio-random-style" class="secondary small" title="Pick a random style from the DJ library">🎲 Random Style</button>
+          <button id="radio-random-style" class="secondary small" title="Pick a random style from the DJ library">🎲 Random</button>
         </div>
       </div>
     </div>
@@ -1152,8 +1159,8 @@
         </select>
       </div>
       <div class="field-group">
-        <label title="Diffusion steps — 20 for fast; 30–40 for higher quality">Steps</label>
-        <input type="number" id="radio-steps" value="20" min="4" max="60" step="1" style="width:70px">
+        <label title="Diffusion steps — 8 for turbo model; 20–30 for SFT model">Steps</label>
+        <input type="number" id="radio-steps" value="8" min="4" max="60" step="1" style="width:70px">
       </div>
       <div class="field-group">
         <label title="Time signature — affects rhythmic feel">Time Sig</label>
@@ -1608,8 +1615,18 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.9.1 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; May 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.9.2 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; May 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.9.2 — Radio Improvements</h3>
+        <ul>
+          <li><strong>Auto DJ genre picker</strong> — 150-genre dropdown (same library as Style tab, grouped by category) in Auto DJ panel; selecting a genre fills the style prompt and sets BPM/Key/Scale to match genre defaults; prompt remains fully editable</li>
+          <li><strong>Radio steps default 8</strong> — diffusion steps now defaults to 8 for the turbo model (was 20)</li>
+          <li><strong>Icecast/Liquidsoap streaming</strong> — Nyx AI Radio stream live at <code>http://192.168.1.109:8000/nyx-radio</code>; <code>nyx-radio.service</code> enabled on Astraea; LAN firewall opened for port 8000</li>
+          <li><strong>Liquidsoap deprecation fix</strong> — updated <code>nyx-radio.liq</code> to use <code>process.read.lines</code> instead of deprecated <code>get_process_lines</code></li>
+        </ul>
       </div>
 
       <div class="about-section">
@@ -1983,7 +2000,7 @@
 <script src="/static/cover.js?v=1"></script>
 <script src="/static/lego.js?v=1"></script>
 <script src="/static/extract.js?v=1"></script>
-<script src="/static/radio.js?v=2"></script>
+<script src="/static/radio.js?v=3"></script>
 <script src="/static/train.js?v=2"></script>
 <script src="/static/midi.js?v=1"></script>
 <script src="/static/history.js?v=2"></script>
