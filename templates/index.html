@@ -1101,19 +1101,40 @@
 
   <!-- RADIO -->
   <div class="tab-panel" id="tab-radio">
-    <p style="font-size:12px;color:var(--muted);margin:0 0 14px" title="Radio generates an endless stream of music. Each segment uses the previous segment's audio as a timbre reference, so the stream stays sonically coherent while evolving creatively. Audio codes are freshly generated each time for variation.">Endless AI radio — each segment inherits the sonic character of the previous, creating a continuous evolving stream.</p>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;margin-bottom:12px">
-      <div class="field-group" style="grid-column:1/-1">
-        <label title="Style tags that stay consistent across all segments. Use genre, mood, instrumentation tags.">Station Prompt (stays consistent)</label>
-        <input type="text" id="radio-tags" placeholder="e.g. lo-fi hip hop, jazz chords, vinyl warmth, mellow, 75 BPM" style="width:100%">
+    <!-- Mode toggle -->
+    <div style="display:flex;gap:0.5rem;margin-bottom:1rem;border-bottom:1px solid var(--border);padding-bottom:0.75rem">
+      <button id="radio-mode-manual" class="secondary small" style="font-size:12px;padding:4px 14px;border:2px solid var(--accent);color:var(--accent)" title="You set the style; AI writes a full song with lyrics for each segment">🎛 Manual</button>
+      <button id="radio-mode-auto" class="secondary small" style="font-size:12px;padding:4px 14px" title="AI DJ picks styles and writes complete songs autonomously">🤖 Auto DJ</button>
+    </div>
+
+    <!-- Manual mode panel -->
+    <div id="radio-panel-manual">
+      <div class="field-group" style="margin-bottom:0.75rem">
+        <label title="Describe the music style; Ollama generates a complete song with lyrics and vocals for each segment">Style Description</label>
+        <input type="text" id="radio-tags" placeholder="e.g. lo-fi hip hop, jazzy piano, female vocals, mellow, 75 BPM" style="width:100%">
       </div>
+    </div>
+
+    <!-- Auto DJ panel -->
+    <div id="radio-panel-auto" style="display:none">
+      <div class="field-group" style="margin-bottom:0.75rem">
+        <label title="Optional: lock the DJ to a genre or mood. Leave blank to let the AI pick randomly each segment.">Style Override <span style="color:var(--muted);font-weight:normal;font-size:0.85em">(optional — blank = fully random)</span></label>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <input type="text" id="radio-style-override" placeholder="e.g. jazz, synthwave, indie folk…" style="flex:1">
+          <button id="radio-random-style" class="secondary small" title="Pick a random style from the DJ library">🎲 Random Style</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shared settings -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;margin-bottom:1rem">
       <div class="field-group">
         <label title="BPM — all segments will target this tempo">BPM</label>
         <input type="number" id="radio-bpm" value="90" min="40" max="240" step="1" style="width:80px">
       </div>
       <div class="field-group">
-        <label title="Duration of each segment in seconds. Shorter = faster iteration; longer = more musical development per segment.">Segment Length (s) ⓘ</label>
+        <label title="Duration of each segment in seconds">Segment Length (s)</label>
         <input type="number" id="radio-duration" value="30" min="10" max="120" step="5" style="width:80px">
       </div>
       <div class="field-group">
@@ -1131,18 +1152,21 @@
         </select>
       </div>
       <div class="field-group">
-        <label title="Diffusion steps — 20 for fast generation; 30–40 for higher quality">Steps ⓘ</label>
+        <label title="Diffusion steps — 20 for fast; 30–40 for higher quality">Steps</label>
         <input type="number" id="radio-steps" value="20" min="4" max="60" step="1" style="width:70px">
       </div>
     </div>
 
-    <button id="btn-radio-toggle" title="Start the radio stream">📻 Start Radio</button>
+    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+      <button id="btn-radio-toggle" title="Start the radio stream">📻 Start Radio</button>
+    </div>
     <div id="radio-status" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
 
     <!-- Mini Player -->
     <div style="margin-top:16px;background:var(--surface2);border-radius:6px;padding:14px">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Now Playing</div>
-      <div id="radio-now-playing" style="font-size:13px;color:var(--text);margin-bottom:8px;min-height:18px">—</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Now Playing</div>
+      <div id="radio-now-playing" style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px;min-height:20px">—</div>
+      <div id="radio-style-display" style="font-size:11px;color:var(--muted);margin-bottom:8px;min-height:14px;font-style:italic"></div>
       <audio id="radio-audio" style="width:100%;margin-bottom:6px" controls preload="auto"></audio>
       <div id="radio-progress" style="font-size:11px;color:var(--muted);text-align:right"></div>
     </div>
@@ -1153,7 +1177,7 @@
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Segment History</div>
         <button id="btn-radio-clear-history" class="secondary small" style="font-size:10px;padding:2px 8px" title="Clear segment history list">🗑 Clear</button>
       </div>
-      <div id="radio-history" style="max-height:200px;overflow-y:auto"></div>
+      <div id="radio-history" style="max-height:220px;overflow-y:auto"></div>
     </div>
   </div>
 
@@ -1945,7 +1969,7 @@
 <script src="/static/cover.js?v=1"></script>
 <script src="/static/lego.js?v=1"></script>
 <script src="/static/extract.js?v=1"></script>
-<script src="/static/radio.js?v=1"></script>
+<script src="/static/radio.js?v=2"></script>
 <script src="/static/train.js?v=2"></script>
 <script src="/static/midi.js?v=1"></script>
 <script src="/static/history.js?v=2"></script>

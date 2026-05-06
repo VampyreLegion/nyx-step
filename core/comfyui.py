@@ -432,6 +432,7 @@ class ComfyUIClient:
         prev_input_name: str,
         caption: str,
         state: dict,
+        lyrics: str = "",
     ) -> dict:
         """Generate the next radio segment using the previous segment as timbre reference."""
         if not config.WORKFLOW_RADIO_CONTINUE_TEMPLATE.exists():
@@ -448,10 +449,8 @@ class ComfyUIClient:
                 node["inputs"]["audio"] = prev_input_name
             elif node.get("class_type") == "TextEncodeAceStepAudio1.5":
                 inp = node.setdefault("inputs", {})
-                _apply_text_encoder(inp, caption, "", state, override_duration=duration)
+                _apply_text_encoder(inp, caption, lyrics, state, override_duration=duration)
                 inp["generate_audio_codes"] = True
-                # radio continue doesn't add scale suffix to tags — clear lyrics override
-                inp["lyrics"] = ""
             elif node.get("class_type") == "EmptyAceStep1.5LatentAudio":
                 node.setdefault("inputs", {})["seconds"] = duration
 
