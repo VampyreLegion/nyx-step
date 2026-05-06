@@ -159,11 +159,13 @@
 
   // ── Start / Stop ─────────────────────────────────────────────────────────────
   async function _start() {
-    const bpm   = +(document.getElementById("radio-bpm")?.value)     || 90;
-    const key   =  document.getElementById("radio-key")?.value       || "C";
-    const scale =  document.getElementById("radio-scale")?.value     || "Major";
-    const dur   = +(document.getElementById("radio-duration")?.value) || 30;
-    const steps = +(document.getElementById("radio-steps")?.value)    || 20;
+    const bpm   = +(document.getElementById("radio-bpm")?.value)         || 90;
+    const key   =  document.getElementById("radio-key")?.value           || "C";
+    const scale =  document.getElementById("radio-scale")?.value         || "Major";
+    const dur   = +(document.getElementById("radio-duration")?.value)    || 30;
+    const steps = +(document.getElementById("radio-steps")?.value)       || 20;
+    const timeSig =  document.getElementById("radio-timesig")?.value     || "4/4";
+    const temp  = +(document.getElementById("radio-temperature")?.value) || 1.05;
     const s = mwState;
 
     const body = {
@@ -171,6 +173,9 @@
       tags:           _mode === "manual" ? (document.getElementById("radio-tags")?.value || "") : "",
       style_override: _mode === "auto"   ? (document.getElementById("radio-style-override")?.value || "") : "",
       bpm, key, scale, duration: dur, steps,
+      time_sig: timeSig,
+      temperature: temp,
+      top_p: 0.95,
       cfg:           s.cfg_scale    || 2.0,
       audio_format:  s.audio_format  || "mp3",
       audio_quality: s.audio_quality || "V0",

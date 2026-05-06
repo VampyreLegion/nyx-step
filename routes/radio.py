@@ -28,7 +28,7 @@ from pathlib import Path
 
 import requests
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 
 import config
@@ -72,6 +72,8 @@ _state: dict = {
     "segment": 0,
     "last_file": None,
     "history": [],          # list of {file, song_name, style}
+    "stream_queue": [],     # filenames waiting to be served to Liquidsoap
+    "stream_pointer": 0,    # next index in history to push to stream_queue
     "settings": {},
     "user_email": None,
     "error": None,
@@ -94,24 +96,32 @@ def _ollama_generate_params(
 ) -> dict:
     """Ask Ollama to generate a complete song (name, caption, tags, lyrics) for a style."""
     section_hint = (
-        "[Verse 1] (4 lines)\n[Chorus] (3 lines)\n[Outro] (2 lines)"
+        "[Verse 1]\nline1\nline2\nline3\nline4\n\n[Chorus]\nline1\nline2\nline3"
         if duration <= 35
-        else "[Verse 1] (4 lines)\n[Chorus] (4 lines)\n[Verse 2] (4 lines)\n[Chorus] (4 lines)\n[Outro] (2 lines)"
+        else "[Verse 1]\nline1\nline2\nline3\nline4\n\n[Chorus]\nline1\nline2\nline3\nline4\n\n[Verse 2]\nline1\nline2\nline3\nline4\n\n[Chorus]\nline1\nline2\nline3\nline4\n\n[Outro]\nline1\nline2"
     )
 
     prompt = (
-        f"You are a music producer creating songs for an AI music generation system.\n\n"
-        f"Create a complete song in this style: {style}\n"
-        f"BPM: {bpm}, Key: {key} {scale}, Duration: {duration:.0f} seconds\n\n"
-        f"Output ONLY a JSON object. No markdown, no code fences, no explanation. "
-        f"Start with {{ and end with }}.\n\n"
-        f"Required fields:\n"
-        f"- song_name: Creative title (3-6 words)\n"
-        f"- caption: 1-2 sentences describing instruments, vocal style, mood, production. Be specific.\n"
-        f"- tags: Comma-separated AI music tags. MUST include vocal style (e.g. 'female vocals, singing' "
-        f"or 'male vocals' or 'male rap vocals'). Include genre, instruments, mood, tempo feel.\n"
-        f"- lyrics: Song lyrics with section markers. Structure:\n{section_hint}\n"
-        f"  Write singable lines that match the style. Use \\n between lines, \\n\\n between sections."
+        f"You are a senior music producer writing prompts for Nyx-Step, an AI music generation system. "
+        f"Your descriptions must be specific enough that an AI can generate rich, varied, non-repetitive music.\n\n"
+        f"Style: {style}\n"
+        f"BPM: {bpm}, Key: {key} {scale}, Duration: ~{duration:.0f}s\n\n"
+        f"Output ONLY a JSON object. No markdown, no code fences. Start with {{ end with }}.\n\n"
+        f"Fields:\n"
+        f"- song_name: evocative 3-6 word title\n"
+        f"- tags: comma-separated Nyx-Step style tags. Rules:\n"
+        f"  * MUST include a vocal type: 'female vocals', 'male vocals', 'rap vocals', 'choir', or similar\n"
+        f"  * Include: primary genre, 2-3 specific instruments (e.g. 'Rhodes piano' not just 'piano'), "
+        f"mood, production style (e.g. 'lo-fi', 'live recording', 'studio polished'), tempo feel\n"
+        f"  * NO generic placeholders. Be specific.\n"
+        f"- caption: 2-3 sentences for the AI to understand the music deeply. Include:\n"
+        f"  * Specific chord progression or harmonic movement (e.g. 'Cmaj7-Am7-Fmaj7-G7')\n"
+        f"  * Rhythmic feel in detail (e.g. 'swung eighth notes on brushed snare with a syncopated kick', "
+        f"NOT 'steady beat' or '16th note pattern')\n"
+        f"  * Texture and dynamics (e.g. 'sparse intro builds to full band by bar 8')\n"
+        f"  * Vocal delivery style (e.g. 'breathy alto with vibrato', 'punchy tenor rap with ad-libs')\n"
+        f"- lyrics: original song lyrics. Structure:\n{section_hint}\n"
+        f"  Write vivid, singable lines matching the style. Use real words, not placeholders."
     )
 
     try:
@@ -195,8 +205,12 @@ def _submit_radio_segment(
         "bpm": settings.get("bpm", 120),
         "key": settings.get("key", "C"),
         "scale": settings.get("scale", "Major"),
+        "time_sig": settings.get("time_sig", "4/4"),
         "steps": settings.get("steps", 20),
         "cfg_scale": settings.get("cfg", 2.0),
+        "temperature": settings.get("temperature", 1.05),
+        "top_p": settings.get("top_p", 0.95),
+        "top_k": settings.get("top_k", 0),
         "duration": settings.get("duration", 30),
         "seed": 0, "lock_seed": False,
         "audio_format": settings.get("audio_format", "mp3"),
@@ -279,6 +293,7 @@ def _watcher():
                     "song_name": _state.get("current_song", ""),
                     "style": _state.get("current_style", ""),
                 })
+                _state["stream_queue"].append(output_file)
                 _state["segment"] = next_seg
                 _state["error"] = None
 
@@ -335,14 +350,18 @@ def _ensure_watcher():
 # ── Pydantic models ────────────────────────────────────────────────────────────
 class RadioStartRequest(BaseModel):
     mode: str = "manual"          # "manual" | "auto"
-    tags: str = ""                # style description (manual) or ignored (auto)
+    tags: str = ""                # style description (manual)
     style_override: str = ""      # auto mode: stick to this style; blank = random
     ollama_model: str = "gemma4:latest"
     bpm: int = 90
     key: str = "C"
     scale: str = "Major"
+    time_sig: str = "4/4"
     steps: int = 20
     cfg: float = 2.0
+    temperature: float = 1.05
+    top_p: float = 0.95
+    top_k: int = 0
     duration: float = 30.0
     audio_format: str = "mp3"
     audio_quality: str = "V0"
@@ -417,6 +436,7 @@ async def radio_start(request: Request, body: RadioStartRequest):
             "segment": 0,
             "last_file": None,
             "history": [],
+            "stream_queue": [],
             "settings": settings,
             "user_email": user_email,
             "error": None,
@@ -453,6 +473,20 @@ async def radio_status():
             "current_style": _state.get("current_style", ""),
             "generating_params": _state.get("generating_params", False),
         }
+
+
+@router.get("/radio/next-for-stream", response_class=PlainTextResponse)
+async def radio_next_for_stream():
+    """Blocking endpoint for Liquidsoap: returns next audio URL as plain text.
+    Polls for up to 90s then returns empty string (Liquidsoap retries)."""
+    deadline = asyncio.get_event_loop().time() + 90
+    while asyncio.get_event_loop().time() < deadline:
+        with _lock:
+            if _state["stream_queue"]:
+                filename = _state["stream_queue"].pop(0)
+                return f"http://192.168.1.236:8001/download/{filename}"
+        await asyncio.sleep(2)
+    return ""
 
 
 @router.get("/radio/events")
