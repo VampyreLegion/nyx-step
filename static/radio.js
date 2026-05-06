@@ -9,6 +9,7 @@
   let _currentIdx = -1;
   let _active = false;
   let _mode = "manual";  // "manual" | "auto"
+  let _bufferCount = 2;  // segments to queue before starting playback
 
   const btn      = () => document.getElementById("btn-radio-toggle");
   const stat     = () => document.getElementById("radio-status");
@@ -129,8 +130,13 @@
         const entry = { file: msg.file, url: `/download/${msg.file}`, segment: msg.segment, song_name: msg.song_name || "", style: msg.style || "" };
         _playlist.push(entry);
         _addHistory(entry);
-        if (!_playing) _playIdx(_playlist.length - 1);
-        else {
+        if (!_playing) {
+          if (_playlist.length >= _bufferCount) {
+            _playIdx(0);
+          } else {
+            _setStatus(`⏳ Buffering… (${_playlist.length}/${_bufferCount} segments ready)`, "var(--muted)");
+          }
+        } else {
           const queued = _playlist.length - _currentIdx - 1;
           _setStatus(`▶ Playing — ${queued} queued`, "var(--accent)");
         }
@@ -159,11 +165,12 @@
 
   // ── Start / Stop ─────────────────────────────────────────────────────────────
   async function _start() {
+    _bufferCount = +(document.getElementById("radio-buffer")?.value) || 2;
     const bpm   = +(document.getElementById("radio-bpm")?.value)         || 90;
     const key   =  document.getElementById("radio-key")?.value           || "C";
     const scale =  document.getElementById("radio-scale")?.value         || "Major";
-    const dur   = +(document.getElementById("radio-duration")?.value)    || 30;
-    const steps = +(document.getElementById("radio-steps")?.value)       || 20;
+    const dur   = +(document.getElementById("radio-duration")?.value)    || 160;
+    const steps = +(document.getElementById("radio-steps")?.value)       || 8;
     const timeSig =  document.getElementById("radio-timesig")?.value     || "4/4";
     const temp  = +(document.getElementById("radio-temperature")?.value) || 1.05;
     const s = mwState;
@@ -288,6 +295,25 @@
     document.getElementById("radio-mode-auto")?.addEventListener("click",   () => _setMode("auto"));
 
     document.getElementById("radio-genre-select")?.addEventListener("change", e => _onGenreChange(e.target.value));
+
+    document.getElementById("radio-dj-choice")?.addEventListener("click", async () => {
+      const inp    = document.getElementById("radio-style-override");
+      const genSel = document.getElementById("radio-genre-select");
+      const djBtn  = document.getElementById("radio-dj-choice");
+      if (!inp) return;
+      djBtn.disabled = true;
+      djBtn.textContent = "🎙 Thinking…";
+      try {
+        const r = await fetch("/radio/dj-choice");
+        const d = await r.json();
+        inp.value = d.style || "";
+        if (genSel) genSel.value = "";
+        const infoEl = document.getElementById("radio-genre-info");
+        if (infoEl) infoEl.textContent = "AI DJ pick";
+      } catch {}
+      djBtn.disabled = false;
+      djBtn.textContent = "🎙 DJ Choice";
+    });
 
     document.getElementById("radio-random-style")?.addEventListener("click", async () => {
       const inp = document.getElementById("radio-style-override");

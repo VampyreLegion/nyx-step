@@ -165,6 +165,31 @@ def _pick_auto_style(style_override: str) -> str:
     return random.choice(_DJ_STYLES)
 
 
+def _ollama_dj_choice(model: str = "gemma4:latest") -> str:
+    """Ask Ollama to freely invent a creative music style for the next set."""
+    prompt = (
+        "You are the AI DJ for Nyx Radio. Invent a creative, specific music style for the next song. "
+        "Return ONLY a short style description (10-30 words) — no explanation, no quotes, no JSON, no preamble. "
+        "Be inventive and specific: include genre, mood, tempo feel, and instrumentation. "
+        "Examples of the exact format:\n"
+        "cinematic synthwave with lush pads, punchy drums, and a wistful melodic lead, 100 BPM\n"
+        "upbeat bossa nova with nylon guitar, brushed drums, and warm female vocals, 92 BPM\n"
+        "dark industrial techno with distorted bass, mechanical rhythms, and cold atmosphere, 135 BPM\n"
+        "Now invent a fresh style:"
+    )
+    try:
+        resp = requests.post(
+            f"{config.OLLAMA_URL}/api/generate",
+            json={"model": model, "prompt": prompt, "stream": False},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json().get("response", "").strip().splitlines()[0].strip(" -•")
+    except Exception as exc:
+        logger.warning("DJ choice Ollama error: %s", exc)
+        return random.choice(_DJ_STYLES)
+
+
 # ── Segment submission ─────────────────────────────────────────────────────────
 def _copy_output_to_input(filename: str) -> str | None:
     src = config.COMFYUI_OUTPUT_DIR / filename
@@ -384,6 +409,15 @@ class GenerateParamsRequest(BaseModel):
 async def radio_random_style(request: Request):
     get_user_email(request)
     return {"style": random.choice(_DJ_STYLES)}
+
+
+@router.get("/radio/dj-choice")
+async def radio_dj_choice(request: Request):
+    get_user_email(request)
+    model = request.query_params.get("model", "gemma4:latest")
+    loop = asyncio.get_running_loop()
+    style = await loop.run_in_executor(get_audio_pool(), lambda: _ollama_dj_choice(model))
+    return {"style": style}
 
 
 @router.post("/radio/generate-params")
