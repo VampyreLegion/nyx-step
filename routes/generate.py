@@ -94,7 +94,17 @@ async def generate(req: GenerateRequest, request: Request):
 @router.get("/events")
 async def events(request: Request):
     user_email = get_user_email(request)
-    last_statuses: dict[str, str] = {}
+
+    # Pre-seed with already-terminal statuses so stale completed jobs don't
+    # replay as job_done events on every new browser connection.
+    # In-progress (queued/running) jobs are left unseeded so their current
+    # status fires immediately on the first poll.
+    my_jobs = tracker.get_user_jobs(user_email)
+    last_statuses: dict[str, str] = {
+        j.prompt_id: j.status
+        for j in my_jobs
+        if j.status in ("done", "error")
+    }
 
     async def generate_events() -> AsyncGenerator[dict, None]:
         while True:
