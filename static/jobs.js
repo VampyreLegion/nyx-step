@@ -22,6 +22,8 @@ function clearJobList() {
   _updateJobsHistoryLink();
 }
 
+document.getElementById("btn-clear-jobs").addEventListener("click", clearJobList);
+
 function setGenProgress(state, label) {
   const wrap = document.getElementById("gen-progress-wrap");
   const bar = document.getElementById("gen-progress-bar");
