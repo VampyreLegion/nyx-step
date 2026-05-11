@@ -735,9 +735,9 @@
           title="CFG Scale: prompt adherence strength. &lt;1.0 = ignores prompt. 1.5–3.0 = balanced (recommended). 5.0+ = very literal, can sound over-processed. Default: 2.0.">
       </div>
       <div class="field-group">
-        <label title="Length of the generated audio clip in seconds. Longer clips take more time and GPU memory proportionally. 30s is a good starting point for a song section. Nyx-Step supports up to ~5 minutes (300s). Default: 30. Range: 5–300.">Duration (s) ⓘ</label>
-        <input type="number" id="param-duration" value="30" step="1" min="5" max="300"
-          title="Audio length in seconds. Longer = more VRAM and time. 30s is good for a section; 60–180s for a full piece. Max ~300s. Default: 30.">
+        <label title="Length of the generated audio clip in seconds. Longer clips take more time and GPU memory proportionally. Nyx-Step supports up to ~5 minutes (300s). Default: 160. Range: 5–300.">Duration (s) ⓘ</label>
+        <input type="number" id="param-duration" value="160" step="1" min="5" max="300"
+          title="Audio length in seconds. Longer = more VRAM and time. 160s default. Max ~300s.">
       </div>
       <div class="field-group">
         <label title="Generate multiple variations in one job. Each variation uses a different random seed. All results appear as separate job cards. 1–4 recommended; higher values use proportionally more VRAM. Default: 1.">Batch ⓘ</label>
@@ -1988,7 +1988,7 @@
 </div>
 
 <script src="/static/wavesurfer.min.js"></script>
-<script src="/static/state.js?v=9"></script>
+<script src="/static/state.js?v=10"></script>
 <script src="/static/utils.js?v=4"></script>
 <script src="/static/bindings.js?v=12"></script>
 <script src="/static/genres.js?v=2"></script>
