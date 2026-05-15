@@ -191,13 +191,34 @@ def _ollama_dj_choice(model: str = "gemma4:latest") -> str:
 
 
 # ── Segment submission ─────────────────────────────────────────────────────────
+def _find_output_file(filename: str) -> Path | None:
+    """Locate a generated audio file across all known output locations."""
+    for candidate in [
+        config.COMFYUI_OUTPUT_DIR / filename,
+        config.RADIO_OUTPUT_DIR / filename,
+    ]:
+        if candidate.exists():
+            return candidate
+    for p in config.COMFYUI_OUTPUT_DIR.parent.rglob(filename):
+        return p
+    return None
+
+
+def _copy_to_radio_dir(filename: str) -> None:
+    """Copy a completed segment into RADIO_OUTPUT_DIR for Liquidsoap."""
+    src = _find_output_file(filename)
+    if src is None:
+        logger.warning("Radio: cannot copy %s to radio dir — file not found", filename)
+        return
+    dest = config.RADIO_OUTPUT_DIR / src.name
+    if not dest.exists():
+        shutil.copy2(src, dest)
+        logger.info("Radio: copied %s → %s", src.name, config.RADIO_OUTPUT_DIR)
+
+
 def _copy_output_to_input(filename: str) -> str | None:
-    src = config.COMFYUI_OUTPUT_DIR / filename
-    if not src.exists():
-        for p in config.COMFYUI_OUTPUT_DIR.parent.rglob(filename):
-            src = p
-            break
-    if not src.exists():
+    src = _find_output_file(filename)
+    if src is None:
         logger.warning("Radio: output file not found: %s", filename)
         return None
     dest = config.COMFYUI_INPUT_DIR / f"radio_ref_{src.name}"
@@ -303,6 +324,9 @@ def _watcher():
                 continue
 
             output_file = files[0]
+
+            # Copy to Radio directory for Liquidsoap
+            _copy_to_radio_dir(output_file)
 
             with _lock:
                 still_active = _state["active"]

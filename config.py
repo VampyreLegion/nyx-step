@@ -24,6 +24,11 @@ COMFYUI_OUTPUT_DIR  = _COMFYUI / "output" / "audio"
 COMFYUI_INPUT_DIR   = _COMFYUI / "input"
 DEMUCS_OUTPUT_DIR   = COMFYUI_OUTPUT_DIR / "separated"
 
+# Radio segments are copied here after completion so Liquidsoap on Astraea
+# can serve them directly via the Nyx_storage CIFS mount.
+RADIO_OUTPUT_DIR = pathlib.Path("/media/Nyx_storage/Radio")
+RADIO_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
 PRESETS_DIR = pathlib.Path("/home/legion/legionprojects/nyx-step/presets")
 PRESETS_DIR.mkdir(exist_ok=True)
 

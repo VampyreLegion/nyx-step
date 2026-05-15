@@ -1620,8 +1620,20 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.9.2 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; May 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.9.3 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; May 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.9.3 — Radio Stop Button &amp; Liquidsoap File Pipeline</h3>
+        <ul>
+          <li><strong>Stop button now visually distinct</strong> — "⏹ Stop Radio" button turns red when the radio is active; resets on stop, error, and SSE disconnect; restores red on page-refresh reconnect</li>
+          <li><strong>Radio → Liquidsoap file pipeline</strong> — completed radio segments are automatically copied to <code>/media/Nyx_storage/Radio/</code> after generation; Liquidsoap on Astraea reads that directory as a playlist (via CIFS mount) instead of polling the HTTP endpoint</li>
+          <li><strong>Liquidsoap script rewritten</strong> — <code>nyx-radio.liq</code> now uses <code>playlist("/media/Nyx_storage/Radio/", reload=60, mode="normal")</code>; Icecast stream continues playing previously generated segments even when the Radio tab is inactive</li>
+          <li><strong>Default song duration 160 s</strong> — Parameters tab and Radio tab duration both default to 160 s (was 30 s)</li>
+          <li><strong>Overview "Clear list" fixed</strong> — button was wired in <code>app.js</code> (not loaded); listener moved into <code>jobs.js</code></li>
+          <li><strong>SSE stale job replay fixed</strong> — <code>/events</code> endpoint pre-seeds already-terminal jobs so they don't re-fire <code>job_done</code> on every browser reconnect</li>
+        </ul>
       </div>
 
       <div class="about-section">
@@ -1921,9 +1933,11 @@
         <ul>
           <li>Continuous AI music stream — segments chain via <code>ReferenceTimbreAudio</code> timbre reference; each segment inherits sonic character from the previous</li>
           <li>First segment: standard generation (no reference); segments 1+: radio-continue workflow with copied audio reference + denoise=1.0 + fresh audio codes</li>
-          <li>Background watcher thread polls ComfyUI every 3 s; on completion copies output to input dir and auto-submits next segment</li>
+          <li>Background watcher thread polls ComfyUI every 3 s; on completion copies segment to <code>/media/Nyx_storage/Radio/</code> then auto-submits next segment</li>
           <li>SSE stream (<code>GET /radio/events</code>) pushes segment events to browser; segments auto-queue for back-to-back playback</li>
           <li>Segment history panel with replay (▶) and download (⬇) per segment; page-refresh reconnects in-progress stream automatically</li>
+          <li>"⏹ Stop Radio" button turns red when active — click to stop after the current segment; Icecast continues playing already-generated segments</li>
+          <li>Liquidsoap on Astraea reads <code>/media/Nyx_storage/Radio/</code> (CIFS mount) as a playlist — stream stays live even when Radio tab is not running</li>
           <li>POST /radio/start + POST /radio/stop + GET /radio/status + GET /radio/events</li>
         </ul>
       </div>
@@ -2005,7 +2019,7 @@
 <script src="/static/cover.js?v=1"></script>
 <script src="/static/lego.js?v=1"></script>
 <script src="/static/extract.js?v=1"></script>
-<script src="/static/radio.js?v=4"></script>
+<script src="/static/radio.js?v=5"></script>
 <script src="/static/train.js?v=2"></script>
 <script src="/static/midi.js?v=1"></script>
 <script src="/static/history.js?v=2"></script>

@@ -145,12 +145,16 @@
       } else if (msg.type === "stopped") {
         _active = false;
         btn().textContent = "📻 Start Radio";
+        btn().style.background = "";
+        btn().style.color = "";
         if (!_playing) { _setStatus("Stopped.", "var(--muted)"); _setNowPlaying("—", ""); }
         _sse.close(); _sse = null;
       } else if (msg.type === "error") {
         _setStatus("Error: " + msg.message, "var(--error)");
         _active = false;
         btn().textContent = "📻 Start Radio";
+        btn().style.background = "";
+        btn().style.color = "";
         _sse.close(); _sse = null;
       }
     };
@@ -212,6 +216,8 @@
       _playing = false;
       btn().disabled = false;
       btn().textContent = "⏹ Stop Radio";
+      btn().style.background = "var(--error)";
+      btn().style.color = "#fff";
       _setStatus(`⏳ Generating segment 0… (${(data.prompt_id||"").slice(0,8)}…)`, "var(--accent2)");
       _setNowPlaying(data.song_name || "Generating…", data.style || "");
       _connectSSE();
@@ -225,6 +231,8 @@
     _active = false;
     try { await fetch("/radio/stop", { method: "POST" }); } catch {}
     btn().textContent = "📻 Start Radio";
+    btn().style.background = "";
+    btn().style.color = "";
     _setStatus("Stopping after current segment…", "var(--muted)");
     if (_sse) { _sse.close(); _sse = null; }
   }
@@ -345,6 +353,8 @@
       if (s.active) {
         _active = true;
         btn().textContent = "⏹ Stop Radio";
+        btn().style.background = "var(--error)";
+        btn().style.color = "#fff";
         _setStatus("Radio running — reconnecting…", "var(--accent)");
         _setNowPlaying(s.current_song || "Generating…", s.current_style || "");
         (s.history || []).forEach((entry, i) => {
