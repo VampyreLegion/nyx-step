@@ -1,4 +1,10 @@
 // ── Initialisation ────────────────────────────────────────────────────────────
+if (localStorage.getItem('hivis') === '1') {
+  document.body.classList.add('hi-vis');
+  const b = document.getElementById('btn-hivis');
+  if (b) b.textContent = 'Hi-Vis: ON';
+}
+
 syncOverviewFromState();
 connectSSE();
 loadGuideSection("starthere", null);
@@ -10,4 +16,10 @@ fetch("/queue").then(r => r.json()).then(data => {
   const c = data.comfyui;
   document.getElementById("queue-badge").textContent =
     `Queue: ${c.running} running, ${c.pending} pending`;
+});
+
+document.getElementById('btn-hivis').addEventListener('click', function() {
+  const on = document.body.classList.toggle('hi-vis');
+  localStorage.setItem('hivis', on ? '1' : '0');
+  this.textContent = on ? 'Hi-Vis: ON' : 'Hi-Vis: OFF';
 });
