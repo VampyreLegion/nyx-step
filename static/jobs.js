@@ -134,11 +134,22 @@ function addJobCard(promptId, songName, status, files) {
   card.className = "job-card";
   card.id = "job-" + promptId;
   card.innerHTML = `
-    <div style="font-weight:600">${songName}</div>
+    <div style="font-weight:600;display:flex;justify-content:space-between;align-items:center">
+      <span>${songName}</span>
+      <button class="secondary small btn-cancel-job" data-pid="${promptId}" style="font-size:10px;padding:2px 7px;color:var(--error,#f38ba8);display:none" title="Cancel this job">✕ Cancel</button>
+    </div>
     <div class="status ${status}">${statusLabel(status)}</div>
     <div class="job-progress"><div class="job-progress-bar ${status}"></div></div>
     <div class="job-files" style="margin-top:6px"></div>
   `;
+  const cancelBtn = card.querySelector(".btn-cancel-job");
+  if (status === "queued" || status === "running") cancelBtn.style.display = "";
+  cancelBtn.addEventListener("click", async () => {
+    cancelBtn.disabled = true; cancelBtn.textContent = "Cancelling…";
+    const r = await fetch(`/queue/${promptId}`, {method: "DELETE"});
+    if (r.ok) { updateJobCard(promptId, "error"); cancelBtn.style.display = "none"; }
+    else { cancelBtn.disabled = false; cancelBtn.textContent = "✕ Cancel"; }
+  });
   if (files && files.length) addDownloadLinks(card.querySelector(".job-files"), files);
   const list = document.getElementById("jobs-list");
   list.prepend(card);
@@ -179,6 +190,8 @@ function updateJobCard(promptId, status, files) {
   const bar = card.querySelector(".job-progress-bar");
   if (bar) bar.className = "job-progress-bar " + status;
   if (files && files.length) addDownloadLinks(card.querySelector(".job-files"), files);
+  const cancelBtn = card.querySelector(".btn-cancel-job");
+  if (cancelBtn && (status === "done" || status === "error")) cancelBtn.style.display = "none";
 }
 
 function addDownloadLinks(container, files) {
