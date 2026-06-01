@@ -6,7 +6,7 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text);
-       font-size: 14px; line-height: 1.5; }
+       font-size: 14px; line-height: 1.5; overscroll-behavior-y: contain; }
 #header { background: var(--surface); border-bottom: 1px solid var(--border);
           padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
 #header h1 { color: var(--accent); font-size: 1.2rem; }
