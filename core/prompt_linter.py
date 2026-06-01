@@ -189,6 +189,13 @@ class PromptLinter:
                     "Supported Nyx-Step codes: [zh] [ko] [es] [fr] [de] [ja] [en]",
                 ))
 
+        if re.search(r'\([^)]+\)', lyrics):
+            results.append(LintResult(
+                "tip", "lyrics",
+                "Parenthetical content found in lyrics",
+                "Content in () is stripped before generation — ACE-Step sings everything verbatim",
+            ))
+
         outro_match = re.search(r'\[Outro\]', lyrics, re.IGNORECASE)
         if outro_match:
             after = lyrics[outro_match.end():]

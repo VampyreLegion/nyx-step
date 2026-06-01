@@ -1,6 +1,7 @@
 from __future__ import annotations
 import asyncio
 import json
+import re
 from typing import AsyncGenerator
 
 from fastapi import APIRouter, Request
@@ -72,7 +73,10 @@ async def generate(req: GenerateRequest, request: Request):
 
     state = req.model_dump()
     caption = req.tags.strip()
-    lyrics = req.lyrics
+    # Strip parenthetical content — ACE-Step sings everything verbatim,
+    # so (backing vocal cues) / (oh yeah) end up being performed as lyrics.
+    lyrics = re.sub(r'\([^)]*\)', '', req.lyrics)
+    lyrics = re.sub(r'\n{3,}', '\n\n', lyrics).strip()
 
     result = _client.build_workflow(caption, lyrics, state)
     if "error" in result:

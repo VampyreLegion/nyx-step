@@ -1621,8 +1621,17 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.9.3 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; May 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.9.4 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; June 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.9.4 — Lyrics Parenthesis Fix</h3>
+        <ul>
+          <li><strong>Parenthetical content stripped before generation</strong> — ACE-Step sings everything in the lyrics field verbatim; content like <code>(Echoes fade out)</code> or <code>(oh yeah)</code> was being performed as regular vocals. Now stripped at the server before the workflow is sent to ComfyUI.</li>
+          <li><strong>Linter tip for parentheses</strong> — the Lint tab now flags <code>(...)</code> in lyrics with a tip explaining they will be removed at generation time.</li>
+          <li><strong>Bracket tags unaffected</strong> — <code>[Verse]</code>, <code>[Chorus]</code>, <code>[Guitar Solo]</code>, <code>[Outro: Fading]</code>, etc. pass through unchanged; only round-bracket <code>(...)</code> content is stripped.</li>
+        </ul>
       </div>
 
       <div class="about-section">
