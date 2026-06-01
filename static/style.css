@@ -133,3 +133,20 @@ input[title] { cursor: help; }
 /* ── Drag-and-drop zones ─────────────────────────────────────────────────── */
 [data-dropzone] { border-radius: 6px; transition: border-color 0.15s, background 0.15s; }
 [data-dropzone].dz-over { border: 2px dashed var(--accent) !important; background: rgba(124,101,217,0.08) !important; }
+
+/* ── Hi-Vis mode (tablet/mobile accessibility) ──────────────────────────── */
+body.hi-vis {
+  font-size: 17px;
+  --text: #ffffff;
+  --muted: #c8d0e0;
+}
+body.hi-vis button { padding: 12px 22px; }
+body.hi-vis button.small { padding: 8px 14px; font-size: 13px; }
+body.hi-vis .chip { padding: 7px 14px; font-size: 14px; }
+body.hi-vis .tag-btn { padding: 7px 14px; font-size: 13px; }
+body.hi-vis input[type=text],
+body.hi-vis input[type=number],
+body.hi-vis select,
+body.hi-vis textarea { padding: 10px 12px; font-size: 15px; }
+body.hi-vis .tab-btn { padding: 13px 18px; font-size: 15px; }
+body.hi-vis .field-group label { font-size: 14px; }
