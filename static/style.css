@@ -150,3 +150,4 @@ body.hi-vis select,
 body.hi-vis textarea { padding: 10px 12px; font-size: 15px; }
 body.hi-vis .tab-btn { padding: 13px 18px; font-size: 15px; }
 body.hi-vis .field-group label { font-size: 14px; }
+body.hi-vis #comfy-status { font-size: 14px !important; }
