@@ -16,6 +16,10 @@ def test_video_config_paths():
     assert hasattr(config, "WORKFLOW_VIDEO_I2V")
     assert hasattr(config, "COMFYUI_INPUT_DIR")
 
+@pytest.mark.skipif(
+    not config.VIDEO_OUTPUT_DIR.parent.exists(),
+    reason="requires Nyx-local ComfyUI tree",
+)
 def test_video_dirs_created():
     config.VIDEO_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     config.VIDEO_CHUNK_DIR.mkdir(parents=True, exist_ok=True)

@@ -27,10 +27,8 @@ DEMUCS_OUTPUT_DIR   = COMFYUI_OUTPUT_DIR / "separated"
 # Radio segments are copied here after completion so Liquidsoap on Astraea
 # can serve them directly via the Nyx_storage CIFS mount.
 RADIO_OUTPUT_DIR = pathlib.Path("/media/Nyx_storage/Radio")
-RADIO_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 PRESETS_DIR = pathlib.Path("/home/legion/legionprojects/nyx-step/presets")
-PRESETS_DIR.mkdir(exist_ok=True)
 
 DB_PATH = pathlib.Path("/home/legion/legionprojects/nyx-step/nyx_step.db")
 
@@ -48,8 +46,14 @@ WORKFLOW_VIDEO_I2V = _NYX_STEP / "workflow_video_i2v.json"
 
 VIDEO_OUTPUT_DIR = _COMFYUI / "output" / "video"
 VIDEO_CHUNK_DIR  = VIDEO_OUTPUT_DIR / "chunks"
-VIDEO_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-VIDEO_CHUNK_DIR.mkdir(parents=True, exist_ok=True)
+
+# Nyx-local paths — creation fails off-Nyx (e.g. CI); features that need them
+# will error at use time instead of blocking import.
+for _d in (RADIO_OUTPUT_DIR, PRESETS_DIR, VIDEO_OUTPUT_DIR, VIDEO_CHUNK_DIR):
+    try:
+        _d.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
 
 WAN_MODEL        = "wan2.1_t2v_1.3B_bf16.safetensors"
 WAN_TEXT_ENCODER = "umt5_xxl_fp8_e4m3fn_scaled.safetensors"
