@@ -51,7 +51,9 @@ def test_guide_summary_returns_html():
 
 def test_ollama_models_returns_list():
     from unittest.mock import patch
-    with patch("core.ollama.list_models", return_value=["gemma4:latest"]):
+    # Patch the name bound in the route module — patching core.ollama has no
+    # effect on the already-imported reference (test only passed with live Ollama)
+    with patch("routes.ollama_routes.list_models", return_value=["gemma4:latest"]):
         resp = client.get("/ollama/models")
         assert resp.status_code == 200
         assert "gemma4:latest" in resp.json()["models"]

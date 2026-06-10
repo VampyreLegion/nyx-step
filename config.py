@@ -28,9 +28,12 @@ DEMUCS_OUTPUT_DIR   = COMFYUI_OUTPUT_DIR / "separated"
 # can serve them directly via the Nyx_storage CIFS mount.
 RADIO_OUTPUT_DIR = pathlib.Path("/media/Nyx_storage/Radio")
 
-PRESETS_DIR = pathlib.Path("/home/legion/legionprojects/nyx-step/presets")
+# Repo-relative paths — resolve the same on Nyx, but stay portable (CI)
+_NYX_STEP = pathlib.Path(__file__).resolve().parent
 
-DB_PATH = pathlib.Path("/home/legion/legionprojects/nyx-step/nyx_step.db")
+PRESETS_DIR = _NYX_STEP / "presets"
+
+DB_PATH = _NYX_STEP / "nyx_step.db"
 
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB
 
@@ -39,8 +42,6 @@ RATE_LIMIT_MAX = 20
 RATE_LIMIT_WINDOW = 60  # seconds
 
 # ── Video generation ──────────────────────────────────────────────────────────
-_NYX_STEP = pathlib.Path("/home/legion/legionprojects/nyx-step")
-
 WORKFLOW_VIDEO_T2V = _NYX_STEP / "workflow_video_t2v.json"
 WORKFLOW_VIDEO_I2V = _NYX_STEP / "workflow_video_i2v.json"
 
