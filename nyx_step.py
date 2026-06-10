@@ -44,8 +44,16 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
+# Cf-Access-* headers are only trustworthy when the request comes through the
+# Cloudflare tunnel on Astraea — direct LAN clients could spoof them.
+_TRUSTED_PROXIES = {"192.168.1.109", "127.0.0.1", "::1"}
+
+
 def get_user_email(request: Request) -> str:
-    return request.headers.get("Cf-Access-Authenticated-User-Email", "dev@local")
+    client_ip = request.client.host if request.client else ""
+    if client_ip in _TRUSTED_PROXIES:
+        return request.headers.get("Cf-Access-Authenticated-User-Email", "dev@local")
+    return "dev@local"
 
 
 @app.get("/health")

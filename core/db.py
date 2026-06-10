@@ -5,9 +5,14 @@ import pathlib
 import sqlite3
 import threading
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
+
+
+def utcnow() -> datetime:
+    """Naive UTC now — keeps stored ISO format consistent with existing rows."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 _DB_PATH: pathlib.Path | None = None
 _local = threading.local()
@@ -77,7 +82,7 @@ def upsert_job(prompt_id: str, user_email: str, song_name: str, seed: int = 0,
                params, submitted_at) VALUES (?,?,?,?,?,?,?,?)
                ON CONFLICT(prompt_id) DO NOTHING""",
             (prompt_id, user_email, song_name, seed, caption, lyrics,
-             json.dumps(params or {}), datetime.utcnow().isoformat()),
+             json.dumps(params or {}), utcnow().isoformat()),
         )
 
 
@@ -116,8 +121,12 @@ def get_active_jobs() -> list[dict]:
 
 
 def get_job_by_filename(filename: str) -> dict | None:
+    # output_files is a JSON array of strings — match the exact quoted filename
+    pattern = "%" + json.dumps(filename) + "%"
     with _get_conn() as conn:
-        rows = conn.execute("SELECT * FROM jobs").fetchall()
+        rows = conn.execute(
+            "SELECT * FROM jobs WHERE output_files LIKE ?", (pattern,)
+        ).fetchall()
     for row in rows:
         job = _row_to_job(row)
         if filename in job.get("output_files", []):
@@ -142,7 +151,7 @@ def user_owns_job(user_email: str, prompt_id: str) -> bool:
 
 
 def purge_old_jobs(ttl_days: int = 7) -> int:
-    cutoff = (datetime.utcnow() - timedelta(days=ttl_days)).isoformat()
+    cutoff = (utcnow() - timedelta(days=ttl_days)).isoformat()
     with _get_conn() as conn:
         n = conn.execute("DELETE FROM jobs WHERE submitted_at < ?", (cutoff,)).rowcount
     return n
@@ -164,7 +173,7 @@ def append_history(prompt_id: str, user_email: str, song_name: str, caption: str
             """INSERT INTO history (prompt_id, user_email, song_name, caption, lyrics,
                seed, output_files, params, created_at) VALUES (?,?,?,?,?,?,?,?,?)""",
             (prompt_id, user_email, song_name, caption, lyrics, seed,
-             json.dumps(output_files), json.dumps(params), datetime.utcnow().isoformat()),
+             json.dumps(output_files), json.dumps(params), utcnow().isoformat()),
         )
 
 

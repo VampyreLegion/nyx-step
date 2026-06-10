@@ -19,7 +19,8 @@ def get_audio_pool() -> concurrent.futures.ThreadPoolExecutor:
 
 async def stream_upload(upload: UploadFile, suffix: str, max_bytes: int = config.MAX_UPLOAD_BYTES) -> Path | JSONResponse:
     """Stream an uploaded file to a temp path, returning 413 JSONResponse if oversized."""
-    tmp = Path(tempfile.mktemp(suffix=suffix))
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as ntf:
+        tmp = Path(ntf.name)
     total = 0
     try:
         async with aiofiles.open(tmp, "wb") as f:

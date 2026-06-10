@@ -19,7 +19,7 @@ class JobInfo:
     prompt_id: str
     user_email: str
     song_name: str
-    submitted_at: datetime = field(default_factory=datetime.utcnow)
+    submitted_at: datetime = field(default_factory=db.utcnow)
     status: str = "queued"       # queued | running | done | error
     output_files: list[str] = field(default_factory=list)
     error_msg: str = ""
@@ -34,7 +34,7 @@ def _dict_to_jobinfo(d: dict) -> JobInfo:
     try:
         submitted_at = datetime.fromisoformat(submitted_at)
     except (ValueError, TypeError):
-        submitted_at = datetime.utcnow()
+        submitted_at = db.utcnow()
     return JobInfo(
         prompt_id=d["prompt_id"],
         user_email=d["user_email"],
