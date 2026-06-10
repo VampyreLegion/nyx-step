@@ -11,6 +11,9 @@ requests>=2.33,<3.0
 httpx>=0.28,<1.0
 aiofiles>=23.0
 
+# Video generation (frame extraction in core/video_orchestrator.py)
+opencv-python-headless>=4.8,<5.0
+
 # Audio analysis (BPM, key, LUFS, spectral, LRC, quality score)
 librosa>=0.11.0,<1.0
 soundfile>=0.13.0
