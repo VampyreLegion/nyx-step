@@ -13,7 +13,7 @@ async function lintAndShow(tags, lyrics) {
   const resp = await fetch("/lint", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({tags, lyrics}),
+    body: JSON.stringify({tags, lyrics, duration: mwState.duration || 0}),
   });
   const data = await resp.json();
   renderLintResults(data.results);

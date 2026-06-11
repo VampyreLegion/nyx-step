@@ -113,10 +113,11 @@ _linter = PromptLinter()
 class _LintRequest(_BaseModel):
     tags: str = ""
     lyrics: str = ""
+    duration: float = 0.0
 
 @app.post("/lint")
 async def lint(req: _LintRequest):
-    results = _linter.lint(req.tags, req.lyrics)
+    results = _linter.lint(req.tags, req.lyrics, duration=req.duration)
     return {"results": [{"severity": r.severity, "field": r.field,
                          "message": r.message, "suggestion": r.suggestion}
                         for r in results]}

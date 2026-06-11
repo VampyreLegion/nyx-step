@@ -25,6 +25,44 @@ _STRUCTURAL_BRACKETS = {
 
 _VALID_LANG_CODES = {"zh", "ko", "es", "fr", "de", "ja", "en"}
 
+_VOCAL_KEYWORDS = {
+    "vocal", "vocals", "voice", "choir", "a cappella", "acappella",
+    "rap", "spoken word", "soprano", "alto", "tenor", "baritone", "bass vocal",
+}
+
+_GENRE_KEYWORDS = {
+    "rock", "pop", "jazz", "edm", "hip hop", "hip-hop", "metal", "folk",
+    "country", "classical", "electronic", "house", "techno", "trance",
+    "blues", "funk", "soul", "r&b", "rnb", "reggae", "ambient", "orchestral",
+    "lo-fi", "lofi", "synthwave", "punk", "disco", "dubstep", "drum and bass",
+    "gospel", "latin", "ska", "grunge", "indie", "swing", "bluegrass",
+}
+
+# (genre keywords, conflicting instrument keywords, label)
+_CONFLICT_PAIRS = [
+    ({"acoustic", "folk", "unplugged", "bluegrass"},
+     {"808", "drum machine", "synthesizer", "vocoder", "dubstep"},
+     "acoustic/folk genre with electronic instruments"),
+    ({"orchestral", "classical", "chamber", "symphony"},
+     {"distorted guitar", "808", "drum machine", "dubstep", "scratching"},
+     "orchestral/classical genre with electronic or distorted instruments"),
+    ({"lo-fi", "lofi", "chillhop"},
+     {"screaming", "blast beats", "distorted guitar"},
+     "lo-fi genre with aggressive elements"),
+    ({"a cappella", "acappella"},
+     {"guitar", "drums", "piano", "synthesizer", "bass", "orchestra"},
+     "a cappella with instrument tags"),
+]
+
+_SECONDS_PER_SECTION = 12
+
+_SYLLABLE_PATTERN = re.compile(r"[aeiouy]+", re.IGNORECASE)
+_MAX_LINE_SYLLABLES = 16
+
+
+def _estimate_syllables(line: str) -> int:
+    return sum(len(_SYLLABLE_PATTERN.findall(w)) for w in line.split())
+
 _LANG_PATTERN = re.compile(r'\[([a-z]{2,3})\]')
 _BRACKET_CONTENT_PATTERN = re.compile(r'\[([^\[\]]*)\]')
 
@@ -39,7 +77,7 @@ def _find_bracket_contents(lyrics: str) -> list[str]:
 
 class PromptLinter:
 
-    def lint(self, tags: str, lyrics: str) -> list[LintResult]:
+    def lint(self, tags: str, lyrics: str, duration: float = 0.0) -> list[LintResult]:
         results: list[LintResult] = []
         tokens = _tokenize_tags(tags)
         brackets = _find_bracket_contents(lyrics)
@@ -51,6 +89,11 @@ class PromptLinter:
         self._lint_tags(tags, tokens, results)
         self._lint_lyrics(lyrics, brackets, structural, results)
         self._lint_combined(tokens, structural, lyrics, brackets, results)
+        self._lint_vocal_presence(tokens, lyrics, results)
+        self._lint_structure_duration(structural, duration, results)
+        self._lint_conflicts(tokens, results)
+        self._lint_line_length(lyrics, results)
+        self._lint_genre_position(tokens, results)
         return results
 
     # ── Tags ──────────────────────────────────────────────────────────────────
@@ -247,3 +290,74 @@ class PromptLinter:
                     "Lyrics has brackets but no content between sections",
                     "Add lyric text or instrument directions between bracket tags",
                 ))
+
+    # ── New rules ─────────────────────────────────────────────────────────────
+
+    def _lint_vocal_presence(self, tokens, lyrics, results) -> None:
+        sung = _BRACKET_CONTENT_PATTERN.sub("", lyrics).strip()
+        if not sung:
+            return
+        joined = " ".join(t.lower() for t in tokens)
+        if not any(kw in joined for kw in _VOCAL_KEYWORDS):
+            results.append(LintResult(
+                "tip", "combined",
+                "Lyrics present but no vocal tag found",
+                "Add a vocal descriptor (e.g. 'female vocal', 'male vocal', 'choir') "
+                "or the model will pick a random voice",
+            ))
+
+    def _lint_structure_duration(self, structural, duration, results) -> None:
+        if duration <= 0 or len(structural) < 2:
+            return
+        needed = len(structural) * _SECONDS_PER_SECTION
+        if needed > duration:
+            results.append(LintResult(
+                "warning", "combined",
+                f"{len(structural)} sections won't fit a {duration:.0f}s duration",
+                f"Sections need ~{_SECONDS_PER_SECTION}s each (~{needed}s total) — "
+                f"raise Duration or remove sections",
+            ))
+
+    def _lint_conflicts(self, tokens, results) -> None:
+        joined = " ".join(t.lower() for t in tokens)
+        for genre_kws, instr_kws, label in _CONFLICT_PAIRS:
+            if (any(g in joined for g in genre_kws)
+                    and any(i in joined for i in instr_kws)):
+                results.append(LintResult(
+                    "warning", "tags",
+                    f"Possible style conflict: {label}",
+                    "Mixing these is occasionally intentional — if not, remove one side "
+                    "for a cleaner generation",
+                ))
+                return
+
+    def _lint_line_length(self, lyrics, results) -> None:
+        for line in lyrics.splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("["):
+                continue
+            syllables = _estimate_syllables(stripped)
+            if syllables > _MAX_LINE_SYLLABLES:
+                excerpt = stripped[:50] + ("…" if len(stripped) > 50 else "")
+                results.append(LintResult(
+                    "tip", "lyrics",
+                    f"Line has ~{syllables} syllables: \"{excerpt}\"",
+                    f"ACE-Step crams long lines — keep sung lines under "
+                    f"~{_MAX_LINE_SYLLABLES} syllables or split them",
+                ))
+                return
+
+    def _lint_genre_position(self, tokens, results) -> None:
+        genre_idx = None
+        for i, t in enumerate(tokens):
+            tl = t.lower()
+            if any(g in tl for g in _GENRE_KEYWORDS):
+                genre_idx = i
+                break
+        if genre_idx is not None and genre_idx >= 5:
+            results.append(LintResult(
+                "tip", "tags",
+                f"Genre tag '{tokens[genre_idx]}' is at position {genre_idx + 1} — genre belongs first",
+                "Attention favors early tokens — put the genre first, then "
+                "instruments, mood, production",
+            ))
