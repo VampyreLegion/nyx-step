@@ -2,6 +2,7 @@
 let _activeGenPromptId = null;
 let _genProgressTimer = null;
 let _jobPayloads = {};
+const _jobFilesByPrompt = {};  // promptId → files array (for fix retake seed lookup)
 const _waveInstances = {};  // filename → WaveSurfer instance
 
 // ── Dismissed jobs (persisted across page loads) ───────────────────────────
@@ -323,6 +324,7 @@ function addDownloadLinks(container, files) {
     }
 
     // ── Quality Score button ──────────────────────────────────────────────────
+    _jobFilesByPrompt[promptId] = files;
     const qBtn = document.createElement("button");
     qBtn.className = "secondary small";
     qBtn.textContent = "📊 Score";
@@ -342,7 +344,20 @@ function addDownloadLinks(container, files) {
         const d = await r.json();
         if (d.error) { scoreEl.textContent = "Score error: " + d.error; return; }
         const dims = Object.entries(d.scores).map(([k, v]) => `${k} ${v}`).join(" · ");
-        scoreEl.innerHTML = `<strong>Quality ${d.grade} (${d.composite}/10)</strong> — ${dims}`;
+        let html = `<strong>Quality ${d.grade} (${d.composite}/10)</strong> — ${dims}`;
+        if (d.suggestions?.length) {
+          const allTags = [...new Set(d.suggestions.flatMap(f => f.add_tags || []))];
+          html += d.suggestions.map(f =>
+            `<div style="margin-top:3px">💡 ${f.text}` +
+            (f.add_tags?.length ? ` — add <i style="color:var(--accent2)">${f.add_tags.join(", ")}</i>` : "") +
+            (f.param_hint ? `<br><span style="color:var(--muted)">${f.param_hint}</span>` : "") +
+            `</div>`).join("");
+          if (allTags.length) {
+            html += `<button class="secondary small" style="margin-top:4px;font-size:11px;padding:2px 8px"
+                      onclick="applyFixAndRetake('${promptId}', ${JSON.stringify(allTags).replace(/"/g, "&quot;")}, this)">✨ Apply &amp; Retake</button>`;
+          }
+        }
+        scoreEl.innerHTML = html;
       } catch(e) { scoreEl.textContent = "Score error: " + e.message; }
       finally { qBtn.disabled = false; qBtn.textContent = "📊 Score"; }
     });
@@ -413,6 +428,41 @@ async function retakeJob(promptId, btn) {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = "🔁 Retake"; }
   }
+}
+
+async function applyFixAndRetake(promptId, addTags, btn) {
+  const payload = _jobPayloads[promptId];
+  if (!payload) { alert("No stored parameters for this job."); return; }
+  if (btn) { btn.disabled = true; btn.textContent = "✨ Retaking…"; }
+  try {
+    // Same seed isolates the tag change; fetch the actual seed used
+    let seed = payload.seed || 0;
+    try {
+      const files = _jobFilesByPrompt[promptId];
+      if (files?.length) {
+        const meta = await fetch("/meta/" + encodeURIComponent(files[0])).then(r => r.json());
+        if (meta.seed) seed = meta.seed;
+      }
+    } catch (_) {}
+    const existing = payload.tags.split(",").map(t => t.trim().toLowerCase());
+    const newTags = addTags.filter(t => !existing.includes(t.toLowerCase()));
+    const merged = newTags.length
+      ? payload.tags.trim() + ", " + newTags.join(", ")
+      : payload.tags.trim();
+    const resp = await fetch("/generate", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        ...payload, tags: merged, seed, lock_seed: true,
+        song_name: "Fix of " + (payload.song_name || "Untitled"),
+      }),
+    });
+    const data = await resp.json();
+    if (data.error) { alert("Retake error: " + data.error); return; }
+    _jobPayloads[data.prompt_id] = {...payload, tags: merged, seed, lock_seed: true};
+    showToast("Fix retake queued with same seed", "success");
+  } catch (e) { alert("Retake error: " + e.message); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = "✨ Apply & Retake"; } }
 }
 
 function toggleRemixPanel(card, sourceFile) {

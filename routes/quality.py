@@ -24,6 +24,90 @@ from nyx_step import get_user_email
 router = APIRouter()
 
 
+def suggest_fixes(scores: dict, metrics: dict) -> list[dict]:
+    """Map low dimension scores to concrete tag/parameter remedies.
+
+    Each suggestion: {"dimension", "text", "add_tags": [...], "param_hint": str}
+    add_tags may be empty when the fix is parameter-side only.
+    """
+    fixes: list[dict] = []
+
+    if scores.get("loudness", 10) < 7:
+        lufs = metrics.get("lufs", -14)
+        if lufs < -16:
+            fixes.append({
+                "dimension": "loudness",
+                "text": f"Track is quiet ({lufs} LUFS vs −14 target)",
+                "add_tags": ["punchy", "powerful"],
+                "param_hint": "",
+            })
+        elif lufs > -12:
+            fixes.append({
+                "dimension": "loudness",
+                "text": f"Track is hot ({lufs} LUFS vs −14 target)",
+                "add_tags": ["spacious", "dynamic"],
+                "param_hint": "",
+            })
+
+    if scores.get("dynamics", 10) < 6:
+        fixes.append({
+            "dimension": "dynamics",
+            "text": f"Over-compressed (LRA ≈ {metrics.get('lra', '?')} LU)",
+            "add_tags": ["dynamic", "expressive"],
+            "param_hint": "Try CFG 3–4 or sampler euler_ancestral for more variation",
+        })
+
+    if scores.get("spectral", 10) < 6:
+        lo, hi = metrics.get("lo_r", 0.35), metrics.get("hi_r", 0.20)
+        if lo > 0.45:
+            fixes.append({
+                "dimension": "spectral",
+                "text": f"Bass-heavy mix ({lo:.0%} energy below 250 Hz)",
+                "add_tags": ["bright", "crisp", "airy"],
+                "param_hint": "Consider removing heavy bass instrument tags",
+            })
+        elif hi > 0.30:
+            fixes.append({
+                "dimension": "spectral",
+                "text": f"Treble-heavy mix ({hi:.0%} energy above 4 kHz)",
+                "add_tags": ["warm", "full", "deep bass"],
+                "param_hint": "",
+            })
+        else:
+            fixes.append({
+                "dimension": "spectral",
+                "text": "Unbalanced frequency spectrum",
+                "add_tags": ["balanced mix", "full"],
+                "param_hint": "",
+            })
+
+    if scores.get("saturation", 10) < 8:
+        fixes.append({
+            "dimension": "saturation",
+            "text": f"Clipping detected ({metrics.get('clipped_pct', '?')}% samples)",
+            "add_tags": [],
+            "param_hint": "Regenerate — clipping is rare and usually seed-specific",
+        })
+
+    if scores.get("coherence", 10) < 6:
+        if metrics.get("silence_pct", 0) > 20:
+            fixes.append({
+                "dimension": "coherence",
+                "text": f"Excessive silence ({metrics.get('silence_pct')}%)",
+                "add_tags": ["continuous", "flowing"],
+                "param_hint": "Check structural brackets aren't creating empty sections",
+            })
+        else:
+            fixes.append({
+                "dimension": "coherence",
+                "text": f"Inconsistent energy (CV {metrics.get('cv', '?')})",
+                "add_tags": [],
+                "param_hint": "Increase Steps; use er_sde + linear_quadratic",
+            })
+
+    return fixes
+
+
 def _score_quality(audio_path: Path) -> dict:
     import numpy as np
 
@@ -37,6 +121,7 @@ def _score_quality(audio_path: Path) -> dict:
 
     scores: dict[str, float] = {}
     details: dict[str, str] = {}
+    metrics: dict[str, float] = {}
 
     # ── 1. Loudness ─────────────────────────────────────────────────────────────
     try:
@@ -56,6 +141,7 @@ def _score_quality(audio_path: Path) -> dict:
             s = max(0.0, 2.0 - (diff - 10) * 0.2)
         scores["loudness"] = round(max(0.0, min(10.0, s)), 1)
         details["loudness"] = f"{lufs:.1f} LUFS (target –14)"
+        metrics["lufs"] = round(float(lufs), 1)
     except Exception:
         scores["loudness"] = 5.0
         details["loudness"] = "unable to measure"
@@ -78,6 +164,7 @@ def _score_quality(audio_path: Path) -> dict:
             s = max(0.0, lra * 2)
         scores["dynamics"] = round(max(0.0, min(10.0, s)), 1)
         details["dynamics"] = f"LRA ≈ {lra:.1f} LU"
+        metrics["lra"] = round(lra, 1)
     except Exception:
         scores["dynamics"] = 5.0
         details["dynamics"] = "unable to measure"
@@ -101,6 +188,8 @@ def _score_quality(audio_path: Path) -> dict:
             s = min(10.0, s + 1.0)
         scores["spectral"] = round(max(0.0, min(10.0, s)), 1)
         details["spectral"] = f"centroid {centroid:.0f} Hz | lo {lo_r:.0%} mid {mid_r:.0%} hi {hi_r:.0%}"
+        metrics["lo_r"], metrics["mid_r"], metrics["hi_r"] = round(float(lo_r), 2), round(float(mid_r), 2), round(float(hi_r), 2)
+        metrics["centroid"] = round(float(centroid), 0)
     except Exception:
         scores["spectral"] = 5.0
         details["spectral"] = "unable to measure"
@@ -119,6 +208,7 @@ def _score_quality(audio_path: Path) -> dict:
             s = max(0.0, 3.0 - clipped_pct * 0.5)
         scores["saturation"] = round(max(0.0, min(10.0, s)), 1)
         details["saturation"] = f"peak {peak:.3f} | clipped {clipped_pct:.3f}%"
+        metrics["clipped_pct"] = round(clipped_pct, 3)
     except Exception:
         scores["saturation"] = 5.0
         details["saturation"] = "unable to measure"
@@ -138,6 +228,8 @@ def _score_quality(audio_path: Path) -> dict:
             s = max(0.0, s - 3.0)
         scores["coherence"] = round(max(0.0, min(10.0, s)), 1)
         details["coherence"] = f"CV {cv:.2f} | silence {silence_pct:.1f}%"
+        metrics["cv"] = round(cv, 2)
+        metrics["silence_pct"] = round(silence_pct, 1)
     except Exception:
         scores["coherence"] = 5.0
         details["coherence"] = "unable to measure"
@@ -151,6 +243,7 @@ def _score_quality(audio_path: Path) -> dict:
         "scores": scores,
         "details": details,
         "grade": "A" if composite >= 8 else "B" if composite >= 6.5 else "C" if composite >= 5 else "D",
+        "suggestions": suggest_fixes(scores, metrics),
     }
 
 
