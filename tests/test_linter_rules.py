@@ -84,3 +84,10 @@ def test_genre_buried_late_tips():
 def test_genre_first_no_tip():
     results = _L.lint("synthwave, dreamy, warm, reverb, analog", "")
     assert not any("first" in m.lower() for m in _messages(results))
+
+
+def test_a_cappella_with_bass_vocal_no_conflict():
+    # "bass vocal" is a vocal range, not an instrument — must not trip the
+    # a cappella conflict pair
+    results = _L.lint("a cappella, bass vocal, choir", "")
+    assert not any("conflict" in m.lower() for m in _messages(results))

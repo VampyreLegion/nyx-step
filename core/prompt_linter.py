@@ -50,7 +50,7 @@ _CONFLICT_PAIRS = [
      {"screaming", "blast beats", "distorted guitar"},
      "lo-fi genre with aggressive elements"),
     ({"a cappella", "acappella"},
-     {"guitar", "drums", "piano", "synthesizer", "bass", "orchestra"},
+     {"guitar", "drums", "piano", "synthesizer", "bass guitar", "orchestra"},
      "a cappella with instrument tags"),
 ]
 
