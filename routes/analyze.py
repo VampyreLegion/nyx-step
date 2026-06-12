@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Request, UploadFile, File, Form
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 import config
 from core.analyze import analyze, transcribe
@@ -32,6 +33,23 @@ async def analyze_audio(request: Request, audio: UploadFile = File(...)):
 
     if "error" in result:
         return JSONResponse({"error": result["error"]}, status_code=400)
+    return result
+
+
+class _SuggestTagsRequest(BaseModel):
+    analysis: dict
+    model: str = "gemma4:latest"
+
+
+@router.post("/analyze/suggest-tags")
+async def suggest_tags(req: _SuggestTagsRequest):
+    from core.ollama import infer_tags
+    import asyncio
+    from core.executor import get_audio_pool
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(get_audio_pool(), lambda: infer_tags(req.analysis, req.model))
+    if "error" in result:
+        return JSONResponse({"error": result["error"]}, status_code=502)
     return result
 
 

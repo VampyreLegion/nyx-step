@@ -146,6 +146,59 @@ def expand_prompt(description: str, model: str = "gemma4:latest") -> dict:
         return {"error": str(exc)}
 
 
+def infer_tags(analysis: dict, model: str = "gemma4:latest") -> dict:
+    """Infer Nyx-Step style tags from Analyze-tab measurements."""
+    import re
+    parts = []
+    if analysis.get("bpm"):
+        parts.append(f"BPM: {analysis['bpm']}")
+    if analysis.get("key"):
+        parts.append(f"Key: {analysis['key']} {analysis.get('scale', '')}".strip())
+    if analysis.get("chords"):
+        parts.append(f"Chord progression: {analysis['chords']}")
+    if analysis.get("lufs") is not None:
+        parts.append(f"Loudness: {analysis['lufs']} LUFS")
+    if analysis.get("duration"):
+        parts.append(f"Duration: {analysis['duration']}s")
+    lyrics = (analysis.get("lyrics") or "")[:300]
+    if lyrics:
+        parts.append(f"Transcribed lyrics excerpt: {lyrics}")
+
+    example = '{"tags":"jazz, swing, piano trio, brushed drums, relaxed, late night","genre":"jazz","mood":"relaxed, smoky"}'
+    system = (
+        "You are a music analyst. Given measurements extracted from an audio file, infer the "
+        "likely genre and produce Nyx-Step style tags as a single JSON object. "
+        "No markdown, no backticks — just raw JSON.\n"
+        "Required keys:\n"
+        "  tags (string): 6-10 comma-separated style tags (genre, instruments, mood, production)\n"
+        "  genre (string): single primary genre, lowercase\n"
+        "  mood (string): 2-3 mood descriptors\n\n"
+        f"Example output:\n{example}"
+    )
+    payload = {
+        "model": model,
+        "prompt": f"{system}\n\nMeasurements:\n" + "\n".join(parts) + "\n\nReturn ONLY the JSON:",
+        "stream": False,
+    }
+    try:
+        resp = ollama_breaker.call(_post_with_retry, f"{config.OLLAMA_URL}/api/generate", payload)
+        text = resp.json().get("response", "").strip()
+        text = re.sub(r'^```[a-z]*\s*', '', text, flags=re.MULTILINE)
+        text = re.sub(r'```\s*$', '', text, flags=re.MULTILINE)
+        match = re.search(r'\{.*\}', text, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                return {"error": f"Model returned malformed JSON: {text[:120]}"}
+        return {"error": f"No JSON found. Model said: {text[:120]}"}
+    except CircuitOpenError:
+        return {"error": "Ollama unavailable (circuit open)"}
+    except Exception as exc:
+        logger.error("infer_tags failed: %s", exc)
+        return {"error": str(exc)}
+
+
 def stream_lyrics(
     prompt: str,
     genre: str,

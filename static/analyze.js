@@ -50,6 +50,8 @@ document.getElementById("btn-analyze").addEventListener("click", async () => {
       (data.lyrics ? `<br><br><b>Transcription:</b><br><pre style="white-space:pre-wrap;font-size:10px;margin:4px 0 0;color:var(--muted)">${data.lyrics}</pre>` : "");
     result.style.display = "block";
     applyBtn.style.display = "";
+    const suggestBtn = document.getElementById("btn-analyze-suggest-tags");
+    if (suggestBtn) suggestBtn.style.display = "";
     status.textContent = "Analysis complete.";
     status.style.color = "var(--accent2)";
   } catch (e) {
@@ -102,4 +104,25 @@ document.getElementById("btn-analyze-apply").addEventListener("click", () => {
   updatePayloadPreview();
   document.getElementById("analyze-status").textContent = "Applied to state — BPM, key, scale, chords, language, and lyrics updated.";
   document.getElementById("analyze-status").style.color = "var(--accent2)";
+});
+
+document.getElementById("btn-analyze-suggest-tags")?.addEventListener("click", async () => {
+  if (!_lastAnalysis) return;
+  const btn = document.getElementById("btn-analyze-suggest-tags");
+  btn.disabled = true; btn.textContent = "🏷 Inferring…";
+  try {
+    const resp = await fetch("/analyze/suggest-tags", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({analysis: _lastAnalysis}),
+    });
+    const d = await resp.json();
+    if (!resp.ok || d.error) { showToast("Tag inference failed: " + (d.error || resp.statusText), "error"); return; }
+    const tagsEl = document.getElementById("overview-tags");
+    tagsEl.value = tagsEl.value.trim() ? tagsEl.value.trim() + ", " + d.tags : d.tags;
+    if (d.genre) mwState.genre = d.genre;
+    updatePayloadPreview();
+    showToast("Style tags inferred and added: " + d.tags, "success");
+  } catch (e) { showToast("Tag inference failed: " + e.message, "error"); }
+  finally { btn.disabled = false; btn.textContent = "🏷 Suggest Tags"; }
 });

@@ -158,3 +158,24 @@ def test_build_workflow_no_negative_tags_unchanged():
     result = client.build_workflow("ambient pad", "", {"bpm": 120, "duration": 30})
     assert "error" not in result
     assert "neg_encode" not in result["workflow"]
+
+
+def test_infer_tags_parses_json():
+    from unittest.mock import patch, MagicMock
+    from core.ollama import infer_tags
+    fake = MagicMock()
+    fake.json.return_value = {"response": '{"tags":"jazz, swing, piano trio","genre":"jazz","mood":"relaxed"}'}
+    with patch("core.ollama._post_with_retry", return_value=fake):
+        result = infer_tags({"bpm": 110, "key": "Bb", "scale": "Major", "chords": "Bb - Gm - Cm - F"})
+    assert result["tags"].startswith("jazz")
+    assert result["genre"] == "jazz"
+
+
+def test_infer_tags_handles_garbage():
+    from unittest.mock import patch, MagicMock
+    from core.ollama import infer_tags
+    fake = MagicMock()
+    fake.json.return_value = {"response": "I think this is jazz music!"}
+    with patch("core.ollama._post_with_retry", return_value=fake):
+        result = infer_tags({"bpm": 110})
+    assert "error" in result
