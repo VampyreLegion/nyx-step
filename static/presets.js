@@ -6,6 +6,7 @@ function _buildPreset() {
     song_name: document.getElementById("song-name").value.trim() || "Untitled",
     tags: document.getElementById("overview-tags").value,
     lyrics: mwState.lyrics,
+    negative_tags: mwState.negative_tags || "",
     genre: mwState.genre,
     bpm: mwState.bpm,
     key: mwState.key,
@@ -50,6 +51,7 @@ function _applyPreset(p) {
   _m("top_k",       p.top_k);
   _m("min_p",       p.min_p);
   _m("lyrics",      p.lyrics);
+  _m("negative_tags", p.negative_tags);
   _m("dit_model",    p.dit_model);
   _m("sampler_name", p.sampler_name);
   _m("scheduler",    p.scheduler);
@@ -72,6 +74,7 @@ function _applyPreset(p) {
   _set("param-seed",     mwState.seed);
   const lockEl = document.getElementById("param-lock-seed");
   if (lockEl) lockEl.checked = mwState.lock_seed;
+  _set("param-negative-tags", mwState.negative_tags);
   _set("param-sampler",   mwState.sampler_name);
   _set("param-scheduler", mwState.scheduler);
   const ditEl = document.getElementById("param-dit-model");
