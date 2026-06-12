@@ -42,14 +42,15 @@ class _SuggestTagsRequest(BaseModel):
 
 
 @router.post("/analyze/suggest-tags")
-async def suggest_tags(req: _SuggestTagsRequest):
+async def suggest_tags(req: _SuggestTagsRequest, request: Request):
+    get_user_email(request)  # auth check
     from core.ollama import infer_tags
-    import asyncio
-    from core.executor import get_audio_pool
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(get_audio_pool(), lambda: infer_tags(req.analysis, req.model))
     if "error" in result:
         return JSONResponse({"error": result["error"]}, status_code=502)
+    if not result.get("tags"):
+        return JSONResponse({"error": "Model response missing 'tags'"}, status_code=502)
     return result
 
 

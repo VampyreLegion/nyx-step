@@ -117,7 +117,7 @@ document.getElementById("btn-analyze-suggest-tags")?.addEventListener("click", a
       body: JSON.stringify({analysis: _lastAnalysis}),
     });
     const d = await resp.json();
-    if (!resp.ok || d.error) { showToast("Tag inference failed: " + (d.error || resp.statusText), "error"); return; }
+    if (!resp.ok || d.error || !d.tags) { showToast("Tag inference failed: " + (d.error || resp.statusText || "no tags returned"), "error"); return; }
     const tagsEl = document.getElementById("overview-tags");
     tagsEl.value = tagsEl.value.trim() ? tagsEl.value.trim() + ", " + d.tags : d.tags;
     if (d.genre) mwState.genre = d.genre;

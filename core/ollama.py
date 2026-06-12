@@ -185,6 +185,7 @@ def infer_tags(analysis: dict, model: str = "gemma4:latest") -> dict:
         text = resp.json().get("response", "").strip()
         text = re.sub(r'^```[a-z]*\s*', '', text, flags=re.MULTILINE)
         text = re.sub(r'```\s*$', '', text, flags=re.MULTILINE)
+        text = text.strip()
         match = re.search(r'\{.*\}', text, re.DOTALL)
         if match:
             try:
