@@ -457,9 +457,11 @@ async function applyFixAndRetake(promptId, addTags, btn) {
         song_name: "Fix of " + (payload.song_name || "Untitled"),
       }),
     });
+    if (!resp.ok) { alert("Retake error: HTTP " + resp.status); return; }
     const data = await resp.json();
     if (data.error) { alert("Retake error: " + data.error); return; }
     _jobPayloads[data.prompt_id] = {...payload, tags: merged, seed, lock_seed: true};
+    addJobCard(data.prompt_id, "Fix of " + (payload.song_name || "Untitled"), "queued", []);
     showToast("Fix retake queued with same seed", "success");
   } catch (e) { alert("Retake error: " + e.message); }
   finally { if (btn) { btn.disabled = false; btn.textContent = "✨ Apply & Retake"; } }
