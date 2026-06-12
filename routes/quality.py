@@ -18,6 +18,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 import config
+import core.db as db
 from core.executor import get_audio_pool
 from nyx_step import get_user_email
 
@@ -268,7 +269,6 @@ async def quality_score(filename: str, request: Request):
     if "error" in result:
         return JSONResponse({"error": result["error"]}, status_code=400)
     try:
-        import core.db as db
         db.set_history_quality(filename, result["composite"])
     except Exception:
         pass  # insight storage is best-effort

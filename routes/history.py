@@ -14,7 +14,7 @@ async def history_insights(request: Request):
     return JSONResponse({
         "tags": tags[:15],
         "weakest": sorted(tags, key=lambda d: d["avg_quality"])[:5],
-        "scored_rows": sum(t["count"] for t in tags),
+        "scored_tag_uses": sum(t["count"] for t in tags),
     })
 
 @router.get("/api/history")

@@ -181,9 +181,10 @@ document.getElementById("btn-history-insights")?.addEventListener("click", async
       return;
     }
     const header = `<tr><th>Tag</th><th>Avg quality</th><th>Uses</th></tr>`;
-    const row = t => `<tr><td>${t.tag}</td><td>${t.avg_quality}</td><td>${t.count}</td></tr>`;
+    const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const row = t => `<tr><td>${esc(t.tag)}</td><td>${t.avg_quality}</td><td>${t.count}</td></tr>`;
     panel.innerHTML =
-      `<b>Best-performing tags</b> (from ${d.scored_rows} scored tag uses)` +
+      `<b>Best-performing tags</b> (from ${d.scored_tag_uses} scored tag uses)` +
       `<table style="font-size:11px;margin:4px 0">${header}` +
       d.tags.map(row).join("") + `</table>` +
       (d.weakest?.length ? `<b>Weakest tags</b><table style="font-size:11px;margin:4px 0">${header}` +
