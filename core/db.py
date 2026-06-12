@@ -55,6 +55,11 @@ def init_db(path: pathlib.Path) -> None:
             CREATE INDEX IF NOT EXISTS idx_history_user ON history(user_email);
             CREATE INDEX IF NOT EXISTS idx_history_ts   ON history(created_at DESC);
         """)
+    with _get_conn() as conn:
+        try:
+            conn.execute("ALTER TABLE history ADD COLUMN quality REAL")
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
 
 @contextmanager
@@ -200,3 +205,32 @@ def clear_user_history(user_email: str) -> int:
     with _get_conn() as conn:
         n = conn.execute("DELETE FROM history WHERE user_email=?", (user_email,)).rowcount
     return n
+
+
+def set_history_quality(filename: str, quality: float) -> None:
+    pattern = "%" + json.dumps(filename) + "%"
+    with _get_conn() as conn:
+        conn.execute(
+            "UPDATE history SET quality=? WHERE output_files LIKE ?",
+            (quality, pattern),
+        )
+
+
+def get_tag_insights(user_email: str, min_count: int = 2) -> list[dict]:
+    """Per-tag generation count and average quality, from scored history rows."""
+    with _get_conn() as conn:
+        rows = conn.execute(
+            "SELECT caption, quality FROM history WHERE user_email=? AND quality IS NOT NULL",
+            (user_email,),
+        ).fetchall()
+    agg: dict[str, list[float]] = {}
+    for row in rows:
+        for tag in {t.strip().lower() for t in row["caption"].split(",") if t.strip()}:
+            agg.setdefault(tag, []).append(row["quality"])
+    out = [
+        {"tag": tag, "count": len(vals), "avg_quality": round(sum(vals) / len(vals), 1)}
+        for tag, vals in agg.items()
+        if len(vals) >= min_count
+    ]
+    out.sort(key=lambda d: -d["avg_quality"])
+    return out

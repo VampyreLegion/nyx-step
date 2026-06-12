@@ -169,3 +169,24 @@ document.getElementById("btn-history-clear").addEventListener("click", async () 
     alert("Failed to clear history: " + e.message);
   }
 });
+
+document.getElementById("btn-history-insights")?.addEventListener("click", async () => {
+  const panel = document.getElementById("history-insights");
+  panel.style.display = "block";
+  panel.textContent = "Crunching…";
+  try {
+    const d = await fetch("/api/history/insights").then(r => r.json());
+    if (!d.tags?.length) {
+      panel.innerHTML = "<i style='color:var(--muted)'>No scored generations yet — click 📊 Score on some job cards first; insights build from scored tracks.</i>";
+      return;
+    }
+    const header = `<tr><th>Tag</th><th>Avg quality</th><th>Uses</th></tr>`;
+    const row = t => `<tr><td>${t.tag}</td><td>${t.avg_quality}</td><td>${t.count}</td></tr>`;
+    panel.innerHTML =
+      `<b>Best-performing tags</b> (from ${d.scored_rows} scored tag uses)` +
+      `<table style="font-size:11px;margin:4px 0">${header}` +
+      d.tags.map(row).join("") + `</table>` +
+      (d.weakest?.length ? `<b>Weakest tags</b><table style="font-size:11px;margin:4px 0">${header}` +
+        d.weakest.map(row).join("") + `</table>` : "");
+  } catch (e) { panel.textContent = "Insights failed: " + e.message; }
+});

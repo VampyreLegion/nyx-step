@@ -7,6 +7,16 @@ from nyx_step import get_user_email
 
 router = APIRouter()
 
+@router.get("/api/history/insights")
+async def history_insights(request: Request):
+    user_email = get_user_email(request)
+    tags = db.get_tag_insights(user_email)
+    return JSONResponse({
+        "tags": tags[:15],
+        "weakest": sorted(tags, key=lambda d: d["avg_quality"])[:5],
+        "scored_rows": sum(t["count"] for t in tags),
+    })
+
 @router.get("/api/history")
 async def get_history(request: Request, limit: int = 20, offset: int = 0):
     limit = max(1, min(limit, 50))
