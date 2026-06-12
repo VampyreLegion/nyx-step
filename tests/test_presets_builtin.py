@@ -45,3 +45,23 @@ def test_delete_builtin_refused(monkeypatch, tmp_path):
     client = TestClient(app)
     resp = client.delete("/presets/Golden - Lo-Fi Study")
     assert resp.status_code == 403
+
+
+def test_user_preset_shadows_builtin(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    from nyx_step import app
+    monkeypatch.setattr(config, "PRESETS_DIR", tmp_path)
+    (tmp_path / "Golden - Lo-Fi Study.nyx").write_text('{"_version": 1, "tags": "custom", "bpm": 100}')
+    client = TestClient(app)
+    names = client.get("/presets").json()["presets"]
+    assert names.count("Golden - Lo-Fi Study") == 1
+    d = client.get("/presets/Golden - Lo-Fi Study").json()
+    assert d["tags"] == "custom"  # user preset wins
+
+
+def test_delete_unknown_preset_404(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    from nyx_step import app
+    monkeypatch.setattr(config, "PRESETS_DIR", tmp_path)
+    client = TestClient(app)
+    assert client.delete("/presets/does-not-exist").status_code == 404

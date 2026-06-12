@@ -58,4 +58,4 @@ async def delete_preset(name: str):
         return {"deleted": path.stem}
     if (BUILTIN_DIR / (_safe_name(name) + ".nyx")).exists():
         return JSONResponse({"error": "Built-in presets cannot be deleted"}, status_code=403)
-    return {"deleted": path.stem}
+    return JSONResponse({"error": "Not found"}, status_code=404)

@@ -50,6 +50,9 @@ function _applyPreset(p) {
   _m("top_k",       p.top_k);
   _m("min_p",       p.min_p);
   _m("lyrics",      p.lyrics);
+  _m("dit_model",    p.dit_model);
+  _m("sampler_name", p.sampler_name);
+  _m("scheduler",    p.scheduler);
 
   const _set = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
   _set("style-bpm",     mwState.bpm);
@@ -69,6 +72,13 @@ function _applyPreset(p) {
   _set("param-seed",     mwState.seed);
   const lockEl = document.getElementById("param-lock-seed");
   if (lockEl) lockEl.checked = mwState.lock_seed;
+  _set("param-sampler",   mwState.sampler_name);
+  _set("param-scheduler", mwState.scheduler);
+  const ditEl = document.getElementById("param-dit-model");
+  if (ditEl && p.dit_model !== undefined) {
+    ditEl.value = mwState.dit_model;
+    ditEl.dispatchEvent(new Event("change"));  // refresh the model hint text
+  }
   _set("song-name",       p.song_name);
   _set("overview-tags",   p.tags ?? "");
   _set("overview-lyrics", mwState.lyrics);
@@ -141,7 +151,12 @@ async function _refreshPresetList() {
     list.querySelectorAll("[data-delete]").forEach(el => {
       el.addEventListener("click", async () => {
         if (!confirm(`Delete "${el.dataset.delete}"?`)) return;
-        await fetch(`/presets/${encodeURIComponent(el.dataset.delete)}`, {method: "DELETE"});
+        const resp = await fetch(`/presets/${encodeURIComponent(el.dataset.delete)}`, {method: "DELETE"});
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          showToast(err.error || "Delete failed", "error");
+          return;
+        }
         showToast("Preset deleted", "info");
         _refreshPresetList();
       });
