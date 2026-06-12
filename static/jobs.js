@@ -363,6 +363,26 @@ function addDownloadLinks(container, files) {
     });
     retakeRow.appendChild(qBtn);
 
+    // ── A/B compare buttons ──────────────────────────────────────────────────
+    ["A", "B"].forEach(slot => {
+      const abBtn = document.createElement("button");
+      abBtn.className = "secondary small";
+      abBtn.textContent = slot === "A" ? "🅰" : "🅱";
+      abBtn.title = `Set this take as side ${slot} in the A/B comparator`;
+      abBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+      abBtn.addEventListener("click", async () => {
+        let seed = _jobPayloads[promptId]?.seed ?? "?";
+        let tags = _jobPayloads[promptId]?.tags ?? "";
+        try {
+          const meta = await fetch("/meta/" + encodeURIComponent(files[0])).then(r => r.json());
+          if (meta.seed !== undefined) seed = meta.seed;
+          if (!tags && meta.caption) tags = meta.caption;
+        } catch (_) {}
+        setCompareSlot(slot, promptId, files[0], _jobPayloads[promptId]?.song_name || "Untitled", seed, tags);
+      });
+      retakeRow.appendChild(abBtn);
+    });
+
     // ── LRC Lyrics button (only if job had lyrics) ────────────────────────────
     const payload = _jobPayloads[promptId];
     const lyricsText = payload?.lyrics || "";
