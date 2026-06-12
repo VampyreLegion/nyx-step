@@ -125,6 +125,27 @@ def _apply_dit_model(workflow: dict, state: dict, default: str = "turbo") -> Non
         node.setdefault("inputs", {})["unet_name"] = unet_name
 
 
+def _apply_negative_tags(workflow: dict, state: dict) -> None:
+    """Wire an 'avoid' prompt into KSampler's negative conditioning.
+
+    Clones the positive TextEncodeAceStepAudio1.5 node with the negative tags
+    (and no lyrics) and points KSampler.negative at it instead of the
+    ConditioningZeroOut passthrough.
+    """
+    neg = (state.get("negative_tags") or "").strip()
+    if not neg:
+        return
+    enc_id = _find_node_id(workflow, "TextEncodeAceStepAudio1.5")
+    ks_id = _find_node_id(workflow, "KSampler")
+    if not enc_id or not ks_id:
+        return
+    neg_node = copy.deepcopy(workflow[enc_id])
+    neg_node["inputs"]["tags"] = neg
+    neg_node["inputs"]["lyrics"] = ""
+    workflow["neg_encode"] = neg_node
+    workflow[ks_id]["inputs"]["negative"] = ["neg_encode", 0]
+
+
 def _apply_audio_format(workflow: dict, state: dict, label: str = "Save Audio") -> None:
     audio_format = state.get("audio_format", "mp3").lower()
     audio_quality = state.get("audio_quality", "V0")
@@ -282,6 +303,7 @@ class ComfyUIClient:
                     workflow[lora2_id]["inputs"]["clip"] = [lora_id, 1]
 
         _apply_audio_format(workflow, state)
+        _apply_negative_tags(workflow, state)
         return {"workflow": workflow, "seed": seed}
 
     def build_cover_workflow(

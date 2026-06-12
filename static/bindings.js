@@ -80,6 +80,7 @@ document.getElementById("param-lora2-name").addEventListener("change", e => {
 document.getElementById("param-lora2-scale").addEventListener("input", e => {
   mwState.lora2_scale = parseFloat(e.target.value) || 1.0;
 });
+bind("param-negative-tags", "negative_tags");
 
 // Populate LoRA dropdown from ComfyUI
 async function _loadLoras() {
@@ -112,6 +113,7 @@ document.getElementById("btn-reset-params").addEventListener("click", () => {
     sampler_name: "er_sde",
     scheduler: "linear_quadratic",
     batch_size: 1,
+    negative_tags: "",
   };
   Object.assign(mwState, defaults);
   document.getElementById("param-steps").value    = defaults.steps;
@@ -132,6 +134,7 @@ document.getElementById("btn-reset-params").addEventListener("click", () => {
   document.getElementById("param-sampler").value = "er_sde";
   document.getElementById("param-scheduler").value = "linear_quadratic";
   document.getElementById("param-batch-size").value = 1;
+  document.getElementById("param-negative-tags").value = "";
   document.getElementById("param-model-hint").textContent = _modelHints["turbo"];
   updatePayloadPreview();
 });

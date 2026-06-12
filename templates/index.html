@@ -873,6 +873,12 @@
           <input type="number" id="param-lora2-scale" value="1.0" min="0" max="2" step="0.05" style="width:70px">
         </div>
       </div>
+      <div style="margin-top:12px">
+        <div class="field-group">
+          <label title="Qualities to steer away from during generation. Uses CFG negative conditioning.">🚫 Avoid (negative tags) ⓘ <span id="param-negative-hint" style="font-size:11px;color:var(--muted)">Comma-separated qualities to steer away from, e.g. vocals, harsh treble. Experimental.</span></label>
+          <input id="param-negative-tags" type="text" placeholder="vocals, muddy bass, distortion" style="width:100%">
+        </div>
+      </div>
     </div>
     <div style="margin-top:10px">
       <button class="secondary small" id="btn-reset-params" title="Reset all generation parameters to their default values">↺ Reset to Defaults</button>
@@ -2012,9 +2018,9 @@
 </div>
 
 <script src="/static/wavesurfer.min.js"></script>
-<script src="/static/state.js?v=10"></script>
+<script src="/static/state.js?v=11"></script>
 <script src="/static/utils.js?v=4"></script>
-<script src="/static/bindings.js?v=12"></script>
+<script src="/static/bindings.js?v=13"></script>
 <script src="/static/genres.js?v=2"></script>
 <script src="/static/chips.js?v=1"></script>
 <script src="/static/tags.js?v=1"></script>

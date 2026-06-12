@@ -16,4 +16,5 @@ const mwState = {
   lora_scale: 1.0,
   lora2_name: "",
   lora2_scale: 1.0,
+  negative_tags: "",
 };

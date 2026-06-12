@@ -135,3 +135,26 @@ def test_list_models_success():
     with patch("requests.get", return_value=mock_resp):
         models = list_models()
         assert "gemma4:latest" in models
+
+@nyx_only
+def test_build_workflow_negative_tags():
+    from core.comfyui import ComfyUIClient
+    client = ComfyUIClient()
+    state = {"negative_tags": "vocals, drums", "bpm": 120, "duration": 30}
+    result = client.build_workflow("ambient pad", "", state)
+    assert "error" not in result
+    wf = result["workflow"]
+    assert "neg_encode" in wf
+    assert wf["neg_encode"]["inputs"]["tags"] == "vocals, drums"
+    assert wf["neg_encode"]["inputs"]["lyrics"] == ""
+    ks_id = next(k for k, v in wf.items() if v.get("class_type") == "KSampler")
+    assert wf[ks_id]["inputs"]["negative"] == ["neg_encode", 0]
+
+
+@nyx_only
+def test_build_workflow_no_negative_tags_unchanged():
+    from core.comfyui import ComfyUIClient
+    client = ComfyUIClient()
+    result = client.build_workflow("ambient pad", "", {"bpm": 120, "duration": 30})
+    assert "error" not in result
+    assert "neg_encode" not in result["workflow"]
