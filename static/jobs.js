@@ -373,12 +373,14 @@ function addDownloadLinks(container, files) {
       abBtn.addEventListener("click", async () => {
         let seed = _jobPayloads[promptId]?.seed ?? "?";
         let tags = _jobPayloads[promptId]?.tags ?? "";
+        let name = _jobPayloads[promptId]?.song_name || "";
         try {
           const meta = await fetch("/meta/" + encodeURIComponent(files[0])).then(r => r.json());
           if (meta.seed !== undefined) seed = meta.seed;
           if (!tags && meta.caption) tags = meta.caption;
+          if (!name && meta.song_name) name = meta.song_name;
         } catch (_) {}
-        setCompareSlot(slot, promptId, files[0], _jobPayloads[promptId]?.song_name || "Untitled", seed, tags);
+        setCompareSlot(slot, promptId, files[0], name || "Untitled", seed, tags);
       });
       retakeRow.appendChild(abBtn);
     });
