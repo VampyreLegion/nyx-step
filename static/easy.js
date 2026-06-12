@@ -102,21 +102,35 @@ async function _doArtistLookup(artist, infoEl, stateObj, useWeb = false, applyTy
       html += `<div style="margin-bottom:4px"><span style="color:var(--muted)">Themes:</span> ${data.lyric_themes.join(", ")}</div>`;
     }
     if (allAceTags.length) {
-      html += `<button class="secondary small" data-apply-state="${encodeURIComponent(JSON.stringify({instrTags, vocalTags}))}" data-apply-type="${applyType}" style="margin-top:2px">Apply to state</button>`;
+      html += `<button class="secondary small" data-apply-state="${encodeURIComponent(JSON.stringify({instrTags, vocalTags, genreTag, vocalKey: data.vocal_key || ""}))}" data-apply-type="${applyType}" style="margin-top:2px">Apply to state</button>`;
     }
     infoEl.innerHTML = html || "No info found";
 
     infoEl.querySelector("[data-apply-state]")?.addEventListener("click", e => {
-      const {instrTags, vocalTags} = JSON.parse(decodeURIComponent(e.target.dataset.applyState));
+      const {instrTags, vocalTags, genreTag, vocalKey} = JSON.parse(decodeURIComponent(e.target.dataset.applyState));
       const type = e.target.dataset.applyType;
       if (type === "artist") {
         _resetOtherApply("easy-vocal-info");
         mwState.instruments = [...instrTags];
         mwState.vocal_tags = [...vocalTags];
+        if (genreTag) mwState.genre = genreTag;
       } else {
         _resetOtherApply("easy-artist-info");
         mwState.instruments = [];
         mwState.vocal_tags = [...vocalTags];
+      }
+      // Parse "a3-e5, often sings in g major / e minor" → key + scale
+      const _flatToSharp = {db:"C#",eb:"D#",gb:"F#",ab:"G#",bb:"A#"};
+      const km = (vocalKey || "").match(/\b([a-g][#♯b♭]?)\s+(major|minor)\b/i);
+      if (km) {
+        let rawKey = km[1].toLowerCase().replace("♯", "#").replace("♭", "b");
+        rawKey = _flatToSharp[rawKey] || (rawKey.charAt(0).toUpperCase() + rawKey.slice(1).replace("#", "#"));
+        mwState.key = rawKey.charAt(0).toUpperCase() + rawKey.slice(1);
+        mwState.scale = km[2].charAt(0).toUpperCase() + km[2].slice(1).toLowerCase();
+        const keyEl = document.getElementById("style-key");
+        const scaleEl = document.getElementById("style-scale");
+        if (keyEl) keyEl.value = mwState.key;
+        if (scaleEl) scaleEl.value = mwState.scale;
       }
       _easyAppliedSource = type;
       document.getElementById("instrument-selected").value = mwState.instruments.join(", ");
