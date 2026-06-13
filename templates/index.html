@@ -1410,6 +1410,7 @@
   <div class="tab-panel" id="tab-guide">
     <div class="inner-tabs" id="guide-tabs">
       <button class="inner-tab-btn active" data-guide="starthere">Start Here</button>
+      <button class="inner-tab-btn" data-guide="whatsnew">✨ What's New</button>
       <button class="inner-tab-btn" data-guide="summary">Summary</button>
       <button class="inner-tab-btn" data-guide="flowcharts">Flowcharts</button>
       <button class="inner-tab-btn" data-guide="scale">Scales &amp; Modes</button>
@@ -1631,8 +1632,25 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.9.4 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; June 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.10.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; June 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.10.0 — Tagging &amp; Song-Creation Toolkit</h3>
+        <ul>
+          <li><strong>Smarter lint rules</strong> — five new checks in the Lint tab: lyrics with no vocal tag, too many sections for the duration (~12&nbsp;s each), genre/instrument conflicts (e.g. <code>acoustic folk</code> + <code>808 bass</code>), overlong sung lines (&gt;~16 syllables), and genre tags buried late in the list</li>
+          <li><strong>Quality fix suggestions + ✨ Apply &amp; Retake</strong> — 📊 Score now diagnoses weak dimensions and proposes remedy tags (bass-heavy → <code>bright, crisp, airy</code>; quiet → <code>punchy, powerful</code>); one click re-generates with the <strong>same seed</strong> plus the fixes so only the fix changes</li>
+          <li><strong>🅰/🅱 Seed A/B compare</strong> — set two takes as A and B for a side-by-side player panel with tag-diff highlighting; flags when the seeds match so you know the difference is the tags, not randomness</li>
+          <li><strong>📈 History insights</strong> — mines your scored generations to surface your best- and worst-performing tags by average quality (a tag must appear in ≥2 scored takes)</li>
+          <li><strong>Artist profile — full apply</strong> — BioInfusor artist lookup now also sets Genre, Key, and Scale from the artist's vocal range, not just instruments/vocals</li>
+          <li><strong>🏷 Auto-tag from reference</strong> — Analyze tab → Suggest Tags has Ollama infer genre/style tags from detected BPM, key, chords, and lyrics</li>
+          <li><strong>🚫 Negative prompting</strong> — new Avoid field in Parameters steers the diffusion model away from named qualities (<code>vocals, muddy bass, distortion</code>) via negative conditioning</li>
+          <li><strong>16 Golden presets</strong> — built-in curated tag combos per genre; loading one sets the full state including the right model/steps/CFG; built-ins are protected from deletion</li>
+          <li><strong>Retake works on restored jobs</strong> — 🔁 Retake and ✨ Apply &amp; Retake now hydrate from <code>/meta</code> when a job card was restored after a page reload, instead of failing with "no stored parameters"</li>
+          <li><strong>Security &amp; CI hardening</strong> — repo made private with the leaked API key scrubbed from history; path-traversal guards on downloads; trusted-proxy check on the CF identity header; pinned requirements; GitHub Actions test workflow; 75 automated tests</li>
+          <li>Full write-up in Guide → <strong>✨ What's New</strong></li>
+        </ul>
       </div>
 
       <div class="about-section">

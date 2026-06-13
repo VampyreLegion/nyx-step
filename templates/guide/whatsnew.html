@@ -1,0 +1,48 @@
+<html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v3.10.0</h2>
+
+<p>Eight new features focused on better tagging and faster, smarter song creation. They chain together:
+<strong>score a take → apply the suggested fixes on the same seed → A/B compare the results → Insights learns which tags work for you.</strong></p>
+
+<h3>1. Smarter Lint Rules</h3>
+<p>The <strong>Lint</strong> tab now catches five more issues that quietly hurt generations:</p>
+<table>
+<tr><th>Rule</th><th>What it catches</th></tr>
+<tr><td>Lyrics without a vocal tag</td><td>You wrote sung lyrics but no <code>female vocal</code> / <code>male vocal</code> / <code>choir</code> — the model will pick a random voice</td></tr>
+<tr><td>Sections vs duration</td><td>Each section needs ~12&nbsp;s; warns when your section count can't fit the Duration (e.g. 8 sections in 30&nbsp;s)</td></tr>
+<tr><td>Genre / instrument conflict</td><td>Combinations like <code>acoustic folk</code> + <code>808 bass</code> or <code>orchestral</code> + <code>distorted guitar</code></td></tr>
+<tr><td>Overlong sung lines</td><td>Lines past ~16 syllables get crammed by ACE-Step — split them</td></tr>
+<tr><td>Genre buried late</td><td>Attention favours early tokens; put the genre first</td></tr>
+</table>
+
+<h3>2. Quality Score → Fix Suggestions</h3>
+<p>Click <strong>📊 Score</strong> on any finished job. Beyond the 0–10 grade, the score now diagnoses each weak dimension and proposes concrete tag fixes — e.g. a bass-heavy mix suggests adding <code>bright, crisp, airy</code>; a quiet track suggests <code>punchy, powerful</code>.</p>
+<p>An <strong>✨ Apply &amp; Retake</strong> button appears when there are actionable fixes. It re-generates the track with the <strong>same seed</strong> and the remedy tags appended — so the only thing that changes is the fix, letting you hear exactly what it did.</p>
+
+<h3>3. Seed A/B Compare</h3>
+<p>Every job card has <strong>🅰</strong> and <strong>🅱</strong> buttons. Set one take as A and another as B to get a side-by-side player panel with the tag differences highlighted. When both takes share a seed, the panel confirms it — so you know the difference comes from the <em>tags</em>, not random variation. The ideal workflow: 🎲 lock a seed, change one tag, generate, compare.</p>
+
+<h3>4. History Insights</h3>
+<p>The <strong>History</strong> tab has a <strong>📈 Insights</strong> button. It mines your own scored generations and shows your <strong>best-performing</strong> and <strong>weakest</strong> tags by average quality. A tag has to appear in at least two scored tracks before it shows, so score a handful of takes first to build the picture. This is personalised best-practice from your own data.</p>
+
+<h3>5. Artist Profile — Full Apply</h3>
+<p>In <strong>Legion's BioInfusor</strong>, an artist lookup's <em>Apply to state</em> now also sets <strong>Genre, Key, and Scale</strong> (parsed from the artist's vocal range), not just instruments and vocal tags. Key/scale are only applied when the lookup returns them in a recognisable form (e.g. "sings in G major"); otherwise they're left untouched.</p>
+
+<h3>6. Auto-Tag from Reference Audio</h3>
+<p>After analysing a track in the <strong>Analyze</strong> tab, click <strong>🏷 Suggest Tags</strong>. The local Ollama model reads the detected BPM, key, chords, and lyrics and infers genre + style tags, appending them to your prompt. Turns "Analyze → Apply" into a full style starting point, not just the numeric fields.</p>
+
+<h3>7. Negative Prompting (Avoid field)</h3>
+<p>The <strong>Parameters</strong> tab has a new <strong>🚫 Avoid</strong> field. Comma-separated qualities you want to steer <em>away</em> from (e.g. <code>vocals, muddy bass, distortion</code>) are wired into the diffusion model's negative conditioning. More reliable than trying to positively prompt around something you don't want. Experimental — effectiveness varies by model and tags.</p>
+
+<h3>8. Golden Presets</h3>
+<p>The preset list now ships with <strong>16 built-in "Golden" presets</strong> — curated, known-good tag combinations per genre (Lo-Fi Study, Synthwave Drive, Epic Cinematic, Jazz Trio Night, Festival EDM, and more). Loading one sets the full state including the right model, steps, and CFG for that style. They can't be deleted, and your own preset with the same name takes priority.</p>
+
+<h3>Tips for Combining Them</h3>
+<ul>
+<li>Start from a <strong>Golden preset</strong> closest to your target, then refine.</li>
+<li>Run <strong>Lint</strong> before generating to catch structure/tag problems early.</li>
+<li>After a take, <strong>📊 Score</strong> it and use <strong>✨ Apply &amp; Retake</strong> to fix issues without losing the seed.</li>
+<li><strong>🅰/🅱 compare</strong> the original and the fix to confirm the change helped.</li>
+<li>Over time, check <strong>📈 Insights</strong> to learn which tags consistently score well for you.</li>
+</ul>
+</body></html>
