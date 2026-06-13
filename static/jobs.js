@@ -419,20 +419,44 @@ function addDownloadLinks(container, files) {
   }
 }
 
-async function retakeJob(promptId, btn) {
-  const payload = _jobPayloads[promptId];
-  if (!payload) {
-    alert("No stored parameters for this job — only jobs generated in this session can be retaken.");
-    return;
+// Resolve a job's generation payload. Uses the in-session cache when present,
+// otherwise reconstructs it from /meta so jobs restored after a page reload
+// can still be retaken. Returns null only when neither source has the data.
+async function _resolveRetakePayload(promptId) {
+  if (_jobPayloads[promptId]) return _jobPayloads[promptId];
+  const files = _jobFilesByPrompt[promptId];
+  if (!files || !files.length) return null;
+  try {
+    const meta = await fetch("/meta/" + encodeURIComponent(files[0])).then(r => r.json());
+    if (!meta || meta.error || !meta.params) return null;
+    const payload = {
+      ...meta.params,
+      tags: meta.caption || "",
+      lyrics: meta.lyrics || "",
+      seed: meta.seed ?? 0,          // actual seed used, not the requested 0
+      song_name: meta.song_name || "Untitled",
+    };
+    _jobPayloads[promptId] = payload; // cache so further actions are instant
+    return payload;
+  } catch (_) {
+    return null;
   }
-  const retakePayload = {
-    ...payload,
-    lock_seed: false,
-    seed: 0,
-    song_name: "Retake of " + (payload.song_name || "Untitled"),
-  };
+}
+
+async function retakeJob(promptId, btn) {
   if (btn) { btn.disabled = true; btn.textContent = "🔁 Retaking…"; }
   try {
+    const payload = await _resolveRetakePayload(promptId);
+    if (!payload) {
+      alert("Could not load this job's parameters — its source file may be missing.");
+      return;
+    }
+    const retakePayload = {
+      ...payload,
+      lock_seed: false,
+      seed: 0,
+      song_name: "Retake of " + (payload.song_name || "Untitled"),
+    };
     const resp = await fetch("/generate", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
@@ -453,11 +477,13 @@ async function retakeJob(promptId, btn) {
 }
 
 async function applyFixAndRetake(promptId, addTags, btn) {
-  const payload = _jobPayloads[promptId];
-  if (!payload) { alert("No stored parameters for this job."); return; }
   if (btn) { btn.disabled = true; btn.textContent = "✨ Retaking…"; }
   try {
-    // Same seed isolates the tag change; fetch the actual seed used
+    const payload = await _resolveRetakePayload(promptId);
+    if (!payload) { alert("Could not load this job's parameters — its source file may be missing."); return; }
+    // Same seed isolates the tag change. _resolveRetakePayload already carries
+    // the actual seed for restored jobs; for in-session jobs the cached payload
+    // holds the requested seed (often 0), so confirm the real one from /meta.
     let seed = payload.seed || 0;
     try {
       const files = _jobFilesByPrompt[promptId];
