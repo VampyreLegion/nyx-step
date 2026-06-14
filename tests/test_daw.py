@@ -101,3 +101,22 @@ def test_library_lists_owned_clips_and_stems(tmp_path, monkeypatch):
     stem_files = [s["file"] for s in lib["stems"]]
     assert "separated/htdemucs/MySong/vocals.wav" in stem_files
     assert {s["stem_type"] for s in lib["stems"]} == {"vocals", "drums", "bass", "other"}
+
+
+def test_audio_serves_clip_and_stem_blocks_others(tmp_path, monkeypatch):
+    import config
+    out = tmp_path / "audio2"
+    (out / "separated" / "htdemucs" / "Song2").mkdir(parents=True)
+    (out / "Song2.mp3").write_bytes(b"ID3DATA")
+    (out / "separated" / "htdemucs" / "Song2" / "bass.wav").write_bytes(b"RIFFDATA")
+    (out / "NotMine.mp3").write_bytes(b"NOPE")
+    monkeypatch.setattr(config, "COMFYUI_OUTPUT_DIR", out)
+    monkeypatch.setattr(config, "DEMUCS_OUTPUT_DIR", out / "separated")
+
+    db.upsert_job("jobY", "dev@local", "Song2")
+    db.update_job("jobY", status="done", output_files=["Song2.mp3"])
+
+    assert client.get("/daw/audio/Song2.mp3").status_code == 200
+    assert client.get("/daw/audio/separated/htdemucs/Song2/bass.wav").status_code == 200
+    assert client.get("/daw/audio/NotMine.mp3").status_code == 404
+    assert client.get("/daw/audio/../../etc/passwd").status_code == 404

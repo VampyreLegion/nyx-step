@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 import config
 import core.db as db
 from nyx_step import get_user_email
+from routes.download import safe_output_path
 
 router = APIRouter(prefix="/daw")
 
@@ -108,3 +109,32 @@ async def library(request: Request):
                     })
 
     return {"clips": clips, "stems": stems}
+
+
+def _user_owns_daw_file(user: str, filename: str) -> bool:
+    # Generated clip the user owns?
+    if db.user_owns_file(user, filename):
+        return True
+    # Stem whose parent-song folder matches a song the user owns?
+    parts = filename.split("/")
+    if len(parts) >= 4 and parts[0] == "separated":
+        song_folder = parts[-2]
+        for job in db.get_user_jobs(user):
+            for f in job.get("output_files", []):
+                if f.rsplit(".", 1)[0] == song_folder:
+                    return True
+    return False
+
+
+@router.get("/audio/{file:path}")
+async def audio(file: str, request: Request):
+    user = get_user_email(request)
+    if not _user_owns_daw_file(user, file):
+        return JSONResponse({"error": "Not found or access denied"}, status_code=404)
+    path = safe_output_path(file)
+    if path is None or not path.exists():
+        return JSONResponse({"error": "File not on disk"}, status_code=404)
+    ext = path.suffix.lower().lstrip(".")
+    media = {"mp3": "audio/mpeg", "flac": "audio/flac", "wav": "audio/wav",
+             "opus": "audio/ogg", "ogg": "audio/ogg"}.get(ext, "application/octet-stream")
+    return FileResponse(str(path), media_type=media)
