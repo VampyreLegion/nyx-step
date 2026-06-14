@@ -272,5 +272,3 @@ document.getElementById("btn-clear-overview").addEventListener("click", () => {
   document.querySelectorAll("#genre-grid .chip").forEach(c => c.classList.remove("active"));
   updatePayloadPreview();
 });
-
-document.getElementById("btn-clear-jobs").addEventListener("click", clearJobList);
