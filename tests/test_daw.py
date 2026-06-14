@@ -80,3 +80,24 @@ def test_route_update_rejects_non_dict_data():
     r = client.put(f"/daw/projects/{pid}", json={"data": "not-an-object"})
     # nyx_step.py has a custom RequestValidationError handler that returns 400
     assert r.status_code == 400
+
+
+def test_library_lists_owned_clips_and_stems(tmp_path, monkeypatch):
+    import config, pathlib
+    out = tmp_path / "audio"
+    (out / "separated" / "htdemucs" / "MySong").mkdir(parents=True)
+    (out / "MySong.mp3").write_bytes(b"ID3")
+    for stem in ("vocals", "drums", "bass", "other"):
+        (out / "separated" / "htdemucs" / "MySong" / f"{stem}.wav").write_bytes(b"RIFF")
+    monkeypatch.setattr(config, "COMFYUI_OUTPUT_DIR", out)
+    monkeypatch.setattr(config, "DEMUCS_OUTPUT_DIR", out / "separated")
+
+    db.upsert_job("jobX", "dev@local", "MySong")
+    db.update_job("jobX", status="done", output_files=["MySong.mp3"])
+
+    lib = client.get("/daw/library").json()
+    clip_files = [c["file"] for c in lib["clips"]]
+    assert "MySong.mp3" in clip_files
+    stem_files = [s["file"] for s in lib["stems"]]
+    assert "separated/htdemucs/MySong/vocals.wav" in stem_files
+    assert {s["stem_type"] for s in lib["stems"]} == {"vocals", "drums", "bass", "other"}

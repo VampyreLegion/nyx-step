@@ -4,6 +4,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+import config
 import core.db as db
 from nyx_step import get_user_email
 
@@ -59,3 +60,51 @@ async def delete_project(project_id: int, request: Request):
     if not db.delete_daw_project(user, project_id):
         return JSONResponse({"error": "Not found"}, status_code=404)
     return {"deleted": project_id}
+
+
+_STEM_TYPES = {"vocals", "drums", "bass", "other"}
+
+
+@router.get("/library")
+async def library(request: Request):
+    user = get_user_email(request)
+
+    # Generated clips: this user's done jobs, one entry per output file.
+    clips = []
+    for job in db.get_user_jobs(user):
+        if job.get("status") != "done":
+            continue
+        params = job.get("params", {}) or {}
+        for f in job.get("output_files", []):
+            clips.append({
+                "file": f,
+                "name": job.get("song_name") or f,
+                "duration": params.get("duration"),
+            })
+
+    # Songs this user owns (filename without extension) → match stem folders.
+    owned_song_names = set()
+    for c in clips:
+        owned_song_names.add(c["file"].rsplit(".", 1)[0])
+
+    stems = []
+    sep = config.DEMUCS_OUTPUT_DIR
+    if sep.exists():
+        for model_dir in sep.iterdir():
+            if not model_dir.is_dir():
+                continue
+            for song_dir in model_dir.iterdir():
+                if not song_dir.is_dir() or song_dir.name not in owned_song_names:
+                    continue
+                for stem_file in song_dir.glob("*.*"):
+                    stem_type = stem_file.stem.lower()
+                    if stem_type not in _STEM_TYPES:
+                        continue
+                    rel = stem_file.relative_to(config.COMFYUI_OUTPUT_DIR).as_posix()
+                    stems.append({
+                        "file": rel,
+                        "name": f"{song_dir.name} — {stem_type}",
+                        "stem_type": stem_type,
+                    })
+
+    return {"clips": clips, "stems": stems}
