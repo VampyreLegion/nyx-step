@@ -10,6 +10,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     if (btn.dataset.tab === "lint") updateLintStatePreview();
     if (btn.dataset.tab === "history") { if (typeof loadHistory === "function" && _historyRecords.length === 0) loadHistory(); }
     if (btn.dataset.tab === "video") { if (typeof onVideoTabOpen === "function") onVideoTabOpen(); }
+    if (btn.dataset.tab === "daw") { if (typeof onDawTabOpen === "function") onDawTabOpen(); }
   });
 });
 
