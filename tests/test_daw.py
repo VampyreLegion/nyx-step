@@ -42,3 +42,41 @@ def test_delete_project():
     pid = db.create_daw_project("del@a.com", "Bye")
     assert db.delete_daw_project("del@a.com", pid) is True
     assert db.get_daw_project("del@a.com", pid) is None
+
+
+import nyx_step  # noqa: E402  (ensures app + routers import)
+from fastapi.testclient import TestClient  # noqa: E402
+
+client = TestClient(nyx_step.app)  # requests resolve to dev@local
+
+
+def test_route_create_list_get_update_delete():
+    r = client.post("/daw/projects", json={"name": "RouteProj"})
+    assert r.status_code == 200
+    pid = r.json()["id"]
+
+    names = [p["name"] for p in client.get("/daw/projects").json()["projects"]]
+    assert "RouteProj" in names
+
+    got = client.get(f"/daw/projects/{pid}").json()
+    assert got["name"] == "RouteProj"
+    assert got["data"]["tracks"] == []
+
+    data = {"version": 1, "tempo": 100, "tracks": []}
+    r = client.put(f"/daw/projects/{pid}", json={"name": "Renamed", "data": data})
+    assert r.status_code == 200
+    assert client.get(f"/daw/projects/{pid}").json()["name"] == "Renamed"
+
+    assert client.delete(f"/daw/projects/{pid}").status_code == 200
+    assert client.get(f"/daw/projects/{pid}").status_code == 404
+
+
+def test_route_get_missing_404():
+    assert client.get("/daw/projects/999999").status_code == 404
+
+
+def test_route_update_rejects_non_dict_data():
+    pid = client.post("/daw/projects", json={"name": "P"}).json()["id"]
+    r = client.put(f"/daw/projects/{pid}", json={"data": "not-an-object"})
+    # nyx_step.py has a custom RequestValidationError handler that returns 400
+    assert r.status_code == 400
