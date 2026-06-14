@@ -54,6 +54,16 @@ def init_db(path: pathlib.Path) -> None:
             );
             CREATE INDEX IF NOT EXISTS idx_history_user ON history(user_email);
             CREATE INDEX IF NOT EXISTS idx_history_ts   ON history(created_at DESC);
+
+            CREATE TABLE IF NOT EXISTS daw_projects (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_email  TEXT NOT NULL,
+                name        TEXT NOT NULL DEFAULT 'Untitled Project',
+                data        TEXT NOT NULL DEFAULT '{}',
+                created_at  TEXT NOT NULL,
+                updated_at  TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_daw_user ON daw_projects(user_email);
         """)
     with _get_conn() as conn:
         try:
@@ -234,3 +244,65 @@ def get_tag_insights(user_email: str, min_count: int = 2) -> list[dict]:
     ]
     out.sort(key=lambda d: -d["avg_quality"])
     return out
+
+
+# ── DAW projects ────────────────────────────────────────────────────────────
+
+_DAW_EMPTY = {"version": 1, "tempo": 120, "tracks": []}
+
+
+def create_daw_project(user_email: str, name: str) -> int:
+    now = utcnow().isoformat()
+    with _get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO daw_projects (user_email, name, data, created_at, updated_at) "
+            "VALUES (?,?,?,?,?)",
+            (user_email, name, json.dumps(_DAW_EMPTY), now, now),
+        )
+        return int(cur.lastrowid)
+
+
+def list_daw_projects(user_email: str) -> list[dict]:
+    with _get_conn() as conn:
+        rows = conn.execute(
+            "SELECT id, name, updated_at FROM daw_projects WHERE user_email=? "
+            "ORDER BY updated_at DESC", (user_email,),
+        ).fetchall()
+    return [{"id": r["id"], "name": r["name"], "updated_at": r["updated_at"]} for r in rows]
+
+
+def get_daw_project(user_email: str, project_id: int) -> dict | None:
+    with _get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM daw_projects WHERE id=? AND user_email=?",
+            (project_id, user_email),
+        ).fetchone()
+    if not row:
+        return None
+    d = dict(row)
+    d["data"] = json.loads(d["data"])
+    return d
+
+
+def update_daw_project(user_email: str, project_id: int, name: str | None = None,
+                       data: dict | None = None) -> bool:
+    sets, vals = [], []
+    if name is not None:
+        sets.append("name=?"); vals.append(name)
+    if data is not None:
+        sets.append("data=?"); vals.append(json.dumps(data))
+    sets.append("updated_at=?"); vals.append(utcnow().isoformat())
+    vals.extend([project_id, user_email])
+    with _get_conn() as conn:
+        cur = conn.execute(
+            f"UPDATE daw_projects SET {', '.join(sets)} WHERE id=? AND user_email=?", vals,
+        )
+        return cur.rowcount > 0
+
+
+def delete_daw_project(user_email: str, project_id: int) -> bool:
+    with _get_conn() as conn:
+        cur = conn.execute(
+            "DELETE FROM daw_projects WHERE id=? AND user_email=?", (project_id, user_email),
+        )
+        return cur.rowcount > 0
