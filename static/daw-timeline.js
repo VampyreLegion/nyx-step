@@ -3,7 +3,6 @@ let _dawPxPerSec = 12;          // zoom
 const _DAW_LANE_H = 64;
 const _DAW_MIN_LEN = 60;        // seconds of empty ruler
 let _dawSelectedClip = null;
-const _dawPeakCache = new Map(); // file → Float32Array peaks
 
 function dawZoom(factor) {
   _dawPxPerSec = Math.min(120, Math.max(3, _dawPxPerSec * factor));
@@ -12,25 +11,6 @@ function dawZoom(factor) {
 
 function _dawTimelineWidth() {
   return Math.max(_DAW_MIN_LEN, dawArrangementLength() + 10) * _dawPxPerSec;
-}
-
-function _dawComputePeaks(file, buf, targetPx) {
-  const key = file + "@" + targetPx;
-  if (_dawPeakCache.has(key)) return _dawPeakCache.get(key);
-  const ch = buf.getChannelData(0);
-  const step = Math.max(1, Math.floor(ch.length / targetPx));
-  const peaks = new Float32Array(targetPx);
-  for (let i = 0; i < targetPx; i++) {
-    let peak = 0;
-    const start = i * step;
-    for (let j = 0; j < step && start + j < ch.length; j++) {
-      const v = Math.abs(ch[start + j]);
-      if (v > peak) peak = v;
-    }
-    peaks[i] = peak;
-  }
-  _dawPeakCache.set(key, peaks);
-  return peaks;
 }
 
 function _dawDrawClipWave(canvas, clip, color) {

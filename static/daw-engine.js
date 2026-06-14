@@ -28,7 +28,7 @@ async function dawGetBuffer(file) {
   }
   try {
     const ctx = _dawEnsureCtx();
-    const ab = await fetch("/daw/audio/" + encodeURI(file)).then(r => {
+    const ab = await fetch("/daw/audio/" + file.split("/").map(encodeURIComponent).join("/")).then(r => {
       if (!r.ok) throw new Error("fetch " + r.status);
       return r.arrayBuffer();
     });

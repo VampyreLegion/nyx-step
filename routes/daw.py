@@ -49,10 +49,12 @@ async def update_project(project_id: int, req: _UpdateProject, request: Request)
     user = get_user_email(request)
     if req.name is None and req.data is None:
         return JSONResponse({"error": "Nothing to update"}, status_code=400)
-    ok = db.update_daw_project(user, project_id, name=req.name, data=req.data)
+    name = req.name.strip() if req.name is not None else None
+    ok = db.update_daw_project(user, project_id, name=name, data=req.data)
     if not ok:
         return JSONResponse({"error": "Not found"}, status_code=404)
-    return {"saved": project_id}
+    p = db.get_daw_project(user, project_id)
+    return {"saved": project_id, "updated_at": p["updated_at"] if p else None}
 
 
 @router.delete("/projects/{project_id}")

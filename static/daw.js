@@ -3,8 +3,7 @@ let _dawInitialized = false;
 
 async function onDawTabOpen() {
   if (!_dawInitialized) { _dawInitialized = true; _dawWireTransport(); }
-  await dawRefreshProjectList();
-  const projects = await dawListProjects();
+  const projects = await dawRefreshProjectList();   // single fetch, reused below
   if (dawState.id == null) {
     if (projects.length) await dawLoadProject(projects[0].id);
     else { await dawNewProject("My First Project"); await dawRefreshProjectList(); }
@@ -13,12 +12,18 @@ async function onDawTabOpen() {
   renderTimeline();
 }
 
-async function dawRefreshProjectList() {
+async function dawRefreshProjectList(projects) {
   const sel = document.getElementById("daw-project-select");
-  if (!sel) return;
-  const projects = await dawListProjects();
-  sel.innerHTML = projects.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+  if (!sel) return [];
+  if (!projects) projects = await dawListProjects();
+  sel.innerHTML = "";
+  for (const p of projects) {              // createElement avoids HTML injection via project name
+    const opt = document.createElement("option");
+    opt.value = p.id; opt.textContent = p.name;
+    sel.appendChild(opt);
+  }
   if (dawState.id != null) sel.value = dawState.id;
+  return projects;
 }
 
 function _dawWireTransport() {

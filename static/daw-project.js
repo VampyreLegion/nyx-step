@@ -36,8 +36,10 @@ async function dawNewProject(name) {
 async function dawLoadProject(id) {
   const p = await fetch("/daw/projects/" + id).then(r => r.json());
   if (p.error) return false;
-  dawState = { id: p.id, name: p.name, ...p.data };
-  dawState.tracks = dawState.tracks || [];
+  // Explicit fields — don't spread p.data (it could carry an id/name and clobber identity)
+  const d = p.data || {};
+  dawState = { id: p.id, name: p.name, version: d.version || 1,
+               tempo: d.tempo ?? 120, tracks: d.tracks || [] };
   if (typeof renderTimeline === "function") renderTimeline();
   _dawSetSaveStatus("✓ saved");
   return true;
