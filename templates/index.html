@@ -32,6 +32,7 @@
   <button class="tab-btn" data-tab="radio" title="Radio — continuous AI-generated music stream; each segment inherits the timbre of the previous">📻 Radio</button>
   <button class="tab-btn" data-tab="analyze" title="Analyze Audio — detect BPM, key, scale, LUFS, chord progression, and lyrics from any audio file">Analyze</button>
   <button class="tab-btn" data-tab="video" title="Video — generate a beat-synced music video from your song using Wan AI">🎬 Video</button>
+  <button class="tab-btn" data-tab="daw" title="DAW — multi-track timeline arranger for your clips and stems">🎚 DAW</button>
   <button class="tab-btn" data-tab="midi" title="MIDI — extract MIDI notes from any audio file (melody or piano polyphonic)">MIDI</button>
   <button class="tab-btn" data-tab="train" title="Train LoRA — train a custom LoRA adapter on your own audio dataset">Train LoRA</button>
   <button class="tab-btn" data-tab="guide" title="Guide — full documentation, flowcharts, scales reference, and workflow tips">Guide</button>
@@ -2014,6 +2015,47 @@
     </div>
   </div>
 
+  <!-- DAW -->
+  <div class="tab-panel" id="tab-daw">
+    <div id="daw-root">
+      <div id="daw-transport" style="display:flex;align-items:center;gap:10px;padding:6px 8px;background:#15171f;border:1px solid #2d3041;border-radius:6px;flex-wrap:wrap">
+        <select id="daw-project-select" style="font-size:12px;min-width:140px"></select>
+        <button class="secondary small" id="daw-new">+ New</button>
+        <button class="secondary small" id="daw-rename">✎ Rename</button>
+        <button class="secondary small" id="daw-delete">🗑</button>
+        <span style="width:1px;height:18px;background:#2d3041"></span>
+        <button class="secondary small" id="daw-play">▶</button>
+        <button class="secondary small" id="daw-pause">⏸</button>
+        <button class="secondary small" id="daw-stop">⏹</button>
+        <button class="secondary small" id="daw-loop" title="Loop arrangement">↻</button>
+        <span id="daw-time" style="font-family:monospace;font-size:12px;color:var(--muted)">0:00 / 0:00</span>
+        <span style="width:1px;height:18px;background:#2d3041"></span>
+        <button class="secondary small" id="daw-zoom-out">🔍−</button>
+        <button class="secondary small" id="daw-zoom-in">🔍+</button>
+        <span id="daw-save-status" style="font-size:11px;color:var(--muted);margin-left:auto">—</span>
+      </div>
+      <div id="daw-arranger" style="display:flex;border:1px solid #2d3041;border-top:none;height:420px;overflow:hidden">
+        <div id="daw-track-headers" style="width:150px;flex:0 0 150px;background:#101218;overflow-y:auto;border-right:1px solid #2d3041">
+          <div id="daw-tracks-head"></div>
+          <button class="secondary small" id="daw-add-track" style="margin:6px;width:calc(100% - 12px)">+ Add Track</button>
+        </div>
+        <div id="daw-timeline-scroll" style="flex:1;overflow:auto;position:relative;background:#0b0c10">
+          <canvas id="daw-ruler" height="22" style="display:block;position:sticky;top:0;z-index:2;background:#15171f"></canvas>
+          <div id="daw-lanes" style="position:relative"></div>
+          <div id="daw-playhead" style="position:absolute;top:0;width:2px;background:#00d4b6;pointer-events:none;z-index:3;display:none"></div>
+        </div>
+      </div>
+      <div id="daw-library" style="border:1px solid #2d3041;border-top:none;border-radius:0 0 6px 6px;padding:6px 8px;max-height:140px;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <strong style="font-size:12px;color:var(--accent2)">📚 Clip Library</strong>
+          <input id="daw-lib-search" placeholder="search…" style="font-size:11px;flex:1;max-width:200px">
+          <button class="secondary small" id="daw-lib-refresh">↻</button>
+        </div>
+        <div id="daw-lib-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- Preset modal -->
@@ -2065,6 +2107,11 @@
 <script src="/static/dropzone.js?v=1"></script>
 <script src="/static/tabs.js?v=3"></script>
 <script src="/static/video.js?v=2"></script>
+<script src="/static/daw-project.js?v=1"></script>
+<script src="/static/daw-engine.js?v=1"></script>
+<script src="/static/daw-library.js?v=1"></script>
+<script src="/static/daw-timeline.js?v=1"></script>
+<script src="/static/daw.js?v=1"></script>
 <script src="/static/init.js?v=2"></script>
 </body>
 </html>
