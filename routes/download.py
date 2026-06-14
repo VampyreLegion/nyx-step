@@ -79,11 +79,15 @@ async def meta(filename: str, request: Request):
     return JSONResponse({"error": "Metadata not found"}, status_code=404)
 
 
-def _safe_output_path(filename: str) -> Path | None:
+def safe_output_path(filename: str) -> Path | None:
     """Resolve filename inside COMFYUI_OUTPUT_DIR, rejecting traversal outside it."""
     base = config.COMFYUI_OUTPUT_DIR.resolve()
     resolved = (base / filename).resolve()
     return resolved if resolved.is_relative_to(base) else None
+
+
+# Backwards-compatible alias (existing internal callers)
+_safe_output_path = safe_output_path
 
 
 def _tag_audio(file_path: Path, meta: dict | None) -> bytes | None:
