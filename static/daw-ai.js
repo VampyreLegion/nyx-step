@@ -108,3 +108,138 @@ function openGenerateDialog(trackId, anchor) {
     document.addEventListener("keydown", _dawGenEsc);
   }, 0);
 }
+
+// ── 5b: AI Remix (variation / extend) ─────────────────────────────────────────
+async function dawRemixClip(clip, mode, tags, duration) {
+  const found = (typeof _dawFindClip === "function") ? _dawFindClip(clip.id) : null;
+  if (!found) return;
+  const track = found.track;
+  _dawGenTracks.add(track.id); renderTimeline();
+  _dawSetSaveStatus("Remixing… queued");
+  try {
+    const resp = await fetch("/remix", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source_file: clip.file, mode, tags, duration,
+                             bpm: dawState.tempo ?? 120, song_name: "DAW remix" }),
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.error || ("HTTP " + resp.status));
+    const file = await dawRunJob(data.prompt_id, s => _dawSetSaveStatus("Remixing… " + s));
+    const at = clip.start + clip.duration;
+    const nc = dawAddClip(track.id, { file, name: mode + ": " + (tags || clip.name).slice(0, 20), source_duration: duration }, at);
+    const buf = await dawGetBuffer(file);
+    if (buf && nc) { nc.source_duration = nc.duration = buf.duration; dawMarkDirty(); }
+    renderTimeline();
+    _dawSetSaveStatus("Remixed ✓");
+  } catch (e) {
+    _dawSetSaveStatus("Remix failed: " + e.message);
+  } finally {
+    _dawGenTracks.delete(track.id); renderTimeline();
+  }
+}
+
+function openRemixDialog(clip, anchor) {
+  _dawCloseGenDialog();
+  const m = document.createElement("div");
+  _dawGenDialogEl = m;
+  m.style.cssText = "position:fixed;z-index:1000;background:#15171f;border:1px solid #2d3041;border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:230px;box-shadow:0 4px 16px rgba(0,0,0,0.5)";
+  const r = anchor.getBoundingClientRect();
+  m.style.left = Math.min(r.left, window.innerWidth - 250) + "px";
+  m.style.top = (r.bottom + 4) + "px";
+
+  const title = document.createElement("div");
+  title.textContent = "🤖 AI Remix";
+  title.style.cssText = "font-size:11px;color:#00d4b6;font-weight:bold";
+
+  const modeRow = document.createElement("label");
+  modeRow.style.cssText = "font-size:11px;color:#e2e4ed;display:flex;align-items:center;gap:6px";
+  modeRow.textContent = "Mode";
+  const modeSel = document.createElement("select");
+  modeSel.style.cssText = "font-size:11px";
+  for (const v of ["variation", "extend"]) {
+    const o = document.createElement("option"); o.value = v; o.textContent = v; modeSel.appendChild(o);
+  }
+  modeRow.appendChild(modeSel);
+
+  const tagsIn = document.createElement("input");
+  tagsIn.type = "text"; tagsIn.placeholder = "tags (optional)";
+  tagsIn.style.cssText = "font-size:11px;width:100%";
+
+  const durRow = document.createElement("label");
+  durRow.style.cssText = "font-size:11px;color:#e2e4ed;display:flex;align-items:center;gap:6px";
+  durRow.textContent = "Duration s";
+  const durIn = document.createElement("input");
+  durIn.type = "number"; durIn.min = "5"; durIn.max = "300"; durIn.step = "1";
+  durIn.value = String(Math.max(5, Math.round(clip.duration || 15)));
+  durIn.style.cssText = "width:60px;font-size:11px";
+  durRow.appendChild(durIn);
+
+  const btnRow = document.createElement("div");
+  btnRow.style.cssText = "display:flex;gap:6px;justify-content:flex-end";
+  const go = document.createElement("button");
+  go.className = "secondary small"; go.textContent = "Remix"; go.style.cssText = "font-size:11px";
+  const cancel = document.createElement("button");
+  cancel.className = "secondary small"; cancel.textContent = "Cancel"; cancel.style.cssText = "font-size:11px";
+  go.addEventListener("click", () => {
+    const dur = Math.min(300, Math.max(5, parseFloat(durIn.value) || 15));
+    _dawCloseGenDialog();
+    dawRemixClip(clip, modeSel.value, tagsIn.value.trim(), dur);
+  });
+  cancel.addEventListener("click", _dawCloseGenDialog);
+  btnRow.appendChild(go); btnRow.appendChild(cancel);
+
+  m.appendChild(title); m.appendChild(modeRow); m.appendChild(tagsIn); m.appendChild(durRow); m.appendChild(btnRow);
+  document.body.appendChild(m);
+  tagsIn.focus();
+  setTimeout(() => {
+    document.addEventListener("mousedown", _dawGenOutside);
+    document.addEventListener("keydown", _dawGenEsc);
+  }, 0);
+}
+
+// ── 5c: Split to Stems (demucs → tracks) ──────────────────────────────────────
+async function dawSplitToStems(clip) {
+  if (clip.file.startsWith("separated/")) { _dawSetSaveStatus("Already a stem"); return; }
+  const found = (typeof _dawFindClip === "function") ? _dawFindClip(clip.id) : null;
+  if (!found) return;
+  const track = found.track;
+  const base = clip.file.replace(/\.[^.]+$/, "");
+  _dawGenTracks.add(track.id); renderTimeline();
+  _dawSetSaveStatus("Splitting to stems…");
+
+  let failed = false, settled = false;
+  const es = new EventSource("/stems/demucs/stream?filename=" + encodeURIComponent(clip.file) + "&model=htdemucs");
+
+  const finish = async (errored) => {
+    if (settled) return;
+    settled = true;
+    es.close();
+    try {
+      if (errored || failed) { _dawSetSaveStatus("Stem split failed"); return; }
+      for (const t of ["vocals", "drums", "bass", "other"]) {
+        const f = "separated/htdemucs/" + base + "/" + t + ".wav";
+        const buf = await dawGetBuffer(f);
+        if (!buf) continue;
+        dawAddTrack(clip.name.slice(0, 14) + " — " + t);
+        const newId = dawState.tracks[dawState.tracks.length - 1].id;
+        dawAddClip(newId, { file: f, name: t, source_duration: buf.duration }, clip.start);
+      }
+      if (!track.mute) dawToggleMute(track.id);
+      _dawSetSaveStatus("Stems ready ✓");
+    } catch (e) {
+      _dawSetSaveStatus("Stem split failed: " + e.message);
+    } finally {
+      _dawGenTracks.delete(track.id); renderTimeline(); dawMarkDirty();
+    }
+  };
+
+  es.addEventListener("log", e => {
+    try {
+      const l = JSON.parse(e.data).line;
+      if (l.includes("[error]")) failed = true;
+      _dawSetSaveStatus("Stems: " + l.slice(0, 40));
+    } catch (_) {}
+  });
+  es.addEventListener("done", () => finish(false));
+  es.onerror = () => finish(true);
+}
