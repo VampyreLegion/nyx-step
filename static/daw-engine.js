@@ -2,6 +2,8 @@
 let _dawCtx = null;
 const _dawBufferCache = new Map();     // file → AudioBuffer (or "error")
 let _dawMaster = null;
+let _dawMasterAnalyser = null;
+const _dawTrackChains = new Map();   // trackId → { gain, pan, analyser }
 let _dawActiveSources = [];
 let _dawIsPlaying = false;
 let _dawPlayhead = 0;                   // seconds
@@ -16,9 +18,47 @@ function _dawEnsureCtx() {
     _dawCtx = new (window.AudioContext || window.webkitAudioContext)();
     _dawMaster = _dawCtx.createGain();
     _dawMaster.gain.value = 1.0;
-    _dawMaster.connect(_dawCtx.destination);
+    _dawMasterAnalyser = _dawCtx.createAnalyser();
+    _dawMasterAnalyser.fftSize = 256;
+    _dawMaster.connect(_dawMasterAnalyser);
+    _dawMasterAnalyser.connect(_dawCtx.destination);
   }
   return _dawCtx;
+}
+
+function _dawSyncChains() {
+  const ctx = _dawEnsureCtx();
+  const ids = new Set(dawState.tracks.map(t => t.id));
+  for (const [id, chain] of _dawTrackChains) {
+    if (!ids.has(id)) {
+      try { chain.gain.disconnect(); chain.pan.disconnect(); chain.analyser.disconnect(); } catch (_) {}
+      _dawTrackChains.delete(id);
+    }
+  }
+  for (const t of dawState.tracks) {
+    let chain = _dawTrackChains.get(t.id);
+    if (!chain) {
+      const gain = ctx.createGain();
+      const pan = ctx.createStereoPanner();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      gain.connect(pan); pan.connect(analyser); analyser.connect(_dawMaster);
+      chain = { gain, pan, analyser };
+      _dawTrackChains.set(t.id, chain);
+    }
+    chain.pan.pan.value = t.pan ?? 0;
+  }
+}
+
+function _dawApplyMixState() {
+  const soloOn = dawState.tracks.some(t => t.solo);
+  for (const t of dawState.tracks) {
+    const chain = _dawTrackChains.get(t.id);
+    if (!chain) continue;
+    const audible = soloOn ? t.solo : !t.mute;
+    chain.gain.value = audible ? (t.volume ?? 1) : 0;
+  }
+  if (_dawMaster) _dawMaster.gain.value = dawState.master_volume ?? 1;
 }
 
 async function dawGetBuffer(file) {
@@ -49,22 +89,23 @@ function _dawAudibleTracks() {
 
 function _dawScheduleAll() {
   const ctx = _dawEnsureCtx();
+  _dawSyncChains();
   _dawStartCtxTime = ctx.currentTime + _DAW_LOOKAHEAD;
   _dawStartPlayhead = _dawPlayhead;
-  const audible = _dawAudibleTracks();
   for (const track of dawState.tracks) {
-    if (!audible.has(track.id)) continue;
+    const chain = _dawTrackChains.get(track.id);
+    if (!chain) continue;
     for (const clip of track.clips) {
       const clipEnd = clip.start + clip.duration;
-      if (clipEnd <= _dawPlayhead) continue;          // already past
+      if (clipEnd <= _dawPlayhead) continue;
       const buf = _dawBufferCache.get(clip.file);
-      if (!buf || buf === "error") continue;          // not loaded / errored
+      if (!buf || buf === "error") continue;
       let when, bufOffset, playDur;
       if (clip.start >= _dawPlayhead) {
         when = _dawStartCtxTime + (clip.start - _dawPlayhead);
         bufOffset = clip.offset;
         playDur = clip.duration;
-      } else {                                         // straddles playhead
+      } else {
         const into = _dawPlayhead - clip.start;
         when = _dawStartCtxTime;
         bufOffset = clip.offset + into;
@@ -72,12 +113,12 @@ function _dawScheduleAll() {
       }
       const src = ctx.createBufferSource();
       src.buffer = buf;
-      const g = ctx.createGain();
-      src.connect(g); g.connect(_dawMaster);
+      src.connect(chain.gain);
       src.start(when, bufOffset, playDur);
       _dawActiveSources.push(src);
     }
   }
+  _dawApplyMixState();
 }
 
 function _dawStopSources() {
@@ -137,10 +178,42 @@ function dawSetLoop(on) { _dawLoop = on; }
 function dawGetPlayhead() { return _dawPlayhead; }
 function dawIsPlaying() { return _dawIsPlaying; }
 
-// Re-schedule mid-playback after a mute/solo change.
+// Re-apply mix state without re-scheduling sources.
 function dawReschedule() {
-  if (!_dawIsPlaying) return;
-  _dawPlayhead = _dawStartPlayhead + (_dawCtx.currentTime - _dawStartCtxTime);
-  _dawStopSources();
-  _dawScheduleAll();
+  _dawApplyMixState();
+}
+
+function dawEngineSetTrackVolume(trackId, gain) {
+  const t = dawState.tracks.find(t => t.id === trackId);
+  const chain = _dawTrackChains.get(trackId);
+  if (!t || !chain) return;
+  const soloOn = dawState.tracks.some(t => t.solo);
+  const audible = soloOn ? t.solo : !t.mute;
+  chain.gain.value = audible ? gain : 0;
+}
+
+function dawEngineSetTrackPan(trackId, pan) {
+  const chain = _dawTrackChains.get(trackId);
+  if (chain) chain.pan.pan.value = pan;
+}
+
+function dawEngineSetMasterVolume(gain) {
+  if (_dawMaster) _dawMaster.gain.value = gain;
+}
+
+function _dawAnalyserPeak(analyser) {
+  const buf = new Float32Array(analyser.fftSize);
+  analyser.getFloatTimeDomainData(buf);
+  let peak = 0;
+  for (let i = 0; i < buf.length; i++) { const v = Math.abs(buf[i]); if (v > peak) peak = v; }
+  return peak;
+}
+
+function dawEngineTrackPeak(trackId) {
+  const chain = _dawTrackChains.get(trackId);
+  return chain ? _dawAnalyserPeak(chain.analyser) : 0;
+}
+
+function dawEngineMasterPeak() {
+  return _dawMasterAnalyser ? _dawAnalyserPeak(_dawMasterAnalyser) : 0;
 }
