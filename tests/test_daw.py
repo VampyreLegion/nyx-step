@@ -120,3 +120,15 @@ def test_audio_serves_clip_and_stem_blocks_others(tmp_path, monkeypatch):
     assert client.get("/daw/audio/separated/htdemucs/Song2/bass.wav").status_code == 200
     assert client.get("/daw/audio/NotMine.mp3").status_code == 404
     assert client.get("/daw/audio/../../etc/passwd").status_code == 404
+
+
+def test_project_persists_mixer_fields():
+    pid = client.post("/daw/projects", json={"name": "MixProj"}).json()["id"]
+    data = {"version": 1, "tempo": 120, "master_volume": 0.6,
+            "tracks": [{"id": "t1", "name": "V", "mute": False, "solo": False,
+                        "color": "#fff", "volume": 0.5, "pan": -0.3, "clips": []}]}
+    client.put(f"/daw/projects/{pid}", json={"data": data})
+    got = client.get(f"/daw/projects/{pid}").json()["data"]
+    assert got["master_volume"] == 0.6
+    assert got["tracks"][0]["volume"] == 0.5
+    assert got["tracks"][0]["pan"] == -0.3
