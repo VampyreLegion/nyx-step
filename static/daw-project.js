@@ -30,6 +30,7 @@ async function dawNewProject(name) {
     body: JSON.stringify({ name: name || "Untitled Project" }),
   }).then(r => r.json());
   dawState = { id: r.id, name: r.name, tempo: 120, master_volume: 1.0, tracks: [] };
+  if (typeof dawResetMixerForProject === "function") dawResetMixerForProject();
   dawAddTrack("Track 1");        // start with one empty track
   return r.id;
 }
@@ -42,6 +43,7 @@ async function dawLoadProject(id) {
   dawState = { id: p.id, name: p.name, version: d.version || 1,
                tempo: d.tempo ?? 120, master_volume: d.master_volume ?? 1.0,
                tracks: (d.tracks || []).map(t => ({ volume: 1.0, pan: 0.0, ...t })) };
+  if (typeof dawResetMixerForProject === "function") dawResetMixerForProject();
   if (typeof renderTimeline === "function") renderTimeline();
   _dawSetSaveStatus("✓ saved");
   return true;

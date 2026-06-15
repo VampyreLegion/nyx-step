@@ -143,7 +143,8 @@ function dawStartMeters() {
   _dawMixerOpen = true;
   if (_dawMeterRaf) return;
   const tick = () => {
-    if (!_dawMixerOpen) { _dawMeterRaf = null; return; }
+    const dawActive = document.getElementById("tab-daw")?.classList.contains("active");
+    if (!_dawMixerOpen || !dawActive) { _dawMeterRaf = null; return; }
     for (const t of dawState.tracks) _dawDrawMeter("daw-meter-" + t.id, dawEngineTrackPeak(t.id));
     _dawDrawMeter("daw-meter-master", dawEngineMasterPeak());
     _dawMeterRaf = requestAnimationFrame(tick);
@@ -154,4 +155,11 @@ function dawStartMeters() {
 function dawStopMeters() {
   _dawMixerOpen = false;
   if (_dawMeterRaf) { cancelAnimationFrame(_dawMeterRaf); _dawMeterRaf = null; }
+}
+
+// Called after a project loads/creates: clear stale master-mute so a new project
+// doesn't inherit the previous one's muted master, and re-apply its master volume.
+function dawResetMixerForProject() {
+  _dawMasterMuted = false;
+  if (typeof dawEngineSetMasterVolume === "function") dawEngineSetMasterVolume(dawState.master_volume ?? 1);
 }

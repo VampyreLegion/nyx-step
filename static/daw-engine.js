@@ -56,7 +56,7 @@ function _dawApplyMixState() {
     const chain = _dawTrackChains.get(t.id);
     if (!chain) continue;
     const audible = soloOn ? t.solo : !t.mute;
-    chain.gain.value = audible ? (t.volume ?? 1) : 0;
+    chain.gain.gain.value = audible ? (t.volume ?? 1) : 0;
   }
   if (_dawMaster) _dawMaster.gain.value = dawState.master_volume ?? 1;
 }
@@ -189,7 +189,7 @@ function dawEngineSetTrackVolume(trackId, gain) {
   if (!t || !chain) return;
   const soloOn = dawState.tracks.some(t => t.solo);
   const audible = soloOn ? t.solo : !t.mute;
-  chain.gain.value = audible ? gain : 0;
+  chain.gain.gain.value = audible ? gain : 0;
 }
 
 function dawEngineSetTrackPan(trackId, pan) {

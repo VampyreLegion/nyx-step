@@ -63,7 +63,7 @@ function _dawWireTransport() {
   document.getElementById("daw-delete").addEventListener("click", async () => {
     if (dawState.id == null || !confirm("Delete this project?")) return;
     await dawDeleteProject(dawState.id);
-    dawState = { id: null, name: "Untitled Project", tempo: 120, tracks: [] };
+    dawState = { id: null, name: "Untitled Project", tempo: 120, master_volume: 1.0, tracks: [] };
     await onDawTabOpen();
   });
   document.getElementById("daw-project-select").addEventListener("change", async e => {
