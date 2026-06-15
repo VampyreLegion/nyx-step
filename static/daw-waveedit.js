@@ -45,6 +45,8 @@ function openClipMenu(clip, anchor) {
   m.appendChild(gainRow);
 
   m.appendChild(mkBtn("Reset fades", () => { dawSetClipFadeIn(clip.id, 0); dawSetClipFadeOut(clip.id, 0); }));
+  m.appendChild(mkBtn("🤖 AI Remix…", () => { if (typeof openRemixDialog === "function") openRemixDialog(clip, anchor); }));
+  m.appendChild(mkBtn("🎛 Split to Stems", () => { if (typeof dawSplitToStems === "function") dawSplitToStems(clip); }));
 
   document.body.appendChild(m);
   setTimeout(() => {
