@@ -46,6 +46,7 @@ function _dawWireTransport() {
     if (show) { dawRenderMixer(); dawStartMeters(); }
     else { dawStopMeters(); }
   });
+  document.getElementById("daw-export").addEventListener("click", () => dawExportWav());
   document.getElementById("daw-add-track").addEventListener("click", () => dawAddTrack());
 
   document.getElementById("daw-new").addEventListener("click", async () => {
