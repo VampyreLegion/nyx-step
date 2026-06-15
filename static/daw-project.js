@@ -119,6 +119,7 @@ function dawAddClip(trackId, src, start) {
     id: _dawUid("c"), file: src.file, name: src.name || src.file,
     start: Math.max(0, start || 0), offset: 0,
     duration: dur, source_duration: dur,
+    gain: 1.0, fade_in: 0.0, fade_out: 0.0,
   };
   t.clips.push(clip);
   _dawAfterMutate();
@@ -192,4 +193,64 @@ function dawSetMasterVolume(gain) {
   dawState.master_volume = gain;
   if (typeof dawEngineSetMasterVolume === "function") dawEngineSetMasterVolume(gain);
   dawMarkDirty();
+}
+
+// ── Wave-edit mutations ─────────────────────────────────────────────────────────
+function dawSetClipGain(clipId, gain) {
+  const f = _dawFindClip(clipId);
+  if (!f) return;
+  f.clip.gain = Math.max(0, gain);
+  if (typeof dawRescheduleClips === "function") dawRescheduleClips();
+  _dawAfterMutate();
+}
+
+function dawSetClipFadeIn(clipId, sec) {
+  const f = _dawFindClip(clipId);
+  if (!f) return;
+  const c = f.clip;
+  c.fade_in = Math.min(Math.max(0, sec), c.duration - (c.fade_out ?? 0));
+  if (typeof dawRescheduleClips === "function") dawRescheduleClips();
+  _dawAfterMutate();
+}
+
+function dawSetClipFadeOut(clipId, sec) {
+  const f = _dawFindClip(clipId);
+  if (!f) return;
+  const c = f.clip;
+  c.fade_out = Math.min(Math.max(0, sec), c.duration - (c.fade_in ?? 0));
+  if (typeof dawRescheduleClips === "function") dawRescheduleClips();
+  _dawAfterMutate();
+}
+
+function dawSplitClipAtPlayhead(clipId) {
+  const f = _dawFindClip(clipId);
+  if (!f) return;
+  const { track, clip } = f;
+  const p = (typeof dawGetPlayhead === "function") ? dawGetPlayhead() : 0;
+  if (p <= clip.start || p >= clip.start + clip.duration) return;
+  const leftDur = p - clip.start;
+  const rightDur = clip.duration - leftDur;
+  const gain = clip.gain ?? 1;
+  const left = { ...clip, id: _dawUid("c"), duration: leftDur, gain,
+                 fade_in: Math.min(clip.fade_in ?? 0, leftDur), fade_out: 0 };
+  const right = { ...clip, id: _dawUid("c"), start: p, offset: clip.offset + leftDur,
+                  duration: rightDur, gain, fade_in: 0,
+                  fade_out: Math.min(clip.fade_out ?? 0, rightDur) };
+  const idx = track.clips.findIndex(c => c.id === clipId);
+  track.clips.splice(idx, 1, left, right);
+  if (typeof dawRescheduleClips === "function") dawRescheduleClips();
+  _dawAfterMutate();
+}
+
+async function dawNormalizeClip(clipId) {
+  const f = _dawFindClip(clipId);
+  if (!f) return;
+  const c = f.clip;
+  if (typeof dawGetBuffer === "function") await dawGetBuffer(c.file);
+  const peak = (typeof dawEngineClipPeak === "function") ? dawEngineClipPeak(c.file, c.offset, c.duration) : 0;
+  if (peak > 0) {
+    c.gain = Math.min(8, 1 / peak);   // NORM_CAP = 8 (≈ +18 dB)
+    if (typeof dawRescheduleClips === "function") dawRescheduleClips();
+    _dawAfterMutate();
+  }
 }
