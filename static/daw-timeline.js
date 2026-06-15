@@ -84,7 +84,14 @@ function dawRenderTrackHeaders() {
     btns.appendChild(mk("M", t.mute, () => { dawToggleMute(t.id); dawReschedule(); }, "Mute"));
     btns.appendChild(mk("S", t.solo, () => { dawToggleSolo(t.id); dawReschedule(); }, "Solo"));
     btns.appendChild(mk("✕", false, () => { if (confirm("Remove track?")) dawRemoveTrack(t.id); }, "Remove"));
-    row.appendChild(name); row.appendChild(btns);
+    const vol = document.createElement("input");
+    vol.type = "range"; vol.min = "0"; vol.max = "2"; vol.step = "0.01";
+    vol.value = t.volume ?? 1;
+    vol.id = "daw-inline-vol-" + t.id;
+    vol.title = "Volume";
+    vol.style.cssText = "width:100%;height:12px;margin-top:2px";
+    vol.addEventListener("input", () => dawSetTrackVolume(t.id, parseFloat(vol.value)));
+    row.appendChild(name); row.appendChild(btns); row.appendChild(vol);
     head.appendChild(row);
   }
 }
