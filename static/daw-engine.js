@@ -61,6 +61,53 @@ function _dawApplyMixState() {
   if (_dawMaster) _dawMaster.gain.value = dawState.master_volume ?? 1;
 }
 
+// Linear per-clip gain+fade envelope on a GainNode, in clip-local time (correct mid-clip).
+function _dawScheduleClipEnvelope(cg, when, localStart, playDur, gain, fadeIn, fadeOut) {
+  const dur = localStart + playDur;
+  if (fadeIn + fadeOut > dur && (fadeIn + fadeOut) > 0) {
+    const scale = dur / (fadeIn + fadeOut);
+    fadeIn *= scale; fadeOut *= scale;
+  }
+  const env = (u) => {
+    let f = 1;
+    if (fadeIn > 0 && u < fadeIn) f = u / fadeIn;
+    else if (fadeOut > 0 && u > dur - fadeOut) f = (dur - u) / fadeOut;
+    return gain * Math.max(0, Math.min(1, f));
+  };
+  cg.gain.setValueAtTime(env(localStart), when);
+  const bps = [];
+  if (fadeIn > 0) bps.push(fadeIn);
+  if (fadeOut > 0) bps.push(dur - fadeOut);
+  bps.push(dur);
+  bps.sort((a, b) => a - b);
+  for (const bp of bps) {
+    if (bp > localStart) cg.gain.linearRampToValueAtTime(env(bp), when + (bp - localStart));
+  }
+}
+
+// Peak abs sample across channels over a clip's [offset, offset+dur] window (0 if buffer absent).
+function dawEngineClipPeak(file, offsetSec, durSec) {
+  const buf = _dawBufferCache.get(file);
+  if (!buf || buf === "error") return 0;
+  const sr = buf.sampleRate;
+  const start = Math.max(0, Math.floor(offsetSec * sr));
+  const end = Math.min(buf.length, Math.floor((offsetSec + durSec) * sr));
+  let peak = 0;
+  for (let ch = 0; ch < buf.numberOfChannels; ch++) {
+    const data = buf.getChannelData(ch);
+    for (let i = start; i < end; i++) { const v = Math.abs(data[i]); if (v > peak) peak = v; }
+  }
+  return peak;
+}
+
+// True reschedule — clip edits change envelopes scheduled at clip start.
+function dawRescheduleClips() {
+  if (!_dawIsPlaying) return;
+  _dawPlayhead = _dawStartPlayhead + (_dawCtx.currentTime - _dawStartCtxTime);
+  _dawStopSources();
+  _dawScheduleAll();
+}
+
 async function dawGetBuffer(file) {
   if (_dawBufferCache.has(file)) {
     const v = _dawBufferCache.get(file);
@@ -113,7 +160,11 @@ function _dawScheduleAll() {
       }
       const src = ctx.createBufferSource();
       src.buffer = buf;
-      src.connect(chain.gain);
+      const cg = ctx.createGain();
+      src.connect(cg); cg.connect(chain.gain);
+      const clipLocalStart = (clip.start >= _dawPlayhead) ? 0 : (_dawPlayhead - clip.start);
+      _dawScheduleClipEnvelope(cg, when, clipLocalStart, playDur,
+                               clip.gain ?? 1, clip.fade_in ?? 0, clip.fade_out ?? 0);
       src.start(when, bufOffset, playDur);
       _dawActiveSources.push(src);
     }
