@@ -145,3 +145,18 @@ def test_project_persists_clip_wave_fields():
     client.put(f"/daw/projects/{pid}", json={"data": data})
     c = client.get(f"/daw/projects/{pid}").json()["data"]["tracks"][0]["clips"][0]
     assert c["gain"] == 0.5 and c["fade_in"] == 1.5 and c["fade_out"] == 2.0
+
+
+def test_daw_job_status_endpoint():
+    nyx_step.tracker.register("dawjob1", "dev@local", "gen")
+    nyx_step.tracker.update("dawjob1", status="done", output_files=["g.mp3"])
+    r = client.get("/daw/job/dawjob1")
+    assert r.status_code == 200
+    d = r.json()
+    assert d["status"] == "done"
+    assert d["files"] == ["g.mp3"]
+
+    assert client.get("/daw/job/nope-xyz").status_code == 404
+
+    nyx_step.tracker.register("dawjob2", "other@x.com", "gen")
+    assert client.get("/daw/job/dawjob2").status_code == 404

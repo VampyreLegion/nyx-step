@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 import config
 import core.db as db
-from nyx_step import get_user_email
+from nyx_step import get_user_email, tracker
 from routes.download import safe_output_path
 
 router = APIRouter(prefix="/daw")
@@ -126,6 +126,17 @@ def _user_owns_daw_file(user: str, filename: str) -> bool:
                 if f.rsplit(".", 1)[0] == song_folder:
                     return True
     return False
+
+
+@router.get("/job/{prompt_id}")
+async def job_status(prompt_id: str, request: Request):
+    user = get_user_email(request)
+    if not tracker.user_owns(user, prompt_id):
+        return JSONResponse({"error": "Not found"}, status_code=404)
+    job = tracker.get(prompt_id)
+    if not job:
+        return JSONResponse({"error": "Not found"}, status_code=404)
+    return {"status": job.status, "files": job.output_files, "error": job.error_msg}
 
 
 @router.get("/audio/{file:path}")
