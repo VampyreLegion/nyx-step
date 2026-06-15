@@ -132,3 +132,16 @@ def test_project_persists_mixer_fields():
     assert got["master_volume"] == 0.6
     assert got["tracks"][0]["volume"] == 0.5
     assert got["tracks"][0]["pan"] == -0.3
+
+
+def test_project_persists_clip_wave_fields():
+    pid = client.post("/daw/projects", json={"name": "WaveProj"}).json()["id"]
+    data = {"version": 1, "tempo": 120, "master_volume": 1.0,
+            "tracks": [{"id": "t1", "name": "V", "mute": False, "solo": False, "color": "#fff",
+                        "volume": 1.0, "pan": 0.0,
+                        "clips": [{"id": "c1", "file": "x.mp3", "name": "x", "start": 0, "offset": 0,
+                                   "duration": 10, "source_duration": 10,
+                                   "gain": 0.5, "fade_in": 1.5, "fade_out": 2.0}]}]}
+    client.put(f"/daw/projects/{pid}", json={"data": data})
+    c = client.get(f"/daw/projects/{pid}").json()["data"]["tracks"][0]["clips"][0]
+    assert c["gain"] == 0.5 and c["fade_in"] == 1.5 and c["fade_out"] == 2.0
