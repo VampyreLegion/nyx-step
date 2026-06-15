@@ -39,6 +39,13 @@ function _dawWireTransport() {
   });
   document.getElementById("daw-zoom-in").addEventListener("click", () => dawZoom(1.4));
   document.getElementById("daw-zoom-out").addEventListener("click", () => dawZoom(1 / 1.4));
+  document.getElementById("daw-mixer-toggle").addEventListener("click", () => {
+    const panel = document.getElementById("daw-mixer-panel");
+    const show = panel.style.display === "none" || !panel.style.display;
+    panel.style.display = show ? "block" : "none";
+    if (show) { dawRenderMixer(); dawStartMeters(); }
+    else { dawStopMeters(); }
+  });
   document.getElementById("daw-add-track").addEventListener("click", () => dawAddTrack());
 
   document.getElementById("daw-new").addEventListener("click", async () => {

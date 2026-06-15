@@ -2032,6 +2032,7 @@
         <span style="width:1px;height:18px;background:#2d3041"></span>
         <button class="secondary small" id="daw-zoom-out">🔍−</button>
         <button class="secondary small" id="daw-zoom-in">🔍+</button>
+        <button class="secondary small" id="daw-mixer-toggle" title="Show/hide mixer">🎚 Mixer</button>
         <span id="daw-save-status" style="font-size:11px;color:var(--muted);margin-left:auto">—</span>
       </div>
       <div id="daw-arranger" style="display:flex;border:1px solid #2d3041;border-top:none;height:420px;overflow:hidden">
@@ -2052,6 +2053,10 @@
           <button class="secondary small" id="daw-lib-refresh">↻</button>
         </div>
         <div id="daw-lib-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+      <div id="daw-mixer-panel" style="display:none;border:1px solid #2d3041;border-top:none;border-radius:0 0 6px 6px;padding:8px;background:#101218">
+        <strong style="font-size:12px;color:#00d4b6;display:block;margin-bottom:6px">🎚 Mixer</strong>
+        <div id="daw-mixer-strips"></div>
       </div>
     </div>
   </div>
@@ -2107,11 +2112,12 @@
 <script src="/static/dropzone.js?v=1"></script>
 <script src="/static/tabs.js?v=4"></script>
 <script src="/static/video.js?v=2"></script>
-<script src="/static/daw-project.js?v=3"></script>
-<script src="/static/daw-engine.js?v=3"></script>
+<script src="/static/daw-project.js?v=4"></script>
+<script src="/static/daw-engine.js?v=4"></script>
 <script src="/static/daw-library.js?v=2"></script>
-<script src="/static/daw-timeline.js?v=3"></script>
-<script src="/static/daw.js?v=3"></script>
+<script src="/static/daw-timeline.js?v=4"></script>
+<script src="/static/daw-mixer.js?v=1"></script>
+<script src="/static/daw.js?v=4"></script>
 <script src="/static/init.js?v=2"></script>
 </body>
 </html>

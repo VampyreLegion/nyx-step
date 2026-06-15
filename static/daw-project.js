@@ -10,6 +10,7 @@ function _dawUid(prefix) { return prefix + Math.random().toString(36).slice(2, 9
 
 function _dawAfterMutate() {
   if (typeof renderTimeline === "function") renderTimeline();
+  if (typeof dawRenderMixerIfOpen === "function") dawRenderMixerIfOpen();
   dawMarkDirty();
 }
 
