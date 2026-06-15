@@ -217,7 +217,7 @@ async function dawSplitToStems(clip) {
     try {
       if (errored || failed) { _dawSetSaveStatus("Stem split failed"); return; }
       for (const t of ["vocals", "drums", "bass", "other"]) {
-        const f = "separated/htdemucs/" + base + "/" + t + ".wav";
+        const f = "separated/htdemucs/" + base + "/" + t + ".mp3";
         const buf = await dawGetBuffer(f);
         if (!buf) continue;
         dawAddTrack(clip.name.slice(0, 14) + " — " + t);
