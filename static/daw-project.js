@@ -1,7 +1,7 @@
 // ── DAW project state + persistence ───────────────────────────────────────────
 // dawState is the in-memory current arrangement. Mutations update it, trigger a
 // re-render, and schedule a debounced autosave.
-let dawState = { id: null, name: "Untitled Project", tempo: 120, tracks: [] };
+let dawState = { id: null, name: "Untitled Project", tempo: 120, master_volume: 1.0, tracks: [] };
 
 const _TRACK_COLORS = ["#7c65d9", "#00d4b6", "#e0884f", "#4caf50", "#e05f8a", "#3f9fe0", "#c9a227"];
 let _dawSaveTimer = null;
@@ -28,7 +28,7 @@ async function dawNewProject(name) {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: name || "Untitled Project" }),
   }).then(r => r.json());
-  dawState = { id: r.id, name: r.name, tempo: 120, tracks: [] };
+  dawState = { id: r.id, name: r.name, tempo: 120, master_volume: 1.0, tracks: [] };
   dawAddTrack("Track 1");        // start with one empty track
   return r.id;
 }
@@ -39,7 +39,8 @@ async function dawLoadProject(id) {
   // Explicit fields — don't spread p.data (it could carry an id/name and clobber identity)
   const d = p.data || {};
   dawState = { id: p.id, name: p.name, version: d.version || 1,
-               tempo: d.tempo ?? 120, tracks: d.tracks || [] };
+               tempo: d.tempo ?? 120, master_volume: d.master_volume ?? 1.0,
+               tracks: (d.tracks || []).map(t => ({ volume: 1.0, pan: 0.0, ...t })) };
   if (typeof renderTimeline === "function") renderTimeline();
   _dawSetSaveStatus("✓ saved");
   return true;
@@ -57,7 +58,7 @@ function dawMarkDirty() {
 
 async function dawSaveNow() {
   if (dawState.id == null) return;
-  const data = { version: 1, tempo: dawState.tempo, tracks: dawState.tracks };
+  const data = { version: 1, tempo: dawState.tempo, master_volume: dawState.master_volume, tracks: dawState.tracks };
   try {
     const r = await fetch("/daw/projects/" + dawState.id, {
       method: "PUT", headers: { "Content-Type": "application/json" },
@@ -72,7 +73,8 @@ function dawAddTrack(name) {
   const i = dawState.tracks.length;
   dawState.tracks.push({
     id: _dawUid("t"), name: name || ("Track " + (i + 1)),
-    mute: false, solo: false, color: _TRACK_COLORS[i % _TRACK_COLORS.length], clips: [],
+    mute: false, solo: false, color: _TRACK_COLORS[i % _TRACK_COLORS.length],
+    volume: 1.0, pan: 0.0, clips: [],
   });
   _dawAfterMutate();
 }
@@ -163,4 +165,28 @@ function dawArrangementLength() {
   for (const t of dawState.tracks)
     for (const c of t.clips) max = Math.max(max, c.start + c.duration);
   return max;
+}
+
+// ── Mixer mutations ─────────────────────────────────────────────────────────────
+function dawSetTrackVolume(trackId, gain) {
+  const t = dawState.tracks.find(t => t.id === trackId);
+  if (!t) return;
+  t.volume = gain;
+  if (typeof dawEngineSetTrackVolume === "function") dawEngineSetTrackVolume(trackId, gain);
+  if (typeof dawReflectVolume === "function") dawReflectVolume(trackId, gain);
+  dawMarkDirty();
+}
+
+function dawSetTrackPan(trackId, pan) {
+  const t = dawState.tracks.find(t => t.id === trackId);
+  if (!t) return;
+  t.pan = pan;
+  if (typeof dawEngineSetTrackPan === "function") dawEngineSetTrackPan(trackId, pan);
+  dawMarkDirty();
+}
+
+function dawSetMasterVolume(gain) {
+  dawState.master_volume = gain;
+  if (typeof dawEngineSetMasterVolume === "function") dawEngineSetMasterVolume(gain);
+  dawMarkDirty();
 }
