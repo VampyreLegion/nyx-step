@@ -45,6 +45,24 @@ function _dawDrawClipWave(canvas, clip, color) {
   ctx.globalAlpha = 1;
 }
 
+function _dawDrawClipFades(canvas, clip) {
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  const fi = (clip.fade_in ?? 0) * _dawPxPerSec;
+  const fo = (clip.fade_out ?? 0) * _dawPxPerSec;
+  ctx.strokeStyle = "#e2e4ed"; ctx.fillStyle = "rgba(0,212,182,0.18)"; ctx.lineWidth = 1;
+  if (fi > 0) {
+    const x = Math.min(fi, w);
+    ctx.beginPath(); ctx.moveTo(0, h); ctx.lineTo(x, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(x, 0); ctx.lineTo(0, h); ctx.closePath(); ctx.fill();
+  }
+  if (fo > 0) {
+    const x = Math.max(0, w - fo);
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(w, h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(w, 0); ctx.lineTo(w, h); ctx.closePath(); ctx.fill();
+  }
+}
+
 function _dawDrawRuler() {
   const canvas = document.getElementById("daw-ruler");
   const w = _dawTimelineWidth();
@@ -135,10 +153,28 @@ function _dawBuildClipEl(track, clip) {
   canvas.style.cssText = "display:block;width:100%;pointer-events:none";
   el.appendChild(label); el.appendChild(canvas);
   _dawDrawClipWave(canvas, clip, track.color);
+  _dawDrawClipFades(canvas, clip);
 
   const handle = document.createElement("div");
-  handle.style.cssText = "position:absolute;right:0;top:0;width:6px;height:100%;cursor:ew-resize;background:linear-gradient(90deg,transparent,#00d4b6)";
+  handle.style.cssText = "position:absolute;right:0;top:10px;height:calc(100% - 10px);width:6px;cursor:ew-resize;background:linear-gradient(90deg,transparent,#00d4b6)";
   el.appendChild(handle);
+
+  const fiH = document.createElement("div");
+  fiH.title = "Fade in";
+  fiH.style.cssText = "position:absolute;left:0;top:0;width:9px;height:9px;cursor:ew-resize;background:#00d4b6;opacity:0.85;border-radius:0 0 6px 0;z-index:2";
+  const foH = document.createElement("div");
+  foH.title = "Fade out";
+  foH.style.cssText = "position:absolute;right:0;top:0;width:9px;height:9px;cursor:ew-resize;background:#00d4b6;opacity:0.85;border-radius:0 0 0 6px;z-index:2";
+  el.appendChild(fiH); el.appendChild(foH);
+  _dawWireFadeHandles(fiH, foH, el, clip);
+
+  const menuBtn = document.createElement("div");
+  menuBtn.textContent = "⋯"; menuBtn.title = "Clip actions";
+  menuBtn.style.cssText = "position:absolute;right:14px;top:0;font-size:11px;line-height:11px;color:#e2e4ed;cursor:pointer;padding:0 3px;z-index:2;background:rgba(0,0,0,0.35);border-radius:2px";
+  menuBtn.addEventListener("mousedown", e => e.stopPropagation());
+  menuBtn.addEventListener("click", e => { e.stopPropagation(); if (typeof openClipMenu === "function") openClipMenu(clip, menuBtn); });
+  el.appendChild(menuBtn);
+  el.addEventListener("contextmenu", e => { e.preventDefault(); if (typeof openClipMenu === "function") openClipMenu(clip, menuBtn); });
 
   _dawWireClipDrag(el, handle, track, clip);
   return el;
@@ -174,6 +210,23 @@ function _dawWireClipDrag(el, handle, track, clip) {
     const onUp = () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
     document.addEventListener("mousemove", onMove); document.addEventListener("mouseup", onUp);
     e.stopPropagation(); e.preventDefault();
+  });
+}
+
+function _dawWireFadeHandles(fiH, foH, el, clip) {
+  fiH.addEventListener("mousedown", e => {
+    e.stopPropagation(); e.preventDefault();
+    const rect = el.getBoundingClientRect();
+    const onMove = m => dawSetClipFadeIn(clip.id, Math.max(0, (m.clientX - rect.left) / _dawPxPerSec));
+    const onUp = () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
+    document.addEventListener("mousemove", onMove); document.addEventListener("mouseup", onUp);
+  });
+  foH.addEventListener("mousedown", e => {
+    e.stopPropagation(); e.preventDefault();
+    const rect = el.getBoundingClientRect();
+    const onMove = m => dawSetClipFadeOut(clip.id, Math.max(0, (rect.right - m.clientX) / _dawPxPerSec));
+    const onUp = () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
+    document.addEventListener("mousemove", onMove); document.addEventListener("mouseup", onUp);
   });
 }
 
