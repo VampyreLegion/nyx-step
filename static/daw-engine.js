@@ -26,12 +26,68 @@ function _dawEnsureCtx() {
   return _dawCtx;
 }
 
+function _dawImpulse(ctx, seconds = 2, decay = 2.5) {
+  const len = Math.floor(ctx.sampleRate * seconds);
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+  }
+  return buf;
+}
+function _dawMakeEq(ctx) {
+  const low = ctx.createBiquadFilter(); low.type = "lowshelf"; low.frequency.value = 320;
+  const mid = ctx.createBiquadFilter(); mid.type = "peaking"; mid.frequency.value = 1000; mid.Q.value = 1;
+  const high = ctx.createBiquadFilter(); high.type = "highshelf"; high.frequency.value = 3200;
+  low.connect(mid); mid.connect(high);
+  return { input: low, output: high, low, mid, high };
+}
+function _dawMakeReverb(ctx) {
+  const input = ctx.createGain(), output = ctx.createGain();
+  const dry = ctx.createGain(); dry.gain.value = 1;
+  const conv = ctx.createConvolver(); conv.buffer = _dawImpulse(ctx);
+  const wet = ctx.createGain(); wet.gain.value = 0;
+  input.connect(dry); dry.connect(output);
+  input.connect(conv); conv.connect(wet); wet.connect(output);
+  return { input, output, wet, dry, conv };
+}
+function _dawMakeDelay(ctx) {
+  const input = ctx.createGain(), output = ctx.createGain();
+  const dry = ctx.createGain(); dry.gain.value = 1;
+  const delay = ctx.createDelay(2.0); delay.delayTime.value = 0.3;
+  const fb = ctx.createGain(); fb.gain.value = 0;
+  const wet = ctx.createGain(); wet.gain.value = 0;
+  input.connect(dry); dry.connect(output);
+  input.connect(delay); delay.connect(wet); wet.connect(output);
+  delay.connect(fb); fb.connect(delay);
+  return { input, output, delay, fb, wet, dry };
+}
+
+function dawEngineSetTrackFx(trackId, fx) {
+  const chain = _dawTrackChains.get(trackId);
+  if (!chain || !chain.eq) return;
+  fx = fx || {};
+  const eq = fx.eq || {}, rv = fx.reverb || {}, dl = fx.delay || {};
+  chain.eq.low.gain.value  = eq.on ? (eq.low ?? 0) : 0;
+  chain.eq.mid.gain.value  = eq.on ? (eq.mid ?? 0) : 0;
+  chain.eq.high.gain.value = eq.on ? (eq.high ?? 0) : 0;
+  chain.reverb.wet.gain.value = rv.on ? (rv.wet ?? 0.3) : 0;
+  chain.delay.delay.delayTime.value = dl.time ?? 0.3;
+  chain.delay.fb.gain.value  = dl.on ? (dl.feedback ?? 0.3) : 0;
+  chain.delay.wet.gain.value = dl.on ? (dl.wet ?? 0.3) : 0;
+}
+
 function _dawSyncChains() {
   const ctx = _dawEnsureCtx();
   const ids = new Set(dawState.tracks.map(t => t.id));
   for (const [id, chain] of _dawTrackChains) {
     if (!ids.has(id)) {
-      try { chain.gain.disconnect(); chain.pan.disconnect(); chain.analyser.disconnect(); } catch (_) {}
+      try {
+        chain.gain.disconnect(); chain.pan.disconnect(); chain.analyser.disconnect();
+        if (chain.eq) { chain.eq.low.disconnect(); chain.eq.mid.disconnect(); chain.eq.high.disconnect(); }
+        if (chain.reverb) { chain.reverb.input.disconnect(); chain.reverb.dry.disconnect(); chain.reverb.conv.disconnect(); chain.reverb.wet.disconnect(); chain.reverb.output.disconnect(); }
+        if (chain.delay) { chain.delay.input.disconnect(); chain.delay.dry.disconnect(); chain.delay.delay.disconnect(); chain.delay.fb.disconnect(); chain.delay.wet.disconnect(); chain.delay.output.disconnect(); }
+      } catch (_) {}
       _dawTrackChains.delete(id);
     }
   }
@@ -39,14 +95,22 @@ function _dawSyncChains() {
     let chain = _dawTrackChains.get(t.id);
     if (!chain) {
       const gain = ctx.createGain();
+      const eq = _dawMakeEq(ctx);
+      const reverb = _dawMakeReverb(ctx);
+      const delay = _dawMakeDelay(ctx);
       const pan = ctx.createStereoPanner();
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 256;
-      gain.connect(pan); pan.connect(analyser); analyser.connect(_dawMaster);
-      chain = { gain, pan, analyser };
+      gain.connect(eq.input);
+      eq.output.connect(reverb.input);
+      reverb.output.connect(delay.input);
+      delay.output.connect(pan);
+      pan.connect(analyser); analyser.connect(_dawMaster);
+      chain = { gain, pan, analyser, eq, reverb, delay };
       _dawTrackChains.set(t.id, chain);
     }
     chain.pan.pan.value = t.pan ?? 0;
+    dawEngineSetTrackFx(t.id, t.fx);
   }
 }
 
