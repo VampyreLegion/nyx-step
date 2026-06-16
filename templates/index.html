@@ -2034,6 +2034,7 @@
         <button class="secondary small" id="daw-zoom-in">🔍+</button>
         <button class="secondary small" id="daw-mixer-toggle" title="Show/hide mixer">🎚 Mixer</button>
         <button class="secondary small" id="daw-export" title="Render the arrangement to a WAV file">⬇ Export WAV</button>
+        <button class="secondary small" id="daw-session-toggle" title="Show/hide session looper grid">🎛 Session</button>
         <span id="daw-save-status" style="font-size:11px;color:var(--muted);margin-left:auto">—</span>
       </div>
       <div id="daw-arranger" style="display:flex;border:1px solid #2d3041;border-top:none;height:420px;overflow:hidden">
@@ -2058,6 +2059,14 @@
       <div id="daw-mixer-panel" style="display:none;border:1px solid #2d3041;border-top:none;border-radius:0 0 6px 6px;padding:8px;background:#101218">
         <strong style="font-size:12px;color:#00d4b6;display:block;margin-bottom:6px">🎚 Mixer</strong>
         <div id="daw-mixer-strips"></div>
+      </div>
+      <div id="daw-session-panel" style="display:none;border:1px solid #2d3041;border-top:none;border-radius:0 0 6px 6px;padding:8px;background:#101218">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <strong style="font-size:12px;color:#00d4b6">🎛 Session</strong>
+          <button class="secondary small" id="daw-session-stopall" style="font-size:11px">⏹ Stop All</button>
+          <button class="secondary small" id="daw-session-addscene" style="font-size:11px">+ Scene</button>
+        </div>
+        <div id="daw-session-grid"></div>
       </div>
     </div>
   </div>
@@ -2113,15 +2122,16 @@
 <script src="/static/dropzone.js?v=1"></script>
 <script src="/static/tabs.js?v=4"></script>
 <script src="/static/video.js?v=2"></script>
-<script src="/static/daw-project.js?v=6"></script>
-<script src="/static/daw-engine.js?v=6"></script>
+<script src="/static/daw-project.js?v=7"></script>
+<script src="/static/daw-engine.js?v=7"></script>
 <script src="/static/daw-library.js?v=2"></script>
 <script src="/static/daw-timeline.js?v=6"></script>
-<script src="/static/daw-mixer.js?v=2"></script>
+<script src="/static/daw-mixer.js?v=3"></script>
 <script src="/static/daw-waveedit.js?v=2"></script>
 <script src="/static/daw-export.js?v=1"></script>
 <script src="/static/daw-ai.js?v=3"></script>
-<script src="/static/daw.js?v=6"></script>
+<script src="/static/daw-session.js?v=1"></script>
+<script src="/static/daw.js?v=7"></script>
 <script src="/static/init.js?v=2"></script>
 </body>
 </html>

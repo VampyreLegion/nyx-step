@@ -47,6 +47,15 @@ function _dawWireTransport() {
     else { dawStopMeters(); }
   });
   document.getElementById("daw-export").addEventListener("click", () => dawExportWav());
+  document.getElementById("daw-session-toggle").addEventListener("click", () => {
+    const panel = document.getElementById("daw-session-panel");
+    const show = panel.style.display === "none" || !panel.style.display;
+    panel.style.display = show ? "block" : "none";
+    if (show) { _dawSessionOpen = true; dawRenderSession(); }
+    else { _dawSessionOpen = false; }
+  });
+  document.getElementById("daw-session-stopall").addEventListener("click", () => dawStopAllCells());
+  document.getElementById("daw-session-addscene").addEventListener("click", () => dawAddScene());
   document.getElementById("daw-add-track").addEventListener("click", () => dawAddTrack());
 
   document.getElementById("daw-new").addEventListener("click", async () => {
