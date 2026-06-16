@@ -1,16 +1,29 @@
 // ── DAW project state + persistence ───────────────────────────────────────────
 // dawState is the in-memory current arrangement. Mutations update it, trigger a
 // re-render, and schedule a debounced autosave.
-let dawState = { id: null, name: "Untitled Project", tempo: 120, master_volume: 1.0, tracks: [] };
+let dawState = { id: null, name: "Untitled Project", tempo: 120, master_volume: 1.0, scenes: 4, tracks: [] };
 
 const _TRACK_COLORS = ["#7c65d9", "#00d4b6", "#e0884f", "#4caf50", "#e05f8a", "#3f9fe0", "#c9a227"];
 let _dawSaveTimer = null;
 
 function _dawUid(prefix) { return prefix + Math.random().toString(36).slice(2, 9); }
 
+function _dawDefaultFx() {
+  return { eq: { on: false, low: 0, mid: 0, high: 0 },
+           reverb: { on: false, wet: 0.3 },
+           delay: { on: false, time: 0.3, feedback: 0.3, wet: 0.3 } };
+}
+
+function _dawNormCells(cells, n) {
+  const out = [];
+  for (let i = 0; i < n; i++) out.push((cells && cells[i]) || null);
+  return out;
+}
+
 function _dawAfterMutate() {
   if (typeof renderTimeline === "function") renderTimeline();
   if (typeof dawRenderMixerIfOpen === "function") dawRenderMixerIfOpen();
+  if (typeof dawRenderSessionIfOpen === "function") dawRenderSessionIfOpen();
   dawMarkDirty();
 }
 
@@ -29,7 +42,7 @@ async function dawNewProject(name) {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: name || "Untitled Project" }),
   }).then(r => r.json());
-  dawState = { id: r.id, name: r.name, tempo: 120, master_volume: 1.0, tracks: [] };
+  dawState = { id: r.id, name: r.name, tempo: 120, master_volume: 1.0, scenes: 4, tracks: [] };
   if (typeof dawResetMixerForProject === "function") dawResetMixerForProject();
   dawAddTrack("Track 1");        // start with one empty track
   return r.id;
@@ -40,9 +53,15 @@ async function dawLoadProject(id) {
   if (p.error) return false;
   // Explicit fields — don't spread p.data (it could carry an id/name and clobber identity)
   const d = p.data || {};
+  const scenes = d.scenes ?? 4;
   dawState = { id: p.id, name: p.name, version: d.version || 1,
-               tempo: d.tempo ?? 120, master_volume: d.master_volume ?? 1.0,
-               tracks: (d.tracks || []).map(t => ({ volume: 1.0, pan: 0.0, ...t })) };
+               tempo: d.tempo ?? 120, master_volume: d.master_volume ?? 1.0, scenes,
+               tracks: (d.tracks || []).map(t => {
+                 const tt = { volume: 1.0, pan: 0.0, ...t };
+                 tt.fx = t.fx || _dawDefaultFx();
+                 tt.cells = _dawNormCells(t.cells, scenes);
+                 return tt;
+               }) };
   if (typeof dawResetMixerForProject === "function") dawResetMixerForProject();
   if (typeof renderTimeline === "function") renderTimeline();
   _dawSetSaveStatus("✓ saved");
@@ -61,7 +80,7 @@ function dawMarkDirty() {
 
 async function dawSaveNow() {
   if (dawState.id == null) return;
-  const data = { version: 1, tempo: dawState.tempo, master_volume: dawState.master_volume, tracks: dawState.tracks };
+  const data = { version: 1, tempo: dawState.tempo, master_volume: dawState.master_volume, scenes: dawState.scenes, tracks: dawState.tracks };
   try {
     const r = await fetch("/daw/projects/" + dawState.id, {
       method: "PUT", headers: { "Content-Type": "application/json" },
@@ -78,6 +97,7 @@ function dawAddTrack(name) {
     id: _dawUid("t"), name: name || ("Track " + (i + 1)),
     mute: false, solo: false, color: _TRACK_COLORS[i % _TRACK_COLORS.length],
     volume: 1.0, pan: 0.0, clips: [],
+    fx: _dawDefaultFx(), cells: _dawNormCells([], dawState.scenes ?? 4),
   });
   _dawAfterMutate();
 }
@@ -253,4 +273,29 @@ async function dawNormalizeClip(clipId) {
     if (typeof dawRescheduleClips === "function") dawRescheduleClips();
     _dawAfterMutate();
   }
+}
+
+// ── FX + session mutations ──────────────────────────────────────────────────────
+function dawSetTrackFx(trackId, fx) {
+  const t = dawState.tracks.find(t => t.id === trackId);
+  if (!t) return;
+  t.fx = fx;
+  if (typeof dawEngineSetTrackFx === "function") dawEngineSetTrackFx(trackId, fx);
+  if (typeof dawRenderMixerIfOpen === "function") dawRenderMixerIfOpen();
+  dawMarkDirty();
+}
+
+function dawSetCell(trackId, sceneIdx, ref) {
+  const t = dawState.tracks.find(t => t.id === trackId);
+  if (!t || !t.cells) return;
+  t.cells[sceneIdx] = ref;
+  if (typeof dawRenderSessionIfOpen === "function") dawRenderSessionIfOpen();
+  dawMarkDirty();
+}
+
+function dawAddScene() {
+  dawState.scenes = (dawState.scenes ?? 4) + 1;
+  for (const t of dawState.tracks) { (t.cells = t.cells || []).push(null); }
+  if (typeof dawRenderSessionIfOpen === "function") dawRenderSessionIfOpen();
+  dawMarkDirty();
 }
