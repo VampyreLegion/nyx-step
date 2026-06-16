@@ -71,6 +71,9 @@ function _dawStrip(track) {
   };
   btns.appendChild(mk("M", track.mute, () => { dawToggleMute(track.id); dawReschedule(); dawRenderMixer(); }));
   btns.appendChild(mk("S", track.solo, () => { dawToggleSolo(track.id); dawReschedule(); dawRenderMixer(); }));
+  const fxOn = !!(track.fx && (track.fx.eq?.on || track.fx.reverb?.on || track.fx.delay?.on));
+  const fxBtn = mk("FX", fxOn, () => openFxPanel(track.id, fxBtn));
+  btns.appendChild(fxBtn);
 
   strip.appendChild(name); strip.appendChild(meterRow);
   strip.appendChild(dbLab); strip.appendChild(pan); strip.appendChild(btns);
@@ -162,4 +165,66 @@ function dawStopMeters() {
 function dawResetMixerForProject() {
   _dawMasterMuted = false;
   if (typeof dawEngineSetMasterVolume === "function") dawEngineSetMasterVolume(dawState.master_volume ?? 1);
+}
+
+let _dawFxPanelEl = null;
+function _dawCloseFxPanel() {
+  if (!_dawFxPanelEl) return;
+  _dawFxPanelEl.remove(); _dawFxPanelEl = null;
+  document.removeEventListener("mousedown", _dawFxOutside);
+  document.removeEventListener("keydown", _dawFxEsc);
+}
+function _dawFxOutside(e) { if (_dawFxPanelEl && !_dawFxPanelEl.contains(e.target)) _dawCloseFxPanel(); }
+function _dawFxEsc(e) { if (e.key === "Escape") _dawCloseFxPanel(); }
+
+function openFxPanel(trackId, anchor) {
+  _dawCloseFxPanel();
+  const track = dawState.tracks.find(t => t.id === trackId);
+  if (!track) return;
+  const fx = track.fx || { eq: {}, reverb: {}, delay: {} };
+  const m = document.createElement("div");
+  _dawFxPanelEl = m;
+  m.style.cssText = "position:fixed;z-index:1000;background:#15171f;border:1px solid #2d3041;border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:210px;box-shadow:0 4px 16px rgba(0,0,0,0.5)";
+  const r = anchor.getBoundingClientRect();
+  m.style.left = Math.min(r.left, window.innerWidth - 230) + "px";
+  m.style.top = (r.bottom + 4) + "px";
+
+  const apply = () => dawSetTrackFx(trackId, fx);
+  const header = (label, key) => {
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;gap:6px;font-size:11px;color:#00d4b6;font-weight:bold";
+    const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!fx[key].on;
+    cb.addEventListener("change", () => { fx[key].on = cb.checked; apply(); });
+    const sp = document.createElement("span"); sp.textContent = label;
+    row.appendChild(cb); row.appendChild(sp);
+    return row;
+  };
+  const slider = (label, key, prop, min, max, step) => {
+    const row = document.createElement("label");
+    row.style.cssText = "font-size:10px;color:#e2e4ed;display:flex;align-items:center;gap:6px;justify-content:space-between";
+    const sp = document.createElement("span"); sp.textContent = label;
+    const inp = document.createElement("input");
+    inp.type = "range"; inp.min = min; inp.max = max; inp.step = step;
+    inp.value = fx[key][prop] ?? 0; inp.style.cssText = "width:110px";
+    inp.addEventListener("input", () => { fx[key][prop] = parseFloat(inp.value); apply(); });
+    row.appendChild(sp); row.appendChild(inp);
+    return row;
+  };
+
+  m.appendChild(header("EQ", "eq"));
+  m.appendChild(slider("Low dB", "eq", "low", -12, 12, 0.5));
+  m.appendChild(slider("Mid dB", "eq", "mid", -12, 12, 0.5));
+  m.appendChild(slider("High dB", "eq", "high", -12, 12, 0.5));
+  m.appendChild(header("Reverb", "reverb"));
+  m.appendChild(slider("Wet", "reverb", "wet", 0, 1, 0.01));
+  m.appendChild(header("Delay", "delay"));
+  m.appendChild(slider("Time s", "delay", "time", 0, 1, 0.01));
+  m.appendChild(slider("Feedback", "delay", "feedback", 0, 0.9, 0.01));
+  m.appendChild(slider("Wet", "delay", "wet", 0, 1, 0.01));
+
+  document.body.appendChild(m);
+  setTimeout(() => {
+    document.addEventListener("mousedown", _dawFxOutside);
+    document.addEventListener("keydown", _dawFxEsc);
+  }, 0);
 }
