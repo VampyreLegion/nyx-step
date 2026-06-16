@@ -216,6 +216,7 @@ async function dawSplitToStems(clip) {
     es.close();
     try {
       if (errored || failed) { _dawSetSaveStatus("Stem split failed"); return; }
+      let added = 0;
       for (const t of ["vocals", "drums", "bass", "other"]) {
         const f = "separated/htdemucs/" + base + "/" + t + ".mp3";
         const buf = await dawGetBuffer(f);
@@ -223,13 +224,16 @@ async function dawSplitToStems(clip) {
         dawAddTrack(clip.name.slice(0, 14) + " — " + t);
         const newId = dawState.tracks[dawState.tracks.length - 1].id;
         dawAddClip(newId, { file: f, name: t, source_duration: buf.duration }, clip.start);
+        added++;
       }
+      if (!added) { _dawSetSaveStatus("Stem split failed — no stems produced"); return; }
       if (!track.mute) dawToggleMute(track.id);
+      dawMarkDirty();                          // autosave only on success
       _dawSetSaveStatus("Stems ready ✓");
     } catch (e) {
       _dawSetSaveStatus("Stem split failed: " + e.message);
     } finally {
-      _dawGenTracks.delete(track.id); renderTimeline(); dawMarkDirty();
+      _dawGenTracks.delete(track.id); renderTimeline();   // no dawMarkDirty here — keeps failure status visible
     }
   };
 
