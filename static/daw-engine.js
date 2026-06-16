@@ -332,3 +332,44 @@ function dawEngineTrackPeak(trackId) {
 function dawEngineMasterPeak() {
   return _dawMasterAnalyser ? _dawAnalyserPeak(_dawMasterAnalyser) : 0;
 }
+
+// ── Session grid looper (free-launch loops through track chains) ───────────────
+const _dawGridActive = new Map();   // trackId → { src, sceneIdx }
+
+async function dawLaunchCell(trackId, sceneIdx) {
+  const track = dawState.tracks.find(t => t.id === trackId);
+  if (!track || !track.cells) return;
+  const ref = track.cells[sceneIdx];
+  if (!ref) return;
+  const ctx = _dawEnsureCtx();
+  if (ctx.state === "suspended") await ctx.resume();
+  _dawSyncChains(); _dawApplyMixState();
+  dawStopCell(trackId);                       // one active cell per column
+  const buf = await dawGetBuffer(ref.file);
+  if (!buf) return;
+  const chain = _dawTrackChains.get(trackId);
+  if (!chain) return;
+  const src = ctx.createBufferSource();
+  src.buffer = buf; src.loop = true;
+  src.connect(chain.gain);
+  src.start();
+  _dawGridActive.set(trackId, { src, sceneIdx });
+  if (typeof dawRenderSessionIfOpen === "function") dawRenderSessionIfOpen();
+}
+
+function dawStopCell(trackId) {
+  const a = _dawGridActive.get(trackId);
+  if (a) { try { a.src.stop(); } catch (_) {} _dawGridActive.delete(trackId); }
+  if (typeof dawRenderSessionIfOpen === "function") dawRenderSessionIfOpen();
+}
+
+function dawStopAllCells() {
+  for (const [, a] of _dawGridActive) { try { a.src.stop(); } catch (_) {} }
+  _dawGridActive.clear();
+  if (typeof dawRenderSessionIfOpen === "function") dawRenderSessionIfOpen();
+}
+
+function dawCellActive(trackId) {
+  const a = _dawGridActive.get(trackId);
+  return a ? a.sceneIdx : -1;
+}
