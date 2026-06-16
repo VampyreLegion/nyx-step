@@ -160,3 +160,22 @@ def test_daw_job_status_endpoint():
 
     nyx_step.tracker.register("dawjob2", "other@x.com", "gen")
     assert client.get("/daw/job/dawjob2").status_code == 404
+
+
+def test_project_persists_fx_and_session():
+    pid = client.post("/daw/projects", json={"name": "P6"}).json()["id"]
+    data = {"version": 1, "tempo": 120, "master_volume": 1.0, "scenes": 4,
+            "tracks": [{"id": "t1", "name": "V", "mute": False, "solo": False, "color": "#fff",
+                        "volume": 1.0, "pan": 0.0,
+                        "fx": {"eq": {"on": True, "low": 3, "mid": -2, "high": 5},
+                               "reverb": {"on": True, "wet": 0.4},
+                               "delay": {"on": False, "time": 0.3, "feedback": 0.3, "wet": 0.3}},
+                        "cells": [{"file": "a.mp3", "name": "a"}, None, None, None],
+                        "clips": []}]}
+    client.put(f"/daw/projects/{pid}", json={"data": data})
+    d = client.get(f"/daw/projects/{pid}").json()["data"]
+    assert d["scenes"] == 4
+    t = d["tracks"][0]
+    assert t["fx"]["eq"]["on"] is True and t["fx"]["eq"]["low"] == 3
+    assert t["fx"]["reverb"]["wet"] == 0.4
+    assert t["cells"][0]["file"] == "a.mp3" and t["cells"][1] is None
