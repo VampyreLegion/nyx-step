@@ -1425,6 +1425,7 @@
       <button class="inner-tab-btn" data-guide="quality">📊 Quality</button>
       <button class="inner-tab-btn" data-guide="lrc">🎵 LRC</button>
       <button class="inner-tab-btn" data-guide="video">🎬 Video</button>
+      <button class="inner-tab-btn" data-guide="dawguide">🎚 DAW</button>
       <button class="inner-tab-btn" data-guide="ch1">1. Philosophy</button>
       <button class="inner-tab-btn" data-guide="ch2">2. Tags</button>
       <button class="inner-tab-btn" data-guide="ch3">3. Lyrics</button>
@@ -1633,8 +1634,23 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.10.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; June 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.11.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; June 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.11.0 — Browser DAW</h3>
+        <ul>
+          <li><strong>🎚 Multi-track DAW</strong> — a full in-browser digital audio workstation (Web Audio API) in the new DAW tab: drag generated clips and stems from the library onto a timeline, arrange, mix, and bounce to WAV. Projects autosave to the server and reload exactly as left.</li>
+          <li><strong>Timeline arranger</strong> — move/trim clips, drag across tracks, fade-in/out handles with drawn curves, split-at-playhead, normalize, per-clip gain; zoom and ruler scrubbing</li>
+          <li><strong>Mixer + per-track FX</strong> — dB faders, pan, mute/solo, level meters, master fader; each track has insert <strong>EQ (3-band) / Reverb / Delay</strong>, toggleable and persisted</li>
+          <li><strong>AI operations on clips</strong> — 🤖 <strong>AI Remix</strong> (variation / extend / repaint via ACE-Step), 🎛 <strong>Split to Stems</strong> (Demucs → vocals/drums/bass/other as tracks), and 🎵 <strong>Generate onto track</strong> from the track header</li>
+          <li><strong>🎛 Session grid</strong> — a clip-launch looper: drop clips into per-track scene cells and trigger them live through each track's chain (volume/pan/mute/FX apply); one active cell per column, Stop All, + Scene</li>
+          <li><strong>Snap to grid</strong> — snap clip placement, moves, trims, and stretches to a tempo grid (Bar / ½ / Beat / ¼) with visible grid lines; hold <kbd>Ctrl</kbd> to bypass</li>
+          <li><strong>Time-stretch</strong> — <kbd>Alt</kbd>+drag a clip edge or enter a target %; <strong>varispeed</strong> by default (pitch follows speed) or <strong>🔒 pitch-lock</strong> (SoundTouch) to preserve key; clamped 0.25×–4×</li>
+          <li><strong>⬇ Export WAV</strong> — bounces the arrangement offline through the same graph as playback (volume, pan, mute/solo, fades, FX, and time-stretch incl. pitch-lock all baked in)</li>
+          <li>Full walkthrough in Guide → <strong>🎚 DAW</strong></li>
+        </ul>
       </div>
 
       <div class="about-section">

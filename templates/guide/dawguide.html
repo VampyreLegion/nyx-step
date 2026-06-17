@@ -1,0 +1,78 @@
+<html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}kbd{background:#2d3041;border:1px solid #444;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px;}</style></head><body>
+<h2 id="dawguide">🎚 The DAW — Multi-Track Studio</h2>
+<p>The <strong>🎚 DAW</strong> tab is a full in-browser digital audio workstation built on the Web Audio API. Arrange your generated clips and stems on a timeline, mix them, apply effects, time-stretch, launch loops live, and bounce the whole thing to a WAV — all without leaving Nyx-Step. Projects autosave to the server and reload exactly as you left them.</p>
+
+<h3>Getting started</h3>
+<ol>
+  <li>Open the <strong>🎚 DAW</strong> tab. A project loads automatically (or click <strong>+ New</strong>).</li>
+  <li>The <strong>📚 Clip Library</strong> at the bottom lists every song you've generated and every stem you've split. Drag a chip onto a track lane to place it.</li>
+  <li>Press <strong>▶</strong> to play, <strong>⏸</strong> pause, <strong>⏹</strong> stop. The transport shows playhead / total time.</li>
+  <li>Everything autosaves — the <strong>✓ saved</strong> indicator confirms. Switch projects from the dropdown; <strong>Rename</strong> / <strong>🗑</strong> manage them.</li>
+</ol>
+
+<h3>Timeline arranger</h3>
+<ul>
+  <li><strong>Tracks</strong> — <strong>+ Add Track</strong> adds a lane. Each header has Mute (<strong>M</strong>), Solo (<strong>S</strong>), a volume slider, and a 🎵 button to generate straight onto that track.</li>
+  <li><strong>Clips</strong> — drag to move (across tracks too), drag the right edge to trim. The left/right corner handles set fade-in / fade-out; the fade curve is drawn on the clip.</li>
+  <li><strong>Zoom</strong> with 🔍− / 🔍+. Click the ruler to move the playhead.</li>
+  <li><strong>Clip menu</strong> (the <code>⋯</code> on a clip) — Split at playhead, Normalize, Gain, Reset fades, plus the AI and stretch operations below.</li>
+</ul>
+
+<h3>Snap to grid</h3>
+<p>The <strong>Snap</strong> checkbox + resolution selector (<strong>Bar / ½ / Beat / ¼</strong>) snap clip placement to a tempo grid derived from the project tempo. Faint grid lines are drawn on the lanes so you can see where things land.</p>
+<ul>
+  <li>Snapping applies to <strong>dropping, moving, trimming, and stretching</strong> clip edges.</li>
+  <li>Hold <kbd>Ctrl</kbd> while dragging to <strong>temporarily bypass</strong> snap for fine adjustment.</li>
+  <li>Grid resolution follows the tempo — change tempo and the grid re-derives.</li>
+</ul>
+
+<h3>Time-stretch</h3>
+<p>Stretch a clip's length on the timeline independently of how much source audio it contains.</p>
+<ul>
+  <li><strong>Plain drag</strong> of the right edge = <strong>trim</strong> (how much of the source plays).</li>
+  <li><strong><kbd>Alt</kbd> + drag</strong> the right edge = <strong>time-stretch</strong> (snaps to the grid, so you can stretch a clip's end onto a bar line).</li>
+  <li>The clip menu has <strong>⇔ Time stretch…</strong> (enter a target % of original), a <strong>🔒 Pitch lock</strong> toggle, and <strong>↺ Reset stretch</strong>.</li>
+  <li><strong>Varispeed (default):</strong> instant, but pitch changes with speed (like tape varispeed) — slower = lower.</li>
+  <li><strong>Pitch lock on:</strong> preserves pitch while changing length (SoundTouch). The first playback after enabling renders the stretched audio in the background, then plays pitch-locked.</li>
+  <li>Stretch is clamped to <strong>0.25×–4×</strong>. Reset returns a clip to 1× (unstretched).</li>
+</ul>
+
+<h3>Mixer &amp; FX</h3>
+<p>Click <strong>🎚 Mixer</strong> for channel strips — dB faders, pan, mute/solo, level meters, and a master fader. Each strip has an <strong>FX</strong> button opening per-track inserts:</p>
+<table>
+  <tr><th>Effect</th><th>Controls</th></tr>
+  <tr><td>EQ</td><td>3-band — Low / Mid / High, ±12&nbsp;dB</td></tr>
+  <tr><td>Reverb</td><td>Wet amount (generated impulse)</td></tr>
+  <tr><td>Delay</td><td>Time / Feedback / Wet</td></tr>
+</table>
+<p>Each effect has an on/off toggle; off = neutral (no colouration). FX settings persist with the project and apply to both timeline playback and the session grid.</p>
+
+<h3>Wave editor &amp; AI operations</h3>
+<ul>
+  <li><strong>Split / Normalize / Gain / Fades</strong> from the clip menu for precise edits.</li>
+  <li><strong>🤖 AI Remix…</strong> — send a clip back through ACE-Step for a variation, extension, or repaint; the result drops into the library and onto a track.</li>
+  <li><strong>🎛 Split to Stems</strong> — run Demucs on a clip to break it into vocals / drums / bass / other as four new tracks (the source is muted).</li>
+  <li><strong>🎵 Generate onto track</strong> — generate a fresh clip directly onto a chosen track from the track header.</li>
+</ul>
+
+<h3>Session grid (looper)</h3>
+<p>Click <strong>🎛 Session</strong> for a clip-launch grid — one column per track, scene rows.</p>
+<ul>
+  <li><strong>Drag a library clip into a cell</strong>, then click the cell to <strong>loop it live</strong> through that track's chain (its volume / pan / mute / FX all apply).</li>
+  <li>One active cell per column — launching another in the same track replaces it; click the active cell to stop.</li>
+  <li><strong>⏹ Stop All</strong> clears everything; <strong>+ Scene</strong> adds a row.</li>
+  <li>Free-launch (no quantization) — built for layering loops of any length on the fly. Independent of the timeline transport.</li>
+</ul>
+
+<h3>Export</h3>
+<p><strong>⬇ Export WAV</strong> bounces the whole arrangement offline through the same graph as playback — volume, pan, mute/solo, fades, FX, and time-stretch (including pitch-lock) are all baked into a 16-bit WAV download.</p>
+
+<h3>Tips</h3>
+<ul>
+  <li>Generate a few clips first so the library has material to arrange.</li>
+  <li>Set the project <strong>tempo</strong> before arranging so the snap grid matches your material.</li>
+  <li>Use <strong>Split to Stems</strong> on a full song, then mute/solo and re-balance the stems with the mixer + FX.</li>
+  <li>For tempo-matched loops in the session grid, time-stretch clips with <strong>pitch lock</strong> so they stay in key.</li>
+  <li>Everything is non-destructive — your original generated files are never modified; the project just references them.</li>
+</ul>
+</body></html>
