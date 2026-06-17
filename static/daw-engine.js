@@ -211,25 +211,35 @@ function _dawScheduleAll() {
       if (clipEnd <= _dawPlayhead) continue;
       const buf = _dawBufferCache.get(clip.file);
       if (!buf || buf === "error") continue;
-      let when, bufOffset, playDur;
+      const srcLen = clip.src_len ?? clip.duration;
+      const r = (srcLen > 0) ? (clip.duration / srcLen) : 1;
+      const rate = 1 / r;
+      let when, srcStart, srcConsume, timelineDur;
       if (clip.start >= _dawPlayhead) {
         when = _dawStartCtxTime + (clip.start - _dawPlayhead);
-        bufOffset = clip.offset;
-        playDur = clip.duration;
+        srcStart = clip.offset; srcConsume = srcLen; timelineDur = clip.duration;
       } else {
-        const into = _dawPlayhead - clip.start;
+        const into = _dawPlayhead - clip.start;          // timeline seconds
         when = _dawStartCtxTime;
-        bufOffset = clip.offset + into;
-        playDur = clip.duration - into;
+        srcStart = clip.offset + into / r; srcConsume = srcLen - into / r; timelineDur = clip.duration - into;
       }
+      const clipLocalStart = (clip.start >= _dawPlayhead) ? 0 : (_dawPlayhead - clip.start);
       const src = ctx.createBufferSource();
-      src.buffer = buf;
       const cg = ctx.createGain();
       src.connect(cg); cg.connect(chain.gain);
-      const clipLocalStart = (clip.start >= _dawPlayhead) ? 0 : (_dawPlayhead - clip.start);
-      _dawScheduleClipEnvelope(cg, when, clipLocalStart, playDur,
-                               clip.gain ?? 1, clip.fade_in ?? 0, clip.fade_out ?? 0);
-      src.start(when, bufOffset, playDur);
+      const stretched = (clip.pitch_lock && Math.abs(r - 1) > 1e-3 && typeof dawStretchGet === "function") ? dawStretchGet(clip) : null;
+      if (stretched) {
+        src.buffer = stretched;
+        src.playbackRate.value = 1;
+        _dawScheduleClipEnvelope(cg, when, clipLocalStart, timelineDur, clip.gain ?? 1, clip.fade_in ?? 0, clip.fade_out ?? 0);
+        src.start(when, clipLocalStart, timelineDur);
+      } else {
+        if (clip.pitch_lock && Math.abs(r - 1) > 1e-3 && typeof dawRenderStretch === "function") dawRenderStretch(clip);
+        src.buffer = buf;
+        src.playbackRate.value = rate;
+        _dawScheduleClipEnvelope(cg, when, clipLocalStart, timelineDur, clip.gain ?? 1, clip.fade_in ?? 0, clip.fade_out ?? 0);
+        src.start(when, srcStart, srcConsume);
+      }
       _dawActiveSources.push(src);
     }
   }
