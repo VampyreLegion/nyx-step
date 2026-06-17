@@ -204,6 +204,25 @@ function dawDuplicateClip(clipId) {
   _dawAfterMutate();
 }
 
+// ── Clip copy / paste ────────────────────────────────────────────────────────
+let _dawClipboard = null;
+function dawCopyClip(clipId) {
+  const found = _dawFindClip(clipId);
+  if (!found) return false;
+  _dawClipboard = { ...found.clip };
+  return true;
+}
+function dawPasteClip(trackId, start) {
+  if (!_dawClipboard) return null;
+  const t = dawState.tracks.find(t => t.id === trackId);
+  if (!t) return null;
+  const s = (typeof _dawSnapSec === "function") ? _dawSnapSec(Math.max(0, start)) : Math.max(0, start);
+  const clip = { ..._dawClipboard, id: _dawUid("c"), start: s };
+  t.clips.push(clip);
+  _dawAfterMutate();
+  return clip;
+}
+
 function dawArrangementLength() {
   let max = 0;
   for (const t of dawState.tracks)

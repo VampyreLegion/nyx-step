@@ -27,6 +27,7 @@ function openClipMenu(clip, anchor) {
     return b;
   };
   m.appendChild(mkBtn("✂ Split at playhead", () => dawSplitClipAtPlayhead(clip.id)));
+  m.appendChild(mkBtn("⧉ Duplicate (after)", () => dawDuplicateClip(clip.id)));
   m.appendChild(mkBtn("📊 Normalize", () => dawNormalizeClip(clip.id)));
 
   const gainRow = document.createElement("label");

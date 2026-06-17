@@ -57,6 +57,24 @@ function _dawWireTransport() {
   if (snapCb) snapCb.addEventListener("change", () => { dawState.snap = snapCb.checked; dawMarkDirty(); renderTimeline(); });
   const snapRes = document.getElementById("daw-snap-res");
   if (snapRes) snapRes.addEventListener("change", () => { dawState.snap_res = snapRes.value; dawMarkDirty(); renderTimeline(); });
+
+  document.addEventListener("keydown", e => {
+    const dawTab = document.getElementById("tab-daw");
+    if (!dawTab || !dawTab.classList.contains("active")) return;
+    const tag = (e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select" || e.target.isContentEditable) return;
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const k = e.key.toLowerCase();
+    if (k === "c" && _dawSelectedClip) {
+      if (dawCopyClip(_dawSelectedClip.id) && typeof _dawSetSaveStatus === "function") _dawSetSaveStatus("clip copied");
+      e.preventDefault();
+    } else if (k === "v" && _dawClipboard) {
+      const dest = _dawSelectedClip ? _dawFindClip(_dawSelectedClip.id) : null;
+      const trackId = dest ? dest.track.id : (dawState.tracks[0] && dawState.tracks[0].id);
+      if (trackId) { const nc = dawPasteClip(trackId, _dawPlayhead); if (nc) { _dawSelectedClip = nc; renderTimeline(); } }
+      e.preventDefault();
+    }
+  });
   document.getElementById("daw-session-toggle").addEventListener("click", () => {
     const panel = document.getElementById("daw-session-panel");
     const show = panel.style.display === "none" || !panel.style.display;
