@@ -21,23 +21,42 @@ async function dawRunJob(promptId, onProgress) {
   throw new Error("timed out");
 }
 
-async function dawGenerateOntoTrack(trackId, tags, duration) {
+const _DAW_GEN_ISOLATION = {
+  instrument: { add: "solo, single instrument, isolated, no accompaniment, dry",
+                neg: "drums, percussion, bass, vocals, choir, full band, ensemble", stem: "other" },
+  vocals:     { add: "a cappella, solo vocal, isolated vocal, dry vocal, no instruments",
+                neg: "instruments, drums, bass, guitar, piano, synth, music", stem: "vocals" },
+  drums:      { add: "solo drums, drum solo, drums only, isolated",
+                neg: "vocals, bass, guitar, piano, synth, melody, harmony", stem: "drums" },
+  bass:       { add: "solo bass, bass only, isolated bassline",
+                neg: "drums, percussion, vocals, guitar, piano, synth, melody", stem: "bass" },
+};
+const _DAW_VOCAL_RE = /\b(vocal|vocals|voice|sing|singer|sung|choir|vox|rap|rapping|a ?cappella|soprano|alto|tenor|falsetto)\b/;
+
+async function dawGenerateOntoTrack(trackId, tags, duration, type, isolate) {
+  const iso = _DAW_GEN_ISOLATION[type] || _DAW_GEN_ISOLATION.instrument;
   const at = dawGetPlayhead();     // capture playhead at submit time
   _dawGenTracks.add(trackId);
   renderTimeline();
   _dawSetSaveStatus("Generating… queued");
   try {
+    const fullTags = tags + ", " + iso.add;
     const resp = await fetch("/generate", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tags, duration, bpm: dawState.tempo ?? 120,
-                             song_name: "DAW: " + tags.slice(0, 40) }),
+      body: JSON.stringify({ tags: fullTags, negative_tags: iso.neg, duration,
+                             bpm: dawState.tempo ?? 120, song_name: "DAW: " + tags.slice(0, 40) }),
     });
     const data = await resp.json();
     if (!resp.ok || data.error) throw new Error(data.error || ("HTTP " + resp.status));
-    const file = await dawRunJob(data.prompt_id, s => _dawSetSaveStatus("Generating… " + s));
+    let file = await dawRunJob(data.prompt_id, s => _dawSetSaveStatus("Generating… " + s));
+    if (isolate) {
+      _dawSetSaveStatus("Isolating…");
+      const stem = await _dawIsolateStem(file, iso.stem);
+      if (stem) file = stem;
+    }
     const clip = dawAddClip(trackId, { file, name: "gen: " + tags.slice(0, 24), source_duration: duration }, at);
     const buf = await dawGetBuffer(file);
-    if (buf && clip) { clip.source_duration = clip.duration = buf.duration; dawMarkDirty(); }
+    if (buf && clip) { clip.source_duration = clip.duration = clip.src_len = buf.duration; dawMarkDirty(); }
     renderTimeline();
     _dawSetSaveStatus("Generated ✓");
   } catch (e) {
@@ -46,6 +65,28 @@ async function dawGenerateOntoTrack(trackId, tags, duration) {
     _dawGenTracks.delete(trackId);
     renderTimeline();
   }
+}
+
+// Run Demucs on a generated file and return the path to one stem, or null on failure.
+function _dawIsolateStem(file, stem) {
+  return new Promise(resolve => {
+    let settled = false, errored = false;
+    const es = new EventSource("/stems/demucs/stream?filename=" + encodeURIComponent(file) + "&model=htdemucs");
+    const done = async (ok) => {
+      if (settled) return; settled = true; es.close();
+      if (!ok) return resolve(null);
+      const base = file.replace(/\.[^.]+$/, "");
+      const f = "separated/htdemucs/" + base + "/" + stem + ".mp3";
+      const buf = await dawGetBuffer(f);
+      resolve(buf ? f : null);
+    };
+    es.addEventListener("log", e => {
+      try { const l = JSON.parse(e.data).line; if (l.includes("[error]")) errored = true;
+            _dawSetSaveStatus("Isolating: " + l.slice(0, 36)); } catch (_) {}
+    });
+    es.addEventListener("done", () => done(!errored));
+    es.onerror = () => done(false);
+  });
 }
 
 function _dawCloseGenDialog() {
@@ -82,6 +123,24 @@ function openGenerateDialog(trackId, anchor) {
   durIn.style.cssText = "width:60px;font-size:11px";
   durRow.appendChild(durIn);
 
+  const typeRow = document.createElement("label");
+  typeRow.style.cssText = "font-size:11px;color:#e2e4ed;display:flex;align-items:center;gap:6px";
+  typeRow.textContent = "Type";
+  const typeSel = document.createElement("select");
+  typeSel.style.cssText = "font-size:11px;width:auto;flex:0 0 auto";
+  for (const [v, label] of [["instrument","Instrument"],["vocals","Vocals"],["drums","Drums"],["bass","Bass"]]) {
+    const o = document.createElement("option"); o.value = v; o.textContent = label; typeSel.appendChild(o);
+  }
+  let _userPickedType = false;
+  typeSel.addEventListener("change", () => { _userPickedType = true; });
+  typeRow.appendChild(typeSel);
+
+  const isoRow = document.createElement("label");
+  isoRow.style.cssText = "font-size:11px;color:#e2e4ed;display:flex;align-items:center;gap:6px";
+  const isoCb = document.createElement("input"); isoCb.type = "checkbox";
+  isoRow.appendChild(isoCb);
+  isoRow.appendChild(document.createTextNode("🔪 Isolate (stem-split after)"));
+
   const btnRow = document.createElement("div");
   btnRow.style.cssText = "display:flex;gap:6px;justify-content:flex-end";
   const gen = document.createElement("button");
@@ -89,18 +148,23 @@ function openGenerateDialog(trackId, anchor) {
   gen.style.cssText = "font-size:11px";
   const cancel = document.createElement("button");
   cancel.className = "secondary small"; cancel.textContent = "Cancel"; cancel.style.cssText = "font-size:11px";
-  tagsIn.addEventListener("input", () => { gen.disabled = !tagsIn.value.trim(); });
+  tagsIn.addEventListener("input", () => {
+    gen.disabled = !tagsIn.value.trim();
+    if (!_userPickedType && _DAW_VOCAL_RE.test(tagsIn.value.toLowerCase())) typeSel.value = "vocals";
+  });
   gen.addEventListener("click", () => {
     const tags = tagsIn.value.trim();
     if (!tags) return;
     const dur = Math.min(300, Math.max(5, parseFloat(durIn.value) || 15));
+    const type = typeSel.value;
+    const isolate = isoCb.checked;
     _dawCloseGenDialog();
-    dawGenerateOntoTrack(trackId, tags, dur);
+    dawGenerateOntoTrack(trackId, tags, dur, type, isolate);
   });
   cancel.addEventListener("click", _dawCloseGenDialog);
   btnRow.appendChild(gen); btnRow.appendChild(cancel);
 
-  m.appendChild(title); m.appendChild(tagsIn); m.appendChild(durRow); m.appendChild(btnRow);
+  m.appendChild(title); m.appendChild(tagsIn); m.appendChild(typeRow); m.appendChild(durRow); m.appendChild(isoRow); m.appendChild(btnRow);
   document.body.appendChild(m);
   tagsIn.focus();
   setTimeout(() => {
