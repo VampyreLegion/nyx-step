@@ -130,6 +130,12 @@ function renderTimeline() {
   const w = _dawTimelineWidth();
   lanes.innerHTML = "";
   lanes.style.width = w + "px";
+  if (dawState.snap) {
+    const period = Math.max(2, _dawSnapDiv() * _dawPxPerSec);
+    lanes.style.backgroundImage = `repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 1px, transparent 1px ${period}px)`;
+  } else {
+    lanes.style.backgroundImage = "none";
+  }
   for (const track of dawState.tracks) {
     const lane = document.createElement("div");
     lane.dataset.trackId = track.id;
@@ -141,7 +147,7 @@ function renderTimeline() {
       if (!raw) return;
       const src = JSON.parse(raw);
       const rect = lane.getBoundingClientRect();
-      const start = Math.max(0, (e.clientX - rect.left) / _dawPxPerSec);
+      const start = Math.max(0, _dawSnapSec((e.clientX - rect.left) / _dawPxPerSec, e.ctrlKey));
       const clip = dawAddClip(track.id, src, start);
       if (clip) dawGetBuffer(clip.file).then(renderTimeline);
     });
@@ -196,7 +202,7 @@ function _dawWireClipDrag(el, handle, track, clip) {
     const startX = e.clientX, origStart = clip.start;
     const onMove = m => {
       const dx = (m.clientX - startX) / _dawPxPerSec;
-      let newStart = Math.max(0, origStart + dx);
+      let newStart = Math.max(0, _dawSnapSec(origStart + dx, m.ctrlKey));
       const laneEls = [...document.querySelectorAll("#daw-lanes > div")];
       let destTrack = track.id;
       for (const le of laneEls) {
@@ -211,10 +217,17 @@ function _dawWireClipDrag(el, handle, track, clip) {
   });
 
   handle.addEventListener("mousedown", e => {
+    const stretchMode = e.altKey;
     const startX = e.clientX, origDur = clip.duration;
+    const srcLen0 = clip.src_len ?? clip.duration;
+    const r0 = (srcLen0 > 0) ? (clip.duration / srcLen0) : 1;
     const onMove = m => {
       const dx = (m.clientX - startX) / _dawPxPerSec;
-      dawTrimClip(clip.id, clip.offset, Math.max(0.1, origDur + dx));
+      const rawLen = Math.max(0.1, origDur + dx);
+      const edge = _dawSnapSec(clip.start + rawLen, m.ctrlKey);
+      const newLen = Math.max(0.1, edge - clip.start);
+      if (stretchMode) dawStretchClip(clip.id, newLen);
+      else dawTrimClip(clip.id, clip.offset, newLen / r0);
     };
     const onUp = () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
     document.addEventListener("mousemove", onMove); document.addEventListener("mouseup", onUp);

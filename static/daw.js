@@ -10,6 +10,12 @@ async function onDawTabOpen() {
   }
   await dawLoadLibrary();
   renderTimeline();
+  _dawSyncSnapControls();
+}
+
+function _dawSyncSnapControls() {
+  const sc = document.getElementById("daw-snap"); if (sc) sc.checked = dawState.snap !== false;
+  const sr = document.getElementById("daw-snap-res"); if (sr) sr.value = dawState.snap_res || "bar";
 }
 
 async function dawRefreshProjectList(projects) {
@@ -47,6 +53,10 @@ function _dawWireTransport() {
     else { dawStopMeters(); }
   });
   document.getElementById("daw-export").addEventListener("click", () => dawExportWav());
+  const snapCb = document.getElementById("daw-snap");
+  if (snapCb) snapCb.addEventListener("change", () => { dawState.snap = snapCb.checked; dawMarkDirty(); renderTimeline(); });
+  const snapRes = document.getElementById("daw-snap-res");
+  if (snapRes) snapRes.addEventListener("change", () => { dawState.snap_res = snapRes.value; dawMarkDirty(); renderTimeline(); });
   document.getElementById("daw-session-toggle").addEventListener("click", () => {
     const panel = document.getElementById("daw-session-panel");
     const show = panel.style.display === "none" || !panel.style.display;
@@ -80,5 +90,6 @@ function _dawWireTransport() {
     await dawLoadProject(parseInt(e.target.value, 10));
     await dawLoadLibrary();
     renderTimeline();
+    _dawSyncSnapControls();
   });
 }

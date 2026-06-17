@@ -13,6 +13,17 @@ async function dawRenderArrangement() {
   for (const t of dawState.tracks) for (const c of t.clips) files.add(c.file);
   await Promise.all([...files].map(dawGetBuffer));
 
+  // Pre-render any pitch-locked stretched clips so the offline pass can use them.
+  if (typeof dawRenderStretch === "function") {
+    const jobs = [];
+    for (const t of dawState.tracks) for (const c of t.clips) {
+      const sl = c.src_len ?? c.duration;
+      const r = (sl > 0) ? (c.duration / sl) : 1;
+      if (c.pitch_lock && Math.abs(r - 1) > 1e-3) jobs.push(dawRenderStretch(c));
+    }
+    await Promise.all(jobs);
+  }
+
   const off = new OfflineAudioContext(2, Math.ceil(len * sr), sr);
   const master = off.createGain();
   master.gain.value = dawState.master_volume ?? 1;
@@ -29,13 +40,23 @@ async function dawRenderArrangement() {
     for (const clip of track.clips) {
       const buf = _dawBufferCache.get(clip.file);
       if (!buf || buf === "error") continue;
+      const srcLen = clip.src_len ?? clip.duration;
+      const r = (srcLen > 0) ? (clip.duration / srcLen) : 1;
       const src = off.createBufferSource();
-      src.buffer = buf;
       const cg = off.createGain();
       src.connect(cg); cg.connect(tg);
-      _dawScheduleClipEnvelope(cg, clip.start, 0, clip.duration,
-                               clip.gain ?? 1, clip.fade_in ?? 0, clip.fade_out ?? 0);
-      src.start(clip.start, clip.offset, clip.duration);
+      const stretched = (clip.pitch_lock && Math.abs(r - 1) > 1e-3 && typeof dawStretchGet === "function") ? dawStretchGet(clip) : null;
+      if (stretched) {
+        src.buffer = stretched;
+        src.playbackRate.value = 1;
+        _dawScheduleClipEnvelope(cg, clip.start, 0, clip.duration, clip.gain ?? 1, clip.fade_in ?? 0, clip.fade_out ?? 0);
+        src.start(clip.start, 0, clip.duration);
+      } else {
+        src.buffer = buf;
+        src.playbackRate.value = 1 / r;
+        _dawScheduleClipEnvelope(cg, clip.start, 0, clip.duration, clip.gain ?? 1, clip.fade_in ?? 0, clip.fade_out ?? 0);
+        src.start(clip.start, clip.offset, srcLen);
+      }
     }
   }
   return await off.startRendering();

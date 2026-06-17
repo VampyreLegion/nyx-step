@@ -45,6 +45,17 @@ function openClipMenu(clip, anchor) {
   m.appendChild(gainRow);
 
   m.appendChild(mkBtn("Reset fades", () => { dawSetClipFadeIn(clip.id, 0); dawSetClipFadeOut(clip.id, 0); }));
+  m.appendChild(mkBtn("⇔ Time stretch…", () => {
+    const srcLen = clip.src_len ?? clip.duration;
+    const cur = Math.round((clip.duration / srcLen) * 100);
+    const v = prompt("Stretch length as % of original (25–400):", String(cur));
+    if (v == null) return;
+    const pct = parseFloat(v);
+    if (isFinite(pct) && pct > 0) dawStretchClip(clip.id, srcLen * pct / 100);
+  }));
+  m.appendChild(mkBtn((clip.pitch_lock ? "🔒 Pitch lock: ON" : "🔓 Pitch lock: OFF"),
+    () => dawSetClipPitchLock(clip.id, !clip.pitch_lock)));
+  m.appendChild(mkBtn("↺ Reset stretch", () => dawResetStretch(clip.id)));
   m.appendChild(mkBtn("🤖 AI Remix…", () => { if (typeof openRemixDialog === "function") openRemixDialog(clip, anchor); }));
   m.appendChild(mkBtn("🎛 Split to Stems", () => { if (typeof dawSplitToStems === "function") dawSplitToStems(clip); }));
 
