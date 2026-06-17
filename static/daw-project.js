@@ -1,7 +1,17 @@
 // ── DAW project state + persistence ───────────────────────────────────────────
 // dawState is the in-memory current arrangement. Mutations update it, trigger a
 // re-render, and schedule a debounced autosave.
-let dawState = { id: null, name: "Untitled Project", tempo: 120, master_volume: 1.0, scenes: 4, tracks: [] };
+let dawState = { id: null, name: "Untitled Project", tempo: 120, master_volume: 1.0, scenes: 4, tracks: [], snap: true, snap_res: "bar" };
+
+function _dawSnapDiv() {
+  const beat = 60 / (dawState.tempo || 120);
+  return { bar: beat * 4, half: beat * 2, beat: beat, quarter: beat / 4 }[dawState.snap_res] || beat * 4;
+}
+function _dawSnapSec(sec, bypass) {
+  if (bypass || !dawState.snap) return sec;
+  const div = _dawSnapDiv();
+  return Math.round(sec / div) * div;
+}
 
 const _TRACK_COLORS = ["#7c65d9", "#00d4b6", "#e0884f", "#4caf50", "#e05f8a", "#3f9fe0", "#c9a227"];
 let _dawSaveTimer = null;
@@ -42,7 +52,7 @@ async function dawNewProject(name) {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: name || "Untitled Project" }),
   }).then(r => r.json());
-  dawState = { id: r.id, name: r.name, tempo: 120, master_volume: 1.0, scenes: 4, tracks: [] };
+  dawState = { id: r.id, name: r.name, tempo: 120, master_volume: 1.0, scenes: 4, tracks: [], snap: true, snap_res: "bar" };
   if (typeof dawResetMixerForProject === "function") dawResetMixerForProject();
   dawAddTrack("Track 1");        // start with one empty track
   return r.id;
@@ -56,12 +66,17 @@ async function dawLoadProject(id) {
   const scenes = d.scenes ?? 4;
   dawState = { id: p.id, name: p.name, version: d.version || 1,
                tempo: d.tempo ?? 120, master_volume: d.master_volume ?? 1.0, scenes,
+               snap: d.snap ?? true, snap_res: d.snap_res ?? "bar",
                tracks: (d.tracks || []).map(t => {
                  const tt = { volume: 1.0, pan: 0.0, ...t };
                  tt.fx = t.fx || _dawDefaultFx();
                  tt.cells = _dawNormCells(t.cells, scenes);
                  return tt;
                }) };
+  for (const t of dawState.tracks) for (const c of (t.clips || [])) {
+    c.src_len = c.src_len ?? c.duration;
+    c.pitch_lock = c.pitch_lock ?? false;
+  }
   if (typeof dawResetMixerForProject === "function") dawResetMixerForProject();
   if (typeof renderTimeline === "function") renderTimeline();
   _dawSetSaveStatus("✓ saved");
@@ -80,7 +95,7 @@ function dawMarkDirty() {
 
 async function dawSaveNow() {
   if (dawState.id == null) return;
-  const data = { version: 1, tempo: dawState.tempo, master_volume: dawState.master_volume, scenes: dawState.scenes, tracks: dawState.tracks };
+  const data = { version: 1, tempo: dawState.tempo, master_volume: dawState.master_volume, scenes: dawState.scenes, tracks: dawState.tracks, snap: dawState.snap, snap_res: dawState.snap_res };
   try {
     const r = await fetch("/daw/projects/" + dawState.id, {
       method: "PUT", headers: { "Content-Type": "application/json" },
@@ -139,6 +154,7 @@ function dawAddClip(trackId, src, start) {
     id: _dawUid("c"), file: src.file, name: src.name || src.file,
     start: Math.max(0, start || 0), offset: 0,
     duration: dur, source_duration: dur,
+    src_len: dur, pitch_lock: false,
     gain: 1.0, fade_in: 0.0, fade_out: 0.0,
   };
   t.clips.push(clip);
@@ -159,13 +175,17 @@ function dawMoveClip(clipId, newTrackId, newStart) {
   _dawAfterMutate();
 }
 
-function dawTrimClip(clipId, offset, duration) {
+function dawTrimClip(clipId, offset, srcLen) {
   const found = _dawFindClip(clipId);
   if (!found) return;
   const c = found.clip;
-  const sd = c.source_duration || duration;
+  const sd = c.source_duration || srcLen;
+  const prevSrc = c.src_len ?? c.duration;
+  const r = (prevSrc > 0) ? (c.duration / prevSrc) : 1;
   c.offset = Math.min(Math.max(0, offset), sd);
-  c.duration = Math.min(Math.max(0.05, duration), sd - c.offset);
+  c.src_len = Math.min(Math.max(0.05, srcLen), sd - c.offset);
+  c.duration = c.src_len * r;
+  if (typeof dawInvalidateStretch === "function") dawInvalidateStretch(c);
   _dawAfterMutate();
 }
 
@@ -298,4 +318,32 @@ function dawAddScene() {
   for (const t of dawState.tracks) { (t.cells = t.cells || []).push(null); }
   if (typeof dawRenderSessionIfOpen === "function") dawRenderSessionIfOpen();
   dawMarkDirty();
+}
+
+// ── Stretch mutations ───────────────────────────────────────────────────────────
+function dawStretchClip(clipId, newDuration) {
+  const found = _dawFindClip(clipId);
+  if (!found) return;
+  const c = found.clip;
+  const srcLen = c.src_len ?? c.duration;
+  const r = Math.min(4, Math.max(0.25, newDuration / srcLen));
+  c.src_len = srcLen;
+  c.duration = srcLen * r;
+  if (typeof dawInvalidateStretch === "function") dawInvalidateStretch(c);
+  _dawAfterMutate();
+}
+function dawSetClipPitchLock(clipId, on) {
+  const found = _dawFindClip(clipId);
+  if (!found) return;
+  found.clip.pitch_lock = !!on;
+  if (typeof dawInvalidateStretch === "function") dawInvalidateStretch(found.clip);
+  _dawAfterMutate();
+}
+function dawResetStretch(clipId) {
+  const found = _dawFindClip(clipId);
+  if (!found) return;
+  const c = found.clip;
+  c.duration = c.src_len ?? c.duration;
+  if (typeof dawInvalidateStretch === "function") dawInvalidateStretch(c);
+  _dawAfterMutate();
 }
