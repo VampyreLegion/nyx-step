@@ -179,3 +179,19 @@ def test_project_persists_fx_and_session():
     assert t["fx"]["eq"]["on"] is True and t["fx"]["eq"]["low"] == 3
     assert t["fx"]["reverb"]["wet"] == 0.4
     assert t["cells"][0]["file"] == "a.mp3" and t["cells"][1] is None
+
+
+def test_project_persists_snap_and_stretch():
+    pid = client.post("/daw/projects", json={"name": "SS"}).json()["id"]
+    data = {"version": 1, "tempo": 120, "master_volume": 1.0, "scenes": 4,
+            "snap": True, "snap_res": "beat",
+            "tracks": [{"id": "t1", "name": "A", "mute": False, "solo": False, "color": "#fff",
+                        "volume": 1.0, "pan": 0.0,
+                        "clips": [{"id": "c1", "file": "a.mp3", "name": "a", "start": 2.0, "offset": 0.0,
+                                   "duration": 8.0, "source_duration": 4.0, "src_len": 4.0,
+                                   "pitch_lock": True, "gain": 1.0, "fade_in": 0.0, "fade_out": 0.0}]}]}
+    client.put(f"/daw/projects/{pid}", json={"data": data})
+    d = client.get(f"/daw/projects/{pid}").json()["data"]
+    assert d["snap"] is True and d["snap_res"] == "beat"
+    c = d["tracks"][0]["clips"][0]
+    assert c["src_len"] == 4.0 and c["duration"] == 8.0 and c["pitch_lock"] is True
