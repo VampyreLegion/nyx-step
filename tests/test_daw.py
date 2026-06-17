@@ -195,3 +195,26 @@ def test_project_persists_snap_and_stretch():
     assert d["snap"] is True and d["snap_res"] == "beat"
     c = d["tracks"][0]["clips"][0]
     assert c["src_len"] == 4.0 and c["duration"] == 8.0 and c["pitch_lock"] is True
+
+
+def _write_sine_wav(path, freq=440.0, secs=1.0, sr=22050):
+    import wave, struct, math
+    with wave.open(path, "w") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr)
+        frames = b"".join(struct.pack("<h", int(0.4 * 32767 * math.sin(2 * math.pi * freq * i / sr)))
+                          for i in range(int(secs * sr)))
+        w.writeframes(frames)
+
+def test_melody_notes_detects_a4(tmp_path):
+    from core.midi import melody_notes, notes_to_json
+    p = str(tmp_path / "tone.wav"); _write_sine_wav(p, 440.0, 1.0)
+    notes = melody_notes(p)
+    assert notes, "expected at least one note from a 440Hz tone"
+    pitches = [n[2] for n in notes]
+    assert any(abs(pp - 69) <= 2 for pp in pitches)   # A4 = MIDI 69, tolerance ±2
+    js = notes_to_json(notes)
+    assert set(js[0].keys()) == {"start", "dur", "pitch", "vel"}
+
+def test_notes_to_json_shape():
+    from core.midi import notes_to_json
+    assert notes_to_json([(0.0, 0.5, 60, 80)]) == [{"start": 0.0, "dur": 0.5, "pitch": 60, "vel": 80}]
