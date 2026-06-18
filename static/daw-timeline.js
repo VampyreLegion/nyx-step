@@ -119,6 +119,30 @@ function dawRenderTrackHeaders() {
     vol.style.cssText = "width:100%;height:12px;margin-top:2px";
     vol.addEventListener("input", () => dawSetTrackVolume(t.id, parseFloat(vol.value)));
     row.appendChild(name); row.appendChild(btns); row.appendChild(vol);
+    if (t.kind === "midi") {
+      const wave = document.createElement("select");
+      wave.title = "Synth waveform"; wave.style.cssText = "font-size:10px;width:100%;margin-top:2px";
+      for (const w of ["sine", "triangle", "sawtooth", "square"]) {
+        const o = document.createElement("option"); o.value = w; o.textContent = w;
+        if ((t.synth || {}).wave === w) o.selected = true; wave.appendChild(o);
+      }
+      wave.addEventListener("change", () => dawSetTrackSynth(t.id, { wave: wave.value }));
+      const outSel = document.createElement("select");
+      outSel.title = "MIDI output (Internal synth or hardware over USB)"; outSel.style.cssText = "font-size:10px;width:100%;margin-top:2px";
+      const rebuild = () => {
+        outSel.innerHTML = "";
+        const oi = document.createElement("option"); oi.value = ""; oi.textContent = "Internal synth"; outSel.appendChild(oi);
+        for (const o of (typeof dawMidiOutputs === "function" ? dawMidiOutputs() : [])) {
+          const op = document.createElement("option"); op.value = o.id; op.textContent = o.name;
+          if (t.midi_out === o.id) op.selected = true; outSel.appendChild(op);
+        }
+        if (t.midi_out) outSel.value = t.midi_out;
+      };
+      rebuild();
+      outSel.addEventListener("focus", async () => { if (typeof dawInitMidi === "function") { await dawInitMidi(); rebuild(); } });
+      outSel.addEventListener("change", () => dawSetTrackMidiOut(t.id, outSel.value || null));
+      row.appendChild(wave); row.appendChild(outSel);
+    }
     head.appendChild(row);
   }
 }
@@ -151,6 +175,23 @@ function renderTimeline() {
       const clip = dawAddClip(track.id, src, start);
       if (clip) dawGetBuffer(clip.file).then(renderTimeline);
     });
+    if (track.kind === "midi") {
+      const notes = track.notes || [];
+      const pitches = notes.map(n => n.pitch);
+      const lo = pitches.length ? Math.min(...pitches) : 48;
+      const hi = pitches.length ? Math.max(...pitches) : 72;
+      const span = Math.max(1, hi - lo);
+      const h = _DAW_LANE_H - 6;
+      for (const n of notes) {
+        const nb = document.createElement("div");
+        const y = 3 + (1 - (n.pitch - lo) / span) * (h - 4);
+        nb.style.cssText = `position:absolute;left:${n.start * _dawPxPerSec}px;top:${y}px;` +
+          `width:${Math.max(2, n.dur * _dawPxPerSec)}px;height:3px;background:${track.color};border-radius:1px;opacity:0.9`;
+        lane.appendChild(nb);
+      }
+      lanes.appendChild(lane);
+      continue;
+    }
     for (const clip of track.clips) lane.appendChild(_dawBuildClipEl(track, clip));
     lanes.appendChild(lane);
   }

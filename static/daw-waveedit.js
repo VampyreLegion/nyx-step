@@ -28,6 +28,7 @@ function openClipMenu(clip, anchor) {
   };
   m.appendChild(mkBtn("✂ Split at playhead", () => dawSplitClipAtPlayhead(clip.id)));
   m.appendChild(mkBtn("⧉ Duplicate (after)", () => dawDuplicateClip(clip.id)));
+  m.appendChild(mkBtn("🎹 Convert to MIDI…", () => { if (typeof openConvertToMidiDialog === "function") openConvertToMidiDialog(clip, anchor); }));
   m.appendChild(mkBtn("📊 Normalize", () => dawNormalizeClip(clip.id)));
 
   const gainRow = document.createElement("label");

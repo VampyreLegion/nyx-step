@@ -37,6 +37,31 @@ async function dawRenderArrangement() {
     const pan = off.createStereoPanner();
     pan.pan.value = track.pan ?? 0;
     tg.connect(pan); pan.connect(master);
+    if (track.kind === "midi") {
+      if (track.midi_out) continue;   // hardware-routed → silent in export
+      const synth = track.synth || { wave: "sawtooth", env: "pluck" };
+      for (const n of (track.notes || [])) {
+        const osc = off.createOscillator(); osc.type = synth.wave || "sawtooth";
+        osc.frequency.value = 440 * Math.pow(2, (n.pitch - 69) / 12);
+        const g = off.createGain();
+        const peak = Math.max(0.001, (n.vel / 127) * 0.3);
+        const when = n.start, dur = Math.max(0.02, n.dur);
+        g.gain.setValueAtTime(0.0001, when);
+        if (synth.env === "pad") {
+          g.gain.linearRampToValueAtTime(peak, when + Math.min(0.15, dur));
+          g.gain.setValueAtTime(peak, when + dur);
+          g.gain.linearRampToValueAtTime(0.0001, when + dur + 0.4);
+        } else {
+          g.gain.linearRampToValueAtTime(peak, when + 0.005);
+          g.gain.exponentialRampToValueAtTime(Math.max(0.0001, peak * 0.25), when + 0.005 + Math.min(0.12, dur));
+          g.gain.linearRampToValueAtTime(0.0001, when + dur + 0.08);
+        }
+        osc.connect(g); g.connect(tg);
+        const rel = (synth.env === "pad") ? 0.4 : 0.08;
+        osc.start(when); osc.stop(when + dur + rel);
+      }
+      continue;
+    }
     for (const clip of track.clips) {
       const buf = _dawBufferCache.get(clip.file);
       if (!buf || buf === "error") continue;

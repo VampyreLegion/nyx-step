@@ -85,6 +85,8 @@ function _dawWireTransport() {
   document.getElementById("daw-session-stopall").addEventListener("click", () => dawStopAllCells());
   document.getElementById("daw-session-addscene").addEventListener("click", () => dawAddScene());
   document.getElementById("daw-add-track").addEventListener("click", () => dawAddTrack());
+  const amt = document.getElementById("daw-add-midi-track");
+  if (amt) amt.addEventListener("click", () => dawAddMidiTrack());
 
   document.getElementById("daw-new").addEventListener("click", async () => {
     const name = prompt("New project name:", "Untitled Project");
