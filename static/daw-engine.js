@@ -271,6 +271,25 @@ function _dawApplyAdsr(gainParam, when, dur, peak, env) {
     gainParam.linearRampToValueAtTime(0.0001, when + dur + 0.08);
   }
 }
+function dawPreviewNote(trackId, pitch, vel) {
+  const ctx = _dawEnsureCtx();
+  if (ctx.state === "suspended") { try { ctx.resume(); } catch (_) {} }
+  const track = dawState.tracks.find(t => t.id === trackId);
+  const synth = (track && track.synth) || { wave: "sawtooth", env: "pluck" };
+  try { _dawSyncChains(); } catch (_) {}
+  const chain = _dawTrackChains.get(trackId);
+  const dest = chain ? chain.gain : _dawMaster;
+  if (!dest) return;
+  const now = ctx.currentTime + 0.01;
+  const osc = ctx.createOscillator(); osc.type = synth.wave || "sawtooth";
+  osc.frequency.value = (typeof _dawNoteFreq === "function") ? _dawNoteFreq(pitch) : 440 * Math.pow(2, (pitch - 69) / 12);
+  const g = ctx.createGain();
+  const peak = Math.max(0.001, ((vel || 100) / 127) * 0.3);
+  _dawApplyAdsr(g.gain, now, 0.22, peak, synth.env || "pluck");
+  osc.connect(g); g.connect(dest);
+  osc.start(now); osc.stop(now + 0.4);
+}
+
 function _dawScheduleMidiTrack(track, chain, ctx) {
   const out = (track.midi_out && typeof dawMidiGetOutput === "function") ? dawMidiGetOutput(track.midi_out) : null;
   const synth = track.synth || { wave: "sawtooth", env: "pluck" };

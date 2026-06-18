@@ -144,6 +144,7 @@ function dawRenderTrackHeaders() {
       outSel.addEventListener("focus", async () => { if (typeof dawInitMidi === "function") { await dawInitMidi(); rebuild(); } });
       outSel.addEventListener("change", () => dawSetTrackMidiOut(t.id, outSel.value || null));
       midiRow.appendChild(wave); midiRow.appendChild(outSel);
+      btns.appendChild(mk("🎹", false, () => { if (typeof openPianoRoll === "function") openPianoRoll(t.id); }, "Edit notes (piano roll)"));
       row.appendChild(midiRow);
     }
     head.appendChild(row);
@@ -192,6 +193,7 @@ function renderTimeline() {
           `width:${Math.max(2, n.dur * _dawPxPerSec)}px;height:3px;background:${track.color};border-radius:1px;opacity:0.9`;
         lane.appendChild(nb);
       }
+      lane.addEventListener("dblclick", () => { if (typeof openPianoRoll === "function") openPianoRoll(track.id); });
       lanes.appendChild(lane);
       continue;
     }

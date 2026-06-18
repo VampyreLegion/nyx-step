@@ -34,8 +34,19 @@ function _dawAfterMutate() {
   if (typeof renderTimeline === "function") renderTimeline();
   if (typeof dawRenderMixerIfOpen === "function") dawRenderMixerIfOpen();
   if (typeof dawRenderSessionIfOpen === "function") dawRenderSessionIfOpen();
+  if (typeof dawRenderPianoRollIfOpen === "function") dawRenderPianoRollIfOpen();
   dawMarkDirty();
 }
+
+function dawAddNote(trackId, note) {
+  const t = dawState.tracks.find(t => t.id === trackId); if (!t) return null;
+  (t.notes = t.notes || []).push(note); _dawAfterMutate(); return note;
+}
+function dawRemoveNote(trackId, note) {
+  const t = dawState.tracks.find(t => t.id === trackId); if (!t || !t.notes) return;
+  t.notes = t.notes.filter(n => n !== note); _dawAfterMutate();
+}
+function dawNoteEdited(trackId) { _dawAfterMutate(); }
 
 function _dawSetSaveStatus(text) {
   const el = document.getElementById("daw-save-status");
