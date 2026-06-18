@@ -77,6 +77,14 @@ async function dawLoadProject(id) {
     c.src_len = c.src_len ?? c.duration;
     c.pitch_lock = c.pitch_lock ?? false;
   }
+  for (const t of dawState.tracks) {
+    t.kind = t.kind || "audio";
+    if (t.kind === "midi") {
+      t.notes = t.notes || [];
+      t.synth = t.synth || _dawDefaultSynth();
+      if (t.midi_out === undefined) t.midi_out = null;
+    }
+  }
   if (typeof dawResetMixerForProject === "function") dawResetMixerForProject();
   if (typeof renderTimeline === "function") renderTimeline();
   _dawSetSaveStatus("✓ saved");
@@ -113,6 +121,7 @@ function dawAddTrack(name) {
     mute: false, solo: false, color: _TRACK_COLORS[i % _TRACK_COLORS.length],
     volume: 1.0, pan: 0.0, clips: [],
     fx: _dawDefaultFx(), cells: _dawNormCells([], dawState.scenes ?? 4),
+    kind: "audio",
   });
   _dawAfterMutate();
 }
@@ -225,8 +234,10 @@ function dawPasteClip(trackId, start) {
 
 function dawArrangementLength() {
   let max = 0;
-  for (const t of dawState.tracks)
-    for (const c of t.clips) max = Math.max(max, c.start + c.duration);
+  for (const t of dawState.tracks) {
+    for (const c of (t.clips || [])) max = Math.max(max, c.start + c.duration);
+    for (const n of (t.notes || [])) max = Math.max(max, n.start + n.dur);
+  }
   return max;
 }
 
@@ -365,4 +376,34 @@ function dawResetStretch(clipId) {
   c.duration = c.src_len ?? c.duration;
   if (typeof dawInvalidateStretch === "function") dawInvalidateStretch(c);
   _dawAfterMutate();
+}
+
+// ── MIDI track model ────────────────────────────────────────────────────────────
+function _dawDefaultSynth() { return { wave: "sawtooth", env: "pluck" }; }
+function dawAddMidiTrack(name) {
+  const i = dawState.tracks.length;
+  const colors = (typeof _TRACK_COLORS !== "undefined") ? _TRACK_COLORS : ["#7c65d9"];
+  dawState.tracks.push({
+    id: _dawUid("t"), name: name || ("MIDI " + (i + 1)),
+    mute: false, solo: false, color: colors[i % colors.length],
+    volume: 1.0, pan: 0.0,
+    fx: (typeof _dawDefaultFx === "function" ? _dawDefaultFx() : undefined),
+    cells: (typeof _dawNormCells === "function" ? _dawNormCells([], dawState.scenes ?? 4) : []),
+    kind: "midi", notes: [], synth: _dawDefaultSynth(), midi_out: null, clips: [],
+  });
+  _dawAfterMutate();
+  return dawState.tracks[dawState.tracks.length - 1];
+}
+function dawSetTrackNotes(trackId, notes) {
+  const t = dawState.tracks.find(t => t.id === trackId); if (!t) return;
+  t.notes = notes || []; _dawAfterMutate();
+}
+function dawSetTrackSynth(trackId, patch) {
+  const t = dawState.tracks.find(t => t.id === trackId); if (!t) return;
+  t.synth = Object.assign({}, t.synth || _dawDefaultSynth(), patch);
+  dawMarkDirty();
+}
+function dawSetTrackMidiOut(trackId, outId) {
+  const t = dawState.tracks.find(t => t.id === trackId); if (!t) return;
+  t.midi_out = outId || null; dawMarkDirty();
 }

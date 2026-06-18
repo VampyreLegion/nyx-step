@@ -241,3 +241,16 @@ def test_transcribe_bad_mode(monkeypatch, tmp_path):
     monkeypatch.setattr(daw_routes, "safe_output_path", lambda fn: f)
     r = client.post("/daw/transcribe", json={"file": "x.mp3", "mode": "nope"})
     assert r.status_code == 400
+
+
+def test_project_persists_midi_track():
+    pid = client.post("/daw/projects", json={"name": "MID"}).json()["id"]
+    data = {"version": 1, "tempo": 120, "master_volume": 1.0, "tracks": [
+        {"id": "m1", "name": "Lead", "mute": False, "solo": False, "color": "#fff",
+         "volume": 1.0, "pan": 0.0, "kind": "midi",
+         "notes": [{"start": 0.0, "dur": 0.5, "pitch": 60, "vel": 80}],
+         "synth": {"wave": "square", "env": "pad"}, "midi_out": "out-1", "clips": []}]}
+    client.put(f"/daw/projects/{pid}", json={"data": data})
+    t = client.get(f"/daw/projects/{pid}").json()["data"]["tracks"][0]
+    assert t["kind"] == "midi" and t["notes"][0]["pitch"] == 60
+    assert t["synth"]["wave"] == "square" and t["midi_out"] == "out-1"
