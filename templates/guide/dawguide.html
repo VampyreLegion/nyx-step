@@ -15,7 +15,13 @@
   <li><strong>Tracks</strong> — <strong>+ Add Track</strong> adds a lane. Each header has Mute (<strong>M</strong>), Solo (<strong>S</strong>), a volume slider, and a 🎵 button to generate straight onto that track.</li>
   <li><strong>Clips</strong> — drag to move (across tracks too), drag the right edge to trim. The left/right corner handles set fade-in / fade-out; the fade curve is drawn on the clip.</li>
   <li><strong>Zoom</strong> with 🔍− / 🔍+. Click the ruler to move the playhead.</li>
-  <li><strong>Clip menu</strong> (the <code>⋯</code> on a clip) — Split at playhead, Normalize, Gain, Reset fades, plus the AI and stretch operations below.</li>
+  <li><strong>Clip menu</strong> (the <code>⋯</code> on a clip) — Split at playhead, Duplicate, Normalize, Gain, Reset fades, plus the stretch, AI, and MIDI operations below.</li>
+</ul>
+
+<h3>Copy / paste / duplicate</h3>
+<ul>
+  <li><strong>⧉ Duplicate (after)</strong> in the clip menu drops a back-to-back copy right after the clip — click once to turn a 30&nbsp;s clip into 60&nbsp;s, again for 90&nbsp;s.</li>
+  <li><strong><kbd>Ctrl</kbd>+C</strong> copies the selected clip; <strong><kbd>Ctrl</kbd>+V</strong> pastes it at the playhead on its track (snapped to the grid).</li>
 </ul>
 
 <h3>Snap to grid</h3>
@@ -52,7 +58,27 @@
   <li><strong>Split / Normalize / Gain / Fades</strong> from the clip menu for precise edits.</li>
   <li><strong>🤖 AI Remix…</strong> — send a clip back through ACE-Step for a variation, extension, or repaint; the result drops into the library and onto a track.</li>
   <li><strong>🎛 Split to Stems</strong> — run Demucs on a clip to break it into vocals / drums / bass / other as four new tracks (the source is muted).</li>
-  <li><strong>🎵 Generate onto track</strong> — generate a fresh clip directly onto a chosen track from the track header.</li>
+  <li><strong>🎵 Generate onto track</strong> — generate a fresh clip directly onto a track from its header. Pick a <strong>Type</strong> (Instrument / Vocals / Drums / Bass — auto-switches to Vocals when your tags mention a voice); the request is augmented with isolation tags and negative conditioning so you get <em>only</em> that instrument/voice, never a full mix. Tick <strong>🔪 Isolate (stem-split after)</strong> for a hard guarantee (runs Demucs and keeps the matching stem).</li>
+  <li><strong>🎹 Convert to MIDI…</strong> — transcribe a clip to a MIDI track (see below).</li>
+</ul>
+
+<h3>MIDI tracks</h3>
+<p>The DAW has full MIDI tracks alongside audio tracks. Add one with <strong>+ Add MIDI Track</strong>, or create one by transcribing audio.</p>
+<ul>
+  <li><strong>Audio → MIDI</strong> — a clip's <strong>🎹 Convert to MIDI…</strong> transcribes it to notes: <strong>Melody</strong> (monophonic pitch), <strong>Rhythm</strong> (percussive onsets), or <strong>Piano</strong> (polyphonic). The new MIDI track lines up under the source clip.</li>
+  <li><strong>Internal synth</strong> — notes play through a built-in synth routed via the track's chain, so the <strong>mixer + FX apply</strong>. The track header has a <strong>waveform</strong> selector (sine / triangle / sawtooth / square).</li>
+  <li><strong>External USB MIDI</strong> — the header's <strong>Output</strong> selector lists <em>Internal synth</em> plus any hardware synths connected over USB MIDI; pick one to drive your hardware instead. (WAV export captures the internal synth only — hardware-routed tracks export silent.)</li>
+  <li>MIDI notes render as blocks on the timeline lane and are included in <strong>Export WAV</strong> (via the internal synth).</li>
+</ul>
+
+<h3>Piano-roll editor</h3>
+<p><strong>Double-click a MIDI lane</strong> (or the <strong>🎹</strong> button in its header) to open the piano-roll — a scrollable pitch×time grid with a clickable piano keyboard down the left.</p>
+<ul>
+  <li><strong>Draw</strong> — click an empty cell to add a note (snapped to the grid; row = pitch). It plays a preview blip.</li>
+  <li><strong>Move</strong> — drag a note (time snaps, pitch follows the row). <strong>Resize</strong> — drag its right edge.</li>
+  <li><strong>Delete</strong> — <kbd>Delete</kbd>/<kbd>Backspace</kbd> on the selected note, or double-click it.</li>
+  <li><strong>Velocity</strong> — the toolbar slider sets the selected note (0–127); note brightness reflects it.</li>
+  <li><strong>Preview</strong> — click any key on the left to hear that pitch through the track's synth. Hold <kbd>Ctrl</kbd> while dragging to bypass snap.</li>
 </ul>
 
 <h3>Session grid (looper)</h3>
