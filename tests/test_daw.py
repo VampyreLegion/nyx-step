@@ -218,3 +218,26 @@ def test_melody_notes_detects_a4(tmp_path):
 def test_notes_to_json_shape():
     from core.midi import notes_to_json
     assert notes_to_json([(0.0, 0.5, 60, 80)]) == [{"start": 0.0, "dur": 0.5, "pitch": 60, "vel": 80}]
+
+
+def test_transcribe_route(monkeypatch, tmp_path):
+    import routes.daw as daw_routes
+    import core.midi as midi_mod
+    f = tmp_path / "x.mp3"; f.write_bytes(b"stub")
+    monkeypatch.setattr(daw_routes, "_user_owns_daw_file", lambda u, fn: True)
+    monkeypatch.setattr(daw_routes, "safe_output_path", lambda fn: f)
+    monkeypatch.setattr(midi_mod, "melody_notes", lambda p: [(0.0, 0.5, 60, 80), (0.5, 1.0, 62, 90)])
+    r = client.post("/daw/transcribe", json={"file": "x.mp3", "mode": "melody"})
+    assert r.status_code == 200
+    d = r.json()
+    assert d["count"] == 2 and d["mode"] == "melody"
+    assert d["notes"][0] == {"start": 0.0, "dur": 0.5, "pitch": 60, "vel": 80}
+    assert abs(d["duration"] - 1.0) < 1e-6
+
+def test_transcribe_bad_mode(monkeypatch, tmp_path):
+    import routes.daw as daw_routes
+    f = tmp_path / "x.mp3"; f.write_bytes(b"stub")
+    monkeypatch.setattr(daw_routes, "_user_owns_daw_file", lambda u, fn: True)
+    monkeypatch.setattr(daw_routes, "safe_output_path", lambda fn: f)
+    r = client.post("/daw/transcribe", json={"file": "x.mp3", "mode": "nope"})
+    assert r.status_code == 400

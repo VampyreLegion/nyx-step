@@ -139,6 +139,39 @@ async def job_status(prompt_id: str, request: Request):
     return {"status": job.status, "files": job.output_files, "error": job.error_msg}
 
 
+class _Transcribe(BaseModel):
+    file: str
+    mode: str = "melody"
+
+
+@router.post("/transcribe")
+async def transcribe(req: _Transcribe, request: Request):
+    import asyncio
+    from core.executor import get_audio_pool
+    user = get_user_email(request)
+    if not _user_owns_daw_file(user, req.file):
+        return JSONResponse({"error": "Not found or access denied"}, status_code=404)
+    path = safe_output_path(req.file)
+    if path is None or not path.exists():
+        return JSONResponse({"error": "File not on disk"}, status_code=404)
+    if req.mode not in ("melody", "rhythm", "piano"):
+        return JSONResponse({"error": "Bad mode"}, status_code=400)
+
+    def _work():
+        from core.midi import melody_notes, rhythm_notes, piano_notes, notes_to_json
+        fn = {"melody": melody_notes, "rhythm": rhythm_notes, "piano": piano_notes}[req.mode]
+        notes = fn(str(path))
+        return notes_to_json(notes)
+
+    try:
+        loop = asyncio.get_event_loop()
+        notes = await loop.run_in_executor(get_audio_pool(), _work)
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+    duration = max((n["start"] + n["dur"] for n in notes), default=0.0)
+    return {"notes": notes, "duration": round(duration, 4), "mode": req.mode, "count": len(notes)}
+
+
 @router.get("/audio/{file:path}")
 async def audio(file: str, request: Request):
     user = get_user_email(request)
