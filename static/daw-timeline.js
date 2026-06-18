@@ -1,6 +1,6 @@
 // ── DAW timeline rendering + interaction ──────────────────────────────────────
 let _dawPxPerSec = 12;          // zoom
-const _DAW_LANE_H = 64;
+const _DAW_LANE_H = 74;
 const _DAW_MIN_LEN = 60;        // seconds of empty ruler
 let _dawSelectedClip = null;
 
@@ -120,15 +120,17 @@ function dawRenderTrackHeaders() {
     vol.addEventListener("input", () => dawSetTrackVolume(t.id, parseFloat(vol.value)));
     row.appendChild(name); row.appendChild(btns); row.appendChild(vol);
     if (t.kind === "midi") {
+      const midiRow = document.createElement("div");
+      midiRow.style.cssText = "display:flex;gap:4px;margin-top:1px";
       const wave = document.createElement("select");
-      wave.title = "Synth waveform"; wave.style.cssText = "font-size:10px;width:100%;margin-top:2px";
+      wave.title = "Synth waveform"; wave.style.cssText = "font-size:9px;flex:1;min-width:0";
       for (const w of ["sine", "triangle", "sawtooth", "square"]) {
         const o = document.createElement("option"); o.value = w; o.textContent = w;
         if ((t.synth || {}).wave === w) o.selected = true; wave.appendChild(o);
       }
       wave.addEventListener("change", () => dawSetTrackSynth(t.id, { wave: wave.value }));
       const outSel = document.createElement("select");
-      outSel.title = "MIDI output (Internal synth or hardware over USB)"; outSel.style.cssText = "font-size:10px;width:100%;margin-top:2px";
+      outSel.title = "MIDI output (Internal synth or hardware over USB)"; outSel.style.cssText = "font-size:9px;flex:1;min-width:0";
       const rebuild = () => {
         outSel.innerHTML = "";
         const oi = document.createElement("option"); oi.value = ""; oi.textContent = "Internal synth"; outSel.appendChild(oi);
@@ -141,7 +143,8 @@ function dawRenderTrackHeaders() {
       rebuild();
       outSel.addEventListener("focus", async () => { if (typeof dawInitMidi === "function") { await dawInitMidi(); rebuild(); } });
       outSel.addEventListener("change", () => dawSetTrackMidiOut(t.id, outSel.value || null));
-      row.appendChild(wave); row.appendChild(outSel);
+      midiRow.appendChild(wave); midiRow.appendChild(outSel);
+      row.appendChild(midiRow);
     }
     head.appendChild(row);
   }
