@@ -214,6 +214,7 @@ def stream_lyrics(
     lyric_themes: str = "",
     vocal_style: str = "",
     instruments_hint: str = "",
+    enhancement_tags: str = "",
     instrumental: bool = False,
 ) -> Generator[str, None, None]:
     mood_str = f"with a {mood} mood" if mood else "with an appropriate mood"
@@ -227,12 +228,13 @@ def stream_lyrics(
     themes_str = f" Common themes to draw from: {lyric_themes}." if lyric_themes else ""
     vocal_str = f" Vocal style: {vocal_style}." if vocal_style else ""
     instr_str = f" Suggested instruments: {instruments_hint}." if instruments_hint else ""
+    enhance_str = f" Key performance and production elements to incorporate: {enhancement_tags}." if enhancement_tags else ""
 
     if instrumental:
         system = (
             f"You are an expert music arranger specializing in {genre} music. "
             f"Create an instrumental arrangement outline {mood_str}. "
-            f"Use this structure: {structure}.{instr_str} "
+            f"Use this structure: {structure}.{instr_str}{enhance_str} "
             f"Use only structural/instrumental tags — no sung lyrics: "
             f"[Intro] [Build] [Drop] [Breakdown] [Outro] [Guitar Solo] [Piano Interlude] [Drum Break]. "
             f"Under each tag write a brief arrangement note (e.g. 'filtered synth pads, rising arp'). "
@@ -240,9 +242,9 @@ def stream_lyrics(
         )
     else:
         system = (
-            f"You are an expert lyricist specializing in {genre} music. "
+            f"You are an expert lyricist and music producer specializing in {genre} music. "
             f"Write lyrics in the key of {key}, {mood_str}. "
-            f"Use this song structure: {structure}.{subject_str}{name_str}{artist_str}{lyric_style_str}{themes_str}{vocal_str}{instr_str} "
+            f"Use this song structure: {structure}.{subject_str}{name_str}{artist_str}{lyric_style_str}{themes_str}{vocal_str}{instr_str}{enhance_str} "
             f"Format every section with Nyx-Step structural tags. "
             f"Available tags — use whichever fit: [Intro] [Verse] [Pre-Chorus] [Chorus] [Bridge] [Outro] "
             f"[Build] [Drop] [Breakdown] [Fade Out] [Guitar Solo] [Piano Interlude] [Drum Break]. "

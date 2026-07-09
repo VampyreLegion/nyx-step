@@ -249,15 +249,15 @@ document.getElementById("btn-easy-gen").addEventListener("click", () => {
   const vocalTags = [...(_easyVocalState.vocal_tags || []), ...(_easyArtistState.vocal_tags || [])];
   const vocalStyle = [...new Set(vocalTags)].join(", ");
 
-  // Apply auto-enhance tags to the overview caption
+  // Apply auto-enhance tags to the overview caption and pass to Ollama
+  let enhancementTags = "";
   if (enhanceChecked) {
-    const enhancements = _getEnhancementTags();
-    if (enhancements.length) {
+    enhancementTags = _getEnhancementTags().join(", ");
+    if (enhancementTags) {
       const existingTags = document.getElementById("overview-tags").value.trim();
-      const extra = enhancements.join(", ");
       document.getElementById("overview-tags").value = existingTags
-        ? existingTags + ", " + extra
-        : extra;
+        ? existingTags + ", " + enhancementTags
+        : enhancementTags;
       updatePayloadPreview();
     }
   }
@@ -276,6 +276,7 @@ document.getElementById("btn-easy-gen").addEventListener("click", () => {
     lyric_themes: (_easyArtistState.lyric_themes || []).join(", "),
     vocal_style: vocalStyle,
     instruments_hint: instrumentsHint,
+    enhancement_tags: enhancementTags,
     instrumental: instrumental ? "true" : "false",
   });
 

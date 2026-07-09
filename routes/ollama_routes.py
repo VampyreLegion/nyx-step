@@ -69,6 +69,7 @@ async def ollama_stream(
     lyric_themes: str = "",
     vocal_style: str = "",
     instruments_hint: str = "",
+    enhancement_tags: str = "",
     instrumental: bool = False,
 ):
     async def token_gen() -> AsyncGenerator[dict, None]:
@@ -81,7 +82,7 @@ async def ollama_stream(
                 genre=genre, key=key, mood=mood, structure=structure,
                 model=model, subject=subject, name_override=name_override,
                 artist=artist, lyric_style=lyric_style, lyric_themes=lyric_themes, vocal_style=vocal_style,
-                instruments_hint=instruments_hint, instrumental=instrumental,
+                instruments_hint=instruments_hint, enhancement_tags=enhancement_tags, instrumental=instrumental,
             ))
 
         tokens = await loop.run_in_executor(executor, _stream)
