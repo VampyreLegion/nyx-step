@@ -22,7 +22,7 @@ MusicWeb is a single-page app that wraps ACE-Step's diffusion model with a full 
 | **Train** | LoRA training UI with real-time loss chart |
 | **History** | Browse, replay, and restore past generations |
 
-Additional features: LRC synchronized lyrics, per-file quality scores (0–10), LoRA browser, Ollama tag/lyrics assistant, Brave Search artist lookup, prompt linter, presets.
+Additional features: LRC synchronized lyrics, per-file quality scores (0–10), LoRA browser, Ollama tag/lyrics assistant, Brave Search artist lookup, prompt linter, presets. All generated audio files carry ID3 tags (BPM, key, genre, title, artist) written at creation time.
 
 ---
 

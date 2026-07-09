@@ -7,6 +7,7 @@ from datetime import datetime
 import config
 import core.db as db
 from core.comfyui import ComfyUIClient
+from core.tagger import tag_file
 
 _JOB_TTL_DAYS = 7
 _PURGE_INTERVAL = 6 * 3600  # purge every 6 hours
@@ -27,6 +28,21 @@ class JobInfo:
     caption: str = ""
     lyrics: str = ""
     params: dict = field(default_factory=dict)
+
+
+def _tag_output_files(job: JobInfo) -> None:
+    """Tag generated audio files in-place with job metadata."""
+    output_dir = config.COMFYUI_OUTPUT_DIR / "audio"
+    meta = {
+        "song_name": job.song_name,
+        "caption": job.caption,
+        "seed": job.seed,
+        "params": job.params,
+    }
+    for fname in job.output_files:
+        fpath = output_dir / fname
+        if fpath.exists():
+            tag_file(fpath, meta)
 
 
 def _dict_to_jobinfo(d: dict) -> JobInfo:
@@ -167,5 +183,6 @@ class JobTracker:
                         completed = self.get(pid)
                         if completed:
                             self._write_history(completed)
+                            _tag_output_files(completed)
                     else:
                         self.update(pid, status="error", error_msg="No output files in history")

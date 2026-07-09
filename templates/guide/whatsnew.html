@@ -1,5 +1,18 @@
 <html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
-<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v3.11.0</h2>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v3.11.1</h2>
+
+<h3>🏷 ID3 Metadata on Generated Files</h3>
+<p>Generated audio files now carry <strong>rich ID3 tags</strong> written at creation time. The BPM, Key, Genre, and Song Name you set in the UI are embedded directly into the file, not just stamped at download time.</p>
+<ul>
+  <li><strong>BPM</strong> — written to the <code>TBPM</code> frame (MP3) or <code>bpm</code> field (FLAC)</li>
+  <li><strong>Key</strong> — written to the <code>TKEY</code> frame (MP3) or <code>initialkey</code> field (FLAC), e.g. "C Major", "F Minor"</li>
+  <li><strong>Genre</strong> — written to the <code>TCON</code> frame (MP3) or <code>genre</code> field (FLAC)</li>
+  <li><strong>Central tagger</strong> — <code>core/tagger.py</code> with <code>tag_file()</code> (in-place at creation) and <code>tag_bytes()</code> (download path); shared by job tracker and download endpoint</li>
+  <li><strong>Survives everything</strong> — tags are on the original file, not a temp copy; ZIP exports, SMB shares, and direct file access all get the metadata</li>
+</ul>
+
+<hr style="border:none;border-top:1px solid #2d3041;margin:18px 0">
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">v3.11.0 — Browser DAW</h2>
 
 <h3>🎚 Browser DAW</h3>
 <p>The headline feature: a full in-browser <strong>digital audio workstation</strong> in the <strong>🎚 DAW</strong> tab. Arrange your generated clips and stems on a multi-track timeline and bounce the result to a WAV — see the dedicated <strong>🎚 DAW</strong> guide for the full walkthrough. Highlights:</p>

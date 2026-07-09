@@ -90,50 +90,7 @@ def safe_output_path(filename: str) -> Path | None:
 _safe_output_path = safe_output_path
 
 
-def _tag_audio(file_path: Path, meta: dict | None) -> bytes | None:
-    """Return file bytes with ID3/FLAC tags applied from meta. Returns None on failure.
-
-    Works on a temp copy — mutagen's file-path save replaces existing tags
-    in place, whereas its BytesIO path can leave a duplicate tag block.
-    """
-    if not meta:
-        return None
-    ext = file_path.suffix.lower()
-    if ext not in (".mp3", ".flac"):
-        return None
-
-    import shutil
-    import tempfile
-    with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as ntf:
-        tmp = Path(ntf.name)
-    try:
-        shutil.copyfile(file_path, tmp)
-        title   = meta.get("song_name", "")
-        caption = meta.get("caption", "")
-        seed    = str(meta.get("seed", ""))
-        comment = f"Tags: {caption}\nSeed: {seed}" if caption else f"Seed: {seed}"
-
-        if ext == ".mp3":
-            from mutagen.mp3 import MP3
-            from mutagen.id3 import TIT2, TPE1, COMM
-            audio = MP3(tmp)
-            if audio.tags is None:
-                audio.add_tags()
-            audio.tags.add(TIT2(encoding=3, text=title))
-            audio.tags.add(TPE1(encoding=3, text="Nyx-Step AI"))
-            audio.tags.add(COMM(encoding=3, lang="eng", desc="", text=comment))
-        else:
-            from mutagen.flac import FLAC
-            audio = FLAC(tmp)
-            audio["title"]   = title
-            audio["artist"]  = "Nyx-Step AI"
-            audio["comment"] = comment
-        audio.save()
-        return tmp.read_bytes()
-    except Exception:
-        return None
-    finally:
-        tmp.unlink(missing_ok=True)
+from core.tagger import tag_bytes as _tag_audio
 
 
 def _get_meta_for_file(filename: str) -> dict | None:

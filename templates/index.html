@@ -1634,8 +1634,16 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.11.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; June 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.11.1 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; July 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.11.1 — ID3 Metadata on Generated Files</h3>
+        <ul>
+          <li><strong>🏷 ID3 tags written at creation time</strong> — every generated MP3/FLAC now has <strong>BPM</strong> (TBMP frame), <strong>Key</strong> (TKEY frame, e.g. "C Major"), and <strong>Genre</strong> (TCON frame) embedded automatically when the job finishes, not just at download time</li>
+          <li><strong>Central tagger module</strong> — <code>core/tagger.py</code> provides shared <code>tag_file()</code> (in-place) and <code>tag_bytes()</code> (download path) used by both the job tracker and download endpoint; files tagged at source survive cache, ZIP exports, and SMB shares</li>
+        </ul>
       </div>
 
       <div class="about-section">
@@ -2025,7 +2033,7 @@
           <li>Drag-and-drop file upload on Analyze, Stems, Cover, and MIDI tabs (shared dropzone.js utility)</li>
           <li>ZIP batch download: POST /download/zip; ZIP All button appears on multi-file job cards</li>
           <li>LUFS loudness meter (pyloudnorm ITU-R BS.1770-4) + chord auto-detection (chroma_stft) added to Analyze endpoint</li>
-          <li>ID3/FLAC metadata tags (song name, Nyx-Step AI artist, generation comment) embedded on all downloaded audio files via mutagen</li>
+          <li>ID3/FLAC metadata tags (song name, artist, BPM, key, genre, comment) embedded at creation time on all generated audio files via mutagen; survive cache, ZIP exports, and direct file access</li>
         </ul>
       </div>
     </div>
