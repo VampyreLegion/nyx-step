@@ -169,6 +169,66 @@ document.getElementById("btn-easy-vocal-lookup").addEventListener("click", () =>
     .finally(() => { btn.disabled = false; btn.textContent = "Look Up"; });
 });
 
+function _getEnhancementTags() {
+  const tags = [];
+  const activeInstruments = (mwState.instruments || []).map(i => i.toLowerCase());
+  const activeVocals = (mwState.vocal_tags || []).map(v => v.toLowerCase());
+  const genre = (mwState.genre || "").toLowerCase();
+
+  // ── Instrument-based performance modifiers ──
+  const hasGuitar = activeInstruments.some(i => /guitar|banjo|mandolin|ukulele/.test(i));
+  const hasBass = activeInstruments.some(i => /bass/.test(i));
+  const hasSynth = activeInstruments.some(i => /synth|pad|keyboard|organ|electric piano|rhodes|wurlitzer/.test(i));
+  const hasAcidSynth = activeInstruments.some(i => /303|acid|moog|tb-?303/.test(i));
+  const hasDrums = activeInstruments.some(i => /drum|808|909|percussion|beat/.test(i));
+  const hasStrings = activeInstruments.some(i => /string|violin|cello|viola|orchestra/.test(i));
+  const hasBrass = activeInstruments.some(i => /brass|trumpet|trombone|horn|sax/.test(i));
+  const hasPiano = activeInstruments.some(i => /piano|grand|upright/.test(i));
+  const hasFlute = activeInstruments.some(i => /flute|woodwind|clarinet|oboe|bassoon/.test(i));
+  const hasVoice = activeVocals.some(i => /vocal|voice|singer|choir/.test(i)) || activeVocals.length > 0;
+
+  if (hasGuitar) tags.push("solo guitar break", "rhythmic strumming");
+  if (hasAcidSynth) tags.push("TB303 bassline fill", "squelchy resonant filter");
+  else if (hasSynth) tags.push("arpeggiated synth", "sweeping pads");
+  if (hasBass) tags.push("groove bassline");
+  if (hasDrums) tags.push("driving rhythm", "syncopated");
+  if (hasStrings) tags.push("legato strings", "staccato strings");
+  if (hasBrass) tags.push("brass section swell");
+  if (hasPiano) tags.push("grand piano", "piano arpeggios");
+  if (hasFlute) tags.push("soaring flute melody");
+
+  // ── Genre-based production & mood ──
+  if (/dubstep|techno|house|trance|edm|dance|electronic|acid/.test(genre)) {
+    tags.push("sidechained", "filtered", "punchy");
+  } else if (/rock|metal|punk|grunge|alternative/.test(genre)) {
+    tags.push("overdrive", "powerful", "distorted rhythm guitar");
+  } else if (/jazz|blues|soul|r&b|funk/.test(genre)) {
+    tags.push("swing", "warm", "soulful");
+  } else if (/hip hop|rap|trap/.test(genre)) {
+    tags.push("lo-fi", "pitch shift", "heavy bass");
+  } else if (/ambient|chill|downtempo|lo-fi/.test(genre)) {
+    tags.push("ethereal", "reverb hall", "dreamy");
+  } else if (/classical|orchestral|cinematic|baroque/.test(genre)) {
+    tags.push("cinematic", "epic", "lush orchestral strings");
+  } else if (/folk|acoustic|country|singer/.test(genre)) {
+    tags.push("intimate", "fingerpicked", "warm");
+  } else if (/pop|synthpop|indie/.test(genre)) {
+    tags.push("catchy", "bright", "polished");
+  } else {
+    tags.push("rich", "textured", "dynamic");
+  }
+
+  // ── Add a structural breakdown for instrumental sections ──
+  const structure = document.getElementById("easy-structure").value;
+  if (structure === "EDM Structure") {
+    tags.push("build-up", "breakdown");
+  } else if (!/minimal/i.test(structure)) {
+    tags.push("breakdown");
+  }
+
+  return [...new Set(tags)];
+}
+
 document.getElementById("btn-easy-gen").addEventListener("click", () => {
   const btn = document.getElementById("btn-easy-gen");
   const log = document.getElementById("easy-log");
@@ -182,10 +242,25 @@ document.getElementById("btn-easy-gen").addEventListener("click", () => {
   let tokenCount = 0;
 
   const instrumental = document.getElementById("easy-instrumental").checked;
+  const enhanceChecked = document.getElementById("easy-enhance").checked;
+
   const instrSet = new Set([..._easyStyleInstruments, ...(_easyArtistState.instrument_tags || [])]);
   const instrumentsHint = [...instrSet].join(", ");
   const vocalTags = [...(_easyVocalState.vocal_tags || []), ...(_easyArtistState.vocal_tags || [])];
   const vocalStyle = [...new Set(vocalTags)].join(", ");
+
+  // Apply auto-enhance tags to the overview caption
+  if (enhanceChecked) {
+    const enhancements = _getEnhancementTags();
+    if (enhancements.length) {
+      const existingTags = document.getElementById("overview-tags").value.trim();
+      const extra = enhancements.join(", ");
+      document.getElementById("overview-tags").value = existingTags
+        ? existingTags + ", " + extra
+        : extra;
+      updatePayloadPreview();
+    }
+  }
 
   const params = new URLSearchParams({
     topic: document.getElementById("easy-topic").value,
