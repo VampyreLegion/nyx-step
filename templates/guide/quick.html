@@ -1,0 +1,31 @@
+<html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}</style></head><body>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">🧠 Quick Idea Starter — Deep AI Expand</h2>
+
+<p>The <strong>Quick Idea Starter</strong> in <strong>Legion's BioInfusor</strong> tab is a one-click song-generation agent. Type any musical idea in plain English — it handles everything from research to final generation.</p>
+
+<h3>How It Works</h3>
+<ol>
+  <li><strong>You type a description</strong> — e.g. "Tiesto style live set", "dark ambient forest at midnight", "Billie Eilish type beat with trap drums"</li>
+  <li><strong>AI researches</strong> — if the description references an artist or known style, Gemma4 + Brave Search gather real context about the artist's genre, instruments, vocal style, and production approach</li>
+  <li><strong>AI generates complete song package</strong> — a single Ollama call produces:
+    <ul>
+      <li>8-15 rich comma-separated Nyx-Step tags (genre, mood, instruments, performance style, texture)</li>
+      <li>BPM, key, scale, time signature, genre, mood</li>
+      <li>4-8 instrument names populated into the instrument list</li>
+      <li>3-6 vocal style tags (voice type, register, effects)</li>
+      <li><strong>Full lyrics</strong> — multi-section song with [Intro], [Verse], [Chorus], [Bridge], [Outro] in the appropriate style</li>
+      <li>Creative song title</li>
+    </ul>
+  </li>
+  <li><strong>Fields populate</strong> — every UI field is filled: tags, lyrics, instruments, vocal tags, BPM, key, scale, song name</li>
+  <li><strong>Auto-generate</strong> — after 1.2 seconds (so you can see what was built), it clicks Generate and submits to ComfyUI</li>
+</ol>
+
+<h3>Tips</h3>
+<ul>
+  <li><strong>Be specific about artists</strong> — mentioning an artist name triggers Brave Search for real context; "Tiesto style" gets better results than just "electronic"</li>
+  <li><strong>Include mood/energy</strong> — "dark aggressive techno" vs "uplifting melodic techno" steers the lyrics and tag selection significantly</li>
+  <li><strong>Edit after generation</strong> — the 1.2s pause lets you tweak any field before the auto-generate fires; you can also cancel by clicking away</li>
+  <li><strong>Instrumental?</strong> — check the "Instrumental only" box before clicking Expand; the AI will write arrangement notes instead of sung lyrics</li>
+</ul>
+</body></html>

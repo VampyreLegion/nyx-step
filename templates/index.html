@@ -1654,8 +1654,12 @@
       </div>
 
       <div class="about-section">
-        <h3>v3.12.0 — Variance Protocol</h3>
+        <h3>v3.12.0 — Variance Protocol &amp; Deep AI Quick Start</h3>
         <ul>
+          <li><strong>🧠 Quick Idea Starter — Deep AI Expand</strong> — BioInfusor's Quick Idea Starter now does full AI research and song generation from a single plain-English phrase. Type "Tiesto style live set" and it Brave-searches the artist, generates 8-15 production tags, writes complete multi-section lyrics, selects vocal tags, populates every field (BPM, key, scale, instruments, vocals), and auto-generates the track — all in one click</li>
+          <li><strong>Brave Search integration</strong> — the deep expand automatically researches the artist or idea via Brave Search to ground the AI in real context before generating lyrics and tags</li>
+          <li><strong>Full lyrics generation</strong> — Ollama writes complete song lyrics with [Intro], [Verse], [Chorus], [Bridge], [Outro] in the detected artist's style, no more manual lyric writing needed for quick ideas</li>
+          <li><strong>Auto-generate after populate</strong> — after all fields are populated, it waits 1.2s so you can see what was built, then clicks Generate to submit to ComfyUI automatically</li>
           <li><strong>🎲 Variance Protocol</strong> — new toggle in the Parameters tab that submits <strong>N individual one-shot workflows</strong> (1–8) instead of a single batch, each with its own randomized seed, CFG, denoise, and prompt variant from a configurable library</li>
           <li><strong><code>NyxStudio-Config.json</code></strong> — new config file at repo root with a 10-entry prompt library, CFG range [1.5–3.5], denoise range [0.85–1.0], and batch strategy settings; edit it to customize the variant pool</li>
           <li><strong><code>core/variance.py</code></strong> — new module: <code>build_variance_states()</code> applies per-item seed generation, CFG/denoise randomization, prompt cycling, and step jitter; <code>load_config()</code> reads from NyxStudio-Config.json</li>
@@ -1841,7 +1845,7 @@
       <div class="about-section">
         <h3>Legion's BioInfusor</h3>
         <ul>
-          <li><strong>Quick Idea Starter</strong> — type a plain-English music description; AI (Ollama) expands it into structured tags, BPM, key, scale, instruments, and mood; model selector auto-populated from Ollama</li>
+          <li><strong>Quick Idea Starter</strong> — type a plain-English music description; AI researches via Brave Search, generates full production tags, writes complete multi-section lyrics, populates every field (BPM, key, scale, time sig, instruments, vocal tags, song name), and auto-generates the track — all in one click</li>
           <li>Topic / Prompt, Mood, Subject / Character, and name-override fields feed Ollama lyrics generation</li>
           <li>Style dropdown — 150+ genres grouped by category, auto-sets BPM / key / instruments</li>
           <li>Song structure selector (Verse-Chorus, EDM, Intro-Verse-Chorus-Outro, etc.) and Ollama model selector</li>

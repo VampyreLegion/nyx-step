@@ -14,7 +14,7 @@ from nyx_step import tracker, get_user_email
 
 router = APIRouter()
 
-_CHAPTER_IDS = ["starthere", "whatsnew", "summary", "flowcharts", "scale", "midi", "analyze", "sampler", "lm", "presets", "radio", "extract", "quality", "lrc", "video", "dawguide", "variance", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
+_CHAPTER_IDS = ["starthere", "whatsnew", "summary", "flowcharts", "scale", "midi", "analyze", "sampler", "lm", "presets", "radio", "extract", "quality", "lrc", "video", "dawguide", "variance", "quick", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8"]
 
 _STYLE = (
     "<style>"
