@@ -1,0 +1,27 @@
+{
+  "project_name": "NyxStep_Global_Variance_Protocol",
+  "version": "1.0",
+  "settings": {
+    "global_randomization": true,
+    "batch_strategy": "increment",
+    "seed_mode": "random_per_index"
+  },
+  "variance_parameters": {
+    "cfg_range": [1.5, 3.5],
+    "denoise_range": [0.85, 1.0],
+    "embedding_noise_intensity": 0.15
+  },
+  "prompt_library": [
+    "psytrance, 145bpm, deep resonant bassline, driving percussion, hypnotic synth leads, aggressive FM synthesis, dark atmospheric textures",
+    "progressive house, 126bpm, smooth bass pulse, airy pads, clean pluck melody, wide stereo image, uplifting chord progression",
+    "minimal tech-house, 128bpm, dry percussive groove, glitchy vocal chops, sharp transient bass, tight gated reverb, industrial undertones",
+    "melodic psytrance, 142bpm, trippy acid sequences, evolving lead synths, rich harmonic layering, spacey delay effects, dynamic EQ sweeps",
+    "deep house, 122bpm, soft sub bass, lush piano chords, soulful rhythmic stabs, warm analog warmth, subtle vinyl crackle texture",
+    "tribal house, 128bpm, heavy complex drum patterns, woodblock percussion, shamanic chanting, evolving drone atmosphere, syncopated bass",
+    "peak-time melodic techno, 130bpm, saw-wave bass drive, soaring lead pads, cavernous reverb, intense build-ups, rhythmic arpeggios",
+    "minimalist ambient techno, 120bpm, granular synthesis textures, long evolving pads, rhythmic clicks and pops, sub-bass sustain, cinematic scope",
+    "psy-tech, 140bpm, rolling triplets, metallic percussion, morphing neuro-bass, high-frequency spectral processing, dark forest aesthetic",
+    "electro-house, 128bpm, side-chained bass, punchy kick, saw-tooth synth stabs, energetic build-ups, filtered noise risers"
+  ],
+  "naming_convention": "{SongTitle}_Seed_{Seed}_{Date}"
+}

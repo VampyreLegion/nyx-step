@@ -63,6 +63,8 @@ class GenerateRequest(BaseModel):
     lora2_name: str = ""
     lora2_scale: float = Field(default=1.0, ge=0.0, le=2.0)
     negative_tags: str = ""
+    variance_mode: bool = False
+    variance_count: int = Field(default=1, ge=1, le=8)
 
 
 @router.post("/generate")
@@ -78,6 +80,30 @@ async def generate(req: GenerateRequest, request: Request):
     # so (backing vocal cues) / (oh yeah) end up being performed as lyrics.
     lyrics = re.sub(r'\([^)]*\)', '', req.lyrics)
     lyrics = re.sub(r'\n{3,}', '\n\n', lyrics).strip()
+
+    if req.variance_mode and req.variance_count > 1:
+        variance_workflows = _client.build_variance_batch(caption, lyrics, state, req.variance_count)
+        if not variance_workflows:
+            return JSONResponse({"error": "Variance mode enabled but no workflows could be built"}, status_code=400)
+
+        prompt_ids = []
+        for vw in variance_workflows:
+            send_result = _client.send_workflow(vw["workflow"])
+            if "error" in send_result:
+                continue
+            pid = send_result.get("prompt_id", "")
+            if pid:
+                safe_params = {k: v for k, v in state.items() if k not in ("lyrics", "tags")}
+                safe_params["variance_index"] = vw.get("variance_index", 0)
+                tracker.register(pid, user_email, req.song_name, seed=vw.get("seed", 0),
+                                 caption=vw.get("caption", caption), lyrics=lyrics, params=safe_params)
+                prompt_ids.append(pid)
+
+        if not prompt_ids:
+            return JSONResponse({"error": "ComfyUI unreachable: failed to submit any variance workflows"}, status_code=400)
+
+        q = tracker.get_queue_counts()
+        return {"prompt_ids": prompt_ids, "queue_position": q["pending"]}
 
     result = _client.build_workflow(caption, lyrics, state)
     if "error" in result:

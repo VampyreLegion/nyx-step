@@ -751,6 +751,18 @@
           title="Batch size: generate N variations simultaneously. Each gets its own seed and job card. More = more VRAM. Default: 1.">
       </div>
     </div>
+    <div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:normal"
+          title="Variance Protocol: when enabled, Nyx submits N individual workflows with randomized seeds, CFG, denoise, and prompt variants from the NyxStudio-Config.json library. Each take is musically distinct.">
+          <input type="checkbox" id="param-variance-mode"> 🎲 Variance Protocol
+        </label>
+        <span style="font-size:11px;color:var(--muted)">Variations:</span>
+        <input type="number" id="param-variance-count" value="3" min="1" max="8" step="1" style="width:60px"
+          title="Number of distinct variant workflows to submit (1–8). Each gets randomized seed, CFG, denoise, and prompt cycling.">
+        <span style="font-size:11px;color:var(--muted)" id="variance-hint">3 individual jobs with randomized params</span>
+      </div>
+    </div>
     <div class="row">
       <div class="field-group">
         <label title="Sampling temperature controls how much randomness is applied when selecting audio tokens. 0.0 = fully deterministic (robotic, repetitive). 0.85 = natural variation with coherence (recommended). 1.5+ = highly experimental and unpredictable — may lose musical structure. Think of it as how much the model 'improvises'. Default: 0.85. Range: 0–2.">Temperature ⓘ</label>

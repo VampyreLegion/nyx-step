@@ -10,6 +10,7 @@ import requests
 
 import config
 from core.circuit_breaker import comfyui_breaker, CircuitOpenError
+from core.variance import build_variance_states, load_config
 
 logger = logging.getLogger(__name__)
 
@@ -232,12 +233,14 @@ class ComfyUIClient:
         if not filled:
             return {"error": "No TextEncodeAceStepAudio1.5 node found in template"}
 
+        batch_size = max(1, min(8, int(state.get("batch_size", 1))))
         for node in _find_nodes(workflow, "EmptyAceStep1.5LatentAudio"):
             node.setdefault("inputs", {})["seconds"] = float(state.get("duration", 30))
-            node["inputs"]["batch_size"] = max(1, min(8, int(state.get("batch_size", 1))))
+            node["inputs"]["batch_size"] = batch_size
 
         seed = _gen_seed(state)
-        _apply_ksampler(workflow, state, seed, denoise=1.0, default_steps=8)
+        denoise = float(state.get("denoise", 1.0))
+        _apply_ksampler(workflow, state, seed, denoise=denoise, default_steps=8)
         _apply_seed_to_encoder(workflow, seed)
         _apply_dit_model(workflow, state, default="turbo")
 
@@ -597,6 +600,32 @@ class ComfyUIClient:
         _apply_audio_format(workflow, state)
 
         return {"workflow": workflow, "seed": seed}
+
+    def build_variance_batch(
+        self,
+        base_caption: str,
+        lyrics: str,
+        state: dict,
+        count: int,
+    ) -> list[dict]:
+        """Build ``count`` individual one-shot workflows with per-item variance.
+
+        Returns a list of ``{"workflow": …, "seed": …, "caption": …}`` dicts.
+        """
+        var_config = load_config()
+        if not state.get("variance_mode"):
+            return []
+
+        var_states = build_variance_states(state, count, var_config)
+        results = []
+        for idx, vs in enumerate(var_states):
+            caption = vs.get("tags", base_caption)
+            r = self.build_workflow(caption, lyrics, vs)
+            if "error" not in r:
+                r["caption"] = caption
+                r["variance_index"] = idx
+                results.append(r)
+        return results
 
     def send_workflow(self, workflow: dict) -> dict:
         try:

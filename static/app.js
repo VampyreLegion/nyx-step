@@ -6,6 +6,7 @@ const mwState = {
   lastAudioFile: null,
   steps: 8, cfg_scale: 2.0, duration: 30.0, seed: 0, lock_seed: false,
   temperature: 0.85, top_p: 0.9, top_k: 0, min_p: 0.0,
+  variance_mode: false, variance_count: 3,
 };
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
@@ -83,6 +84,19 @@ document.getElementById("btn-random-seed").addEventListener("click", () => {
   document.getElementById("param-lock-seed").checked = true;
   mwState.seed = seed;
   mwState.lock_seed = true;
+  updatePayloadPreview();
+});
+
+document.getElementById("param-variance-mode").addEventListener("change", e => {
+  mwState.variance_mode = e.target.checked;
+  document.getElementById("param-variance-count").style.display = mwState.variance_mode ? "" : "none";
+  document.getElementById("variance-hint").style.display = mwState.variance_mode ? "" : "none";
+  updatePayloadPreview();
+});
+document.getElementById("param-variance-count").addEventListener("change", e => {
+  mwState.variance_count = parseInt(e.target.value) || 1;
+  document.getElementById("variance-hint").textContent =
+    mwState.variance_count + " individual jobs with randomized params";
   updatePayloadPreview();
 });
 
@@ -385,6 +399,10 @@ function syncParamsFromDOM() {
   });
   const lock = document.getElementById("param-lock-seed");
   if (lock) mwState.lock_seed = lock.checked;
+  const varianceMode = document.getElementById("param-variance-mode");
+  if (varianceMode) mwState.variance_mode = varianceMode.checked;
+  const varianceCount = document.getElementById("param-variance-count");
+  if (varianceCount) mwState.variance_count = parseInt(varianceCount.value) || 1;
 }
 
 function syncOverviewFromState() {
@@ -411,6 +429,7 @@ function updatePayloadPreview() {
     `BPM: ${s.bpm}   Key: ${s.key} ${s.scale}   Time: ${s.time_sig}`,
     `Steps: ${s.steps}   CFG: ${s.cfg_scale}   Duration: ${s.duration}s   Seed: ${seedLabel}`,
     `Temp: ${s.temperature}   Top-P: ${s.top_p}   Top-K: ${s.top_k}   Min-P: ${s.min_p}`,
+    `Variance: ${s.variance_mode ? "ON (" + s.variance_count + " variants)" : "OFF"}`,
   ].join("\n");
 }
 
@@ -452,6 +471,8 @@ function _buildPreset() {
     top_p: mwState.top_p,
     top_k: mwState.top_k,
     min_p: mwState.min_p,
+    variance_mode: mwState.variance_mode,
+    variance_count: mwState.variance_count,
   };
 }
 
@@ -476,6 +497,8 @@ function _applyPreset(p) {
   if (p.top_p       !== undefined) mwState.top_p        = p.top_p;
   if (p.top_k       !== undefined) mwState.top_k        = p.top_k;
   if (p.min_p       !== undefined) mwState.min_p        = p.min_p;
+  if (p.variance_mode  !== undefined) mwState.variance_mode  = p.variance_mode;
+  if (p.variance_count !== undefined) mwState.variance_count = p.variance_count;
   if (p.lyrics      !== undefined) mwState.lyrics       = p.lyrics;
 
   // Style tab DOM
@@ -499,6 +522,12 @@ function _applyPreset(p) {
   _set("param-seed",     mwState.seed);
   const lockEl = document.getElementById("param-lock-seed");
   if (lockEl) lockEl.checked = mwState.lock_seed;
+  const varModeEl = document.getElementById("param-variance-mode");
+  if (varModeEl) varModeEl.checked = mwState.variance_mode;
+  const varCountEl = document.getElementById("param-variance-count");
+  if (varCountEl) { varCountEl.value = mwState.variance_count; varCountEl.style.display = mwState.variance_mode ? "" : "none"; }
+  const varHintEl = document.getElementById("variance-hint");
+  if (varHintEl) { varHintEl.textContent = mwState.variance_count + " individual jobs with randomized params"; varHintEl.style.display = mwState.variance_mode ? "" : "none"; }
 
   // Overview DOM
   _set("song-name",       p.song_name);
@@ -622,6 +651,7 @@ document.getElementById("btn-clear-overview").addEventListener("click", () => {
     instruments: [], vocal_tags: [], lyrics: "",
     steps: 8, cfg_scale: 2.0, duration: 30.0, seed: 0, lock_seed: false,
     temperature: 0.85, top_p: 0.9, top_k: 0, min_p: 0.0,
+    variance_mode: false, variance_count: 3,
   });
   document.getElementById("song-name").value = "";
   document.getElementById("overview-tags").value = "";
@@ -643,6 +673,8 @@ document.getElementById("btn-clear-overview").addEventListener("click", () => {
     }[id]] ?? 0;
   });
   document.getElementById("param-lock-seed").checked = false;
+  document.getElementById("param-variance-mode").checked = false;
+  document.getElementById("param-variance-count").value = 3;
   document.getElementById("instrument-selected").value = "";
   document.getElementById("vocal-selected").value = "";
   document.querySelectorAll("#instrument-chips .chip, #vocal-chips .chip").forEach(c => c.classList.remove("active"));
@@ -713,11 +745,19 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
       btn.textContent = "🎵 Generate Music Idea";
       return;
     }
-    _activeGenPromptId = data.prompt_id;
-    addJobCard(data.prompt_id, songName, "queued", []);
-    status.textContent = `Queued \u2014 ${data.prompt_id}`;
-    status.style.color = "var(--muted)";
-    setGenProgress("queued", "Queued — waiting for ComfyUI to start…");
+    if (data.prompt_ids) {
+      _activeGenPromptId = data.prompt_ids[0];
+      data.prompt_ids.forEach(pid => addJobCard(pid, songName, "queued", []));
+      status.textContent = `Queued ${data.prompt_ids.length} variants \u2014 ${data.prompt_ids[0]}…`;
+      status.style.color = "var(--muted)";
+      setGenProgress("queued", `Queued ${data.prompt_ids.length} variance jobs…`);
+    } else {
+      _activeGenPromptId = data.prompt_id;
+      addJobCard(data.prompt_id, songName, "queued", []);
+      status.textContent = `Queued \u2014 ${data.prompt_id}`;
+      status.style.color = "var(--muted)";
+      setGenProgress("queued", "Queued — waiting for ComfyUI to start…");
+    }
     btn.disabled = false;
     btn.textContent = "🎵 Generate Music Idea";
   } catch (e) {
