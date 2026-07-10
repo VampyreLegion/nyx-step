@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
 from core.executor import get_audio_pool
-from core.ollama import list_models, lookup_artist, stream_lyrics, expand_prompt
+from core.ollama import list_models, lookup_artist, stream_lyrics, expand_prompt, deep_expand_prompt
 
 router = APIRouter(prefix="/ollama")
 
@@ -49,6 +49,18 @@ async def expand(req: ExpandRequest):
     result = await loop.run_in_executor(
         get_audio_pool(),
         lambda: expand_prompt(req.description.strip(), req.model),
+    )
+    return result
+
+
+@router.post("/expand-deep")
+async def expand_deep(req: ExpandRequest):
+    if not req.description.strip():
+        return {"error": "description required"}
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        get_audio_pool(),
+        lambda: deep_expand_prompt(req.description.strip(), req.model),
     )
     return result
 

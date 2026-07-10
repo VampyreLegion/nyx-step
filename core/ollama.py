@@ -200,6 +200,97 @@ def infer_tags(analysis: dict, model: str = "gemma4:latest") -> dict:
         return {"error": str(exc)}
 
 
+def deep_expand_prompt(description: str, model: str = "gemma4:latest") -> dict:
+    """Full AI elaboration: research artist, generate complete tags + full lyrics.
+
+    Returns dict with keys: tags, bpm, key, scale, time_sig, genre, mood,
+    instruments (list), vocal_tags (list), lyrics (str), song_name (str).
+    """
+    import re
+
+    # Detect if an artist is referenced — try Brave Search for context
+    web_context = ""
+    artist_name = ""
+    try:
+        from core.brave_search import search_artist
+        result = search_artist(description)
+        if result and len(result) > 100:
+            web_context = result[:2000]
+    except Exception:
+        pass
+
+    example = (
+        '{"tags":"trance, electronic, driving bass, synth leads, '
+        'atmospheric pads, energetic, euphoric, festival, big room",'
+        '"bpm":132,"key":"F","scale":"minor","time_sig":"4/4",'
+        '"genre":"trance","mood":"euphoric, energetic, uplifting",'
+        '"instruments":["synth","drum machine","bass synth","sampler"],'
+        '"vocal_tags":["male vocal","processed","reverent","ethereal"],'
+        '"lyrics":"[Intro: Building]\\n\\n[Verse]\\nUnder the lights\\nThe bassline '
+        'drives us\\n\\n[Chorus]\\nWe are the night\\nLifting spirits\\n\\n[Outro: Fading]",'
+        '"song_name":"Neon Lights"}'
+    )
+
+    system = (
+        "You are a world-class music producer and lyricist AI. "
+        "Given a music idea or description, you will produce a COMPLETE song package "
+        "as a single JSON object. No markdown, no backticks, no explanation — raw JSON only.\n\n"
+        "Required keys:\n"
+        "  tags (string): 8-15 comma-separated Nyx-Step style tags: genre, mood, instruments, "
+        "tempo feel, production style, performance technique, energy level, sonic texture\n"
+        "  bpm (integer): estimated tempo 40-300\n"
+        "  key (string): musical key, one of: C, C#, D, D#, E, F, F#, G, G#, A, A#, B\n"
+        "  scale (string): one of: major, minor, harmonic minor, pentatonic major, pentatonic minor, "
+        "dorian, phrygian, lydian, mixolydian\n"
+        "  time_sig (string): one of: 2/4, 3/4, 4/4, 6/8\n"
+        "  genre (string): single primary genre\n"
+        "  mood (string): 2-4 mood/energy descriptors\n"
+        "  instruments (array of strings): 4-8 instrument names for the instrument list\n"
+        "  vocal_tags (array of strings): 3-6 vocal style descriptors e.g. "
+        "['female vocal','powerful','raspy','falsetto','breathy','choir']\n"
+        "  lyrics (string): COMPLETE song with Nyx-Step section tags. "
+        "Must include all of: [Intro], [Verse], [Chorus], [Bridge], [Outro]. "
+        "At least 2 verses and 2 choruses. "
+        "Every section starts with its bracketed tag on its own line. "
+        "Write lyrics that are poetic, musical, and evoke the described mood.\n"
+        "  song_name (string): a creative title derived from the description\n\n"
+        f"Example output for 'Tiesto style live set':\n{example}"
+    )
+
+    # Build prompt with web context if available
+    extra_context = ""
+    if web_context:
+        extra_context = (
+            f"\n\nWeb research about this idea/artist:\n{web_context}\n\n"
+            "Use this context to inform genre, style, instruments, and lyrics."
+        )
+    full_prompt = (
+        f"{system}{extra_context}\n\n"
+        f"Now convert this description into a complete song package. "
+        f"Return ONLY the JSON: {description}"
+    )
+
+    payload = {"model": model, "prompt": full_prompt, "stream": False}
+    try:
+        resp = ollama_breaker.call(_post_with_retry, f"{config.OLLAMA_URL}/api/generate", payload)
+        text = resp.json().get("response", "").strip()
+        text = re.sub(r'^```[a-z]*\s*', '', text, flags=re.MULTILINE)
+        text = re.sub(r'```\s*$', '', text, flags=re.MULTILINE)
+        text = text.strip()
+        match = re.search(r'\{.*\}', text, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                return {"error": f"Model returned malformed JSON: {text[:120]}"}
+        return {"error": f"No JSON found. Model said: {text[:120]}"}
+    except CircuitOpenError:
+        return {"error": "Ollama unavailable (circuit open)"}
+    except Exception as exc:
+        logger.error("deep_expand_prompt failed: %s", exc)
+        return {"error": str(exc)}
+
+
 def stream_lyrics(
     prompt: str,
     genre: str,
