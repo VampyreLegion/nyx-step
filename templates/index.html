@@ -1649,8 +1649,20 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.11.1 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; July 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.12.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; July 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.12.0 — Variance Protocol</h3>
+        <ul>
+          <li><strong>🎲 Variance Protocol</strong> — new toggle in the Parameters tab that submits <strong>N individual one-shot workflows</strong> (1–8) instead of a single batch, each with its own randomized seed, CFG, denoise, and prompt variant from a configurable library</li>
+          <li><strong><code>NyxStudio-Config.json</code></strong> — new config file at repo root with a 10-entry prompt library, CFG range [1.5–3.5], denoise range [0.85–1.0], and batch strategy settings; edit it to customize the variant pool</li>
+          <li><strong><code>core/variance.py</code></strong> — new module: <code>build_variance_states()</code> applies per-item seed generation, CFG/denoise randomization, prompt cycling, and step jitter; <code>load_config()</code> reads from NyxStudio-Config.json</li>
+          <li><strong>Lock Seed mode</strong> — when Lock Seed is on, all variance variants share the same base seed so the only differences come from CFG, denoise, and prompt cycling</li>
+          <li><strong>Per-variant job cards</strong> — each variant produces its own job card; you can Score, LRC, Remix, and download each independently</li>
+          <li>Full documentation in Guide → <strong>🎲 Variance Protocol</strong></li>
+        </ul>
       </div>
 
       <div class="about-section">
@@ -1879,6 +1891,7 @@
           <li>LM Stage toggle — generate_audio_codes; advanced lm_* params are standalone-API-only</li>
           <li>LoRA section — dropdown populated from ComfyUI models/loras; strength slider (0–2); ↺ refresh button; injects LoraLoader node into workflow between UNETLoader/DualCLIPLoader and sampler</li>
           <li>Dual LoRA stacking — LoRA 1 + LoRA 2 slots chained in series; each has independent scale (0–2)</li>
+          <li>🎲 Variance Protocol — toggle to submit N individual workflows with randomized seeds, CFG, denoise, and prompt cycling from <code>NyxStudio-Config.json</code>; each variant is its own job card with independent Score, LRC, and download</li>
           <li>↺ Reset to Defaults — resets all parameter fields in one click</li>
           <li>Changes sync to Overview payload preview immediately and on tab switch</li>
         </ul>

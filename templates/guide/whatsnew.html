@@ -1,5 +1,20 @@
 <html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
-<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v3.11.1</h2>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v3.12.0</h2>
+
+<h3>🎲 Variance Protocol</h3>
+<p>The <strong>Variance Protocol</strong> systematically randomizes each generation in a multi-output run so every take is musically distinct. Enable it in the <strong>Parameters</strong> tab — set a <strong>Variations</strong> count (1–8) and each variant becomes its own job card.</p>
+<ul>
+  <li><strong>Per-variant seed randomization</strong> — each gets a fresh random seed (or shares Lock Seed if enabled)</li>
+  <li><strong>CFG sweep</strong> — CFG Scale randomly sampled from a configurable range (default 1.5–3.5)</li>
+  <li><strong>Denoise variation</strong> — denoise randomized between 0.85–1.0 for slight acoustic differences</li>
+  <li><strong>Prompt cycling</strong> — rotates through a 10-entry prompt library from <code>NyxStudio-Config.json</code></li>
+  <li><strong>Step jitter</strong> — step count varies by ±1 around your base setting</li>
+  <li><strong>N individual workflows</strong> — instead of one batch-N job, submits N one-shot workflows so each variant gets truly independent sampling</li>
+</ul>
+<p>Full details in Guide → <strong>🎲 Variance Protocol</strong>.</p>
+
+<hr style="border:none;border-top:1px solid #2d3041;margin:18px 0">
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">v3.11.1 — ID3 Metadata on Generated Files</h2>
 
 <h3>🏷 ID3 Metadata on Generated Files</h3>
 <p>Generated audio files now carry <strong>rich ID3 tags</strong> written at creation time. The BPM, Key, Genre, and Song Name you set in the UI are embedded directly into the file, not just stamped at download time.</p>

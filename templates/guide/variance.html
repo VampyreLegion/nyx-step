@@ -1,0 +1,35 @@
+<html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">🎲 Variance Protocol</h2>
+
+<p>The <strong>Variance Protocol</strong> systematically introduces randomization entropy across batch generations so each take in a multi-output run is musically distinct. Instead of generating N variants from a single batch (which share one seed), it submits N individual one-shot workflows, each with its own seed, CFG, denoise, and prompt variant.</p>
+
+<h3>How It Works</h3>
+<p>When you enable Variance Protocol in the <strong>Parameters</strong> tab and set a Variations count:</p>
+<ol>
+  <li><strong>Seed randomization</strong> — each variant gets a fresh random seed (unless Lock Seed is on, in which case all variants share the base seed)</li>
+  <li><strong>CFG sweep</strong> — CFG Scale is randomly sampled from a range (default <strong>1.5–3.5</strong>) per variant instead of a fixed value</li>
+  <li><strong>Denoise variation</strong> — denoise strength is randomized between <strong>0.85–1.0</strong> for slight acoustic variation</li>
+  <li><strong>Prompt cycling</strong> — the prompt library in <code>NyxStudio-Config.json</code> rotates through 10+ curated music-description templates, cycling across variants so each take is oriented by a different sonic target</li>
+  <li><strong>Step jitter</strong> — the step count varies by ±1 around your base setting to avoid lockstep artifact patterns</li>
+</ol>
+
+<h3>Configuration</h3>
+<p>All variance parameters live in <code>NyxStudio-Config.json</code> at the repo root:</p>
+<table>
+<tr><th>Key</th><th>Default</th><th>Description</th></tr>
+<tr><td><code>global_randomization</code></td><td><code>true</code></td><td>Master toggle (overridden by UI checkbox)</td></tr>
+<tr><td><code>batch_strategy</code></td><td><code>"increment"</code></td><td>How prompts cycle through the library</td></tr>
+<tr><td><code>seed_mode</code></td><td><code>"random_per_index"</code></td><td>Each variant gets an independent random seed</td></tr>
+<tr><td><code>cfg_range</code></td><td><code>[1.5, 3.5]</code></td><td>Low/high bounds for CFG randomization</td></tr>
+<tr><td><code>denoise_range</code></td><td><code>[0.85, 1.0]</code></td><td>Low/high bounds for denoise randomization</td></tr>
+<tr><td><code>prompt_library</code></td><td>10 entries</td><td>Array of comma-separated tag strings cycled per variant</td></tr>
+</table>
+
+<h3>Usage Tips</h3>
+<ul>
+  <li><strong>Start with 3 variations</strong> — enough variety to compare without overwhelming the ComfyUI queue</li>
+  <li><strong>Lock seed</strong> + Variance Protocol = variants differ only in CFG, denoise, and prompt choice (not random seed), useful for isolating which parameter matters most</li>
+  <li><strong>Edit the prompt library</strong> — add your own genre/tag combinations to <code>NyxStudio-Config.json</code> to bias the variant pool toward your preferred sonic palette</li>
+  <li><strong>Each variant is a separate job card</strong> — you can Score, LRC, Remix, and download each independently</li>
+</ul>
+</body></html>
