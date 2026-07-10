@@ -94,16 +94,12 @@ document.getElementById("btn-quick-expand").addEventListener("click", async () =
     if (typeof updateTagTokenCount === "function") updateTagTokenCount();
     if (typeof updatePayloadPreview === "function") updatePayloadPreview();
 
-    status.innerHTML = "✅ <strong>Done</strong> — tags, lyrics, and production settings loaded. Auto-generating…";
+    status.innerHTML = "✅ <strong>Done</strong> — tags, lyrics, and production settings loaded. Review in the <strong>Generate</strong> tab and click <strong>Generate</strong> when ready.";
     status.style.color = "var(--accent2)";
 
-    // ── Auto-generate after a brief pause so the user sees what was built ────
-    setTimeout(() => {
-      const genBtn = document.getElementById("btn-generate");
-      if (genBtn && !genBtn.disabled) {
-        genBtn.click();
-      }
-    }, 1200);
+    // ── Switch to Generate tab so the user sees populated fields ─────────────
+    const genTabBtn = document.querySelector('.tab-btn[data-tab="overview"]');
+    if (genTabBtn) genTabBtn.click();
 
   } catch (e) {
     status.textContent = "Error: " + e.message;
