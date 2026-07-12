@@ -270,20 +270,47 @@ def deep_expand_prompt(description: str, model: str = "gemma4:latest") -> dict:
         f"Return ONLY the JSON: {description}"
     )
 
-    payload = {"model": model, "prompt": full_prompt, "stream": False, "options": {"num_predict": 8192}}
+    payload = {"model": model, "prompt": full_prompt, "stream": False, "options": {"num_predict": 16384}}
     try:
         resp = ollama_breaker.call(_post_with_retry, f"{config.OLLAMA_URL}/api/generate", payload)
         text = resp.json().get("response", "").strip()
         text = re.sub(r'^```[a-z]*\s*', '', text, flags=re.MULTILINE)
         text = re.sub(r'```\s*$', '', text, flags=re.MULTILINE)
         text = text.strip()
+
+        # Robust JSON extraction: try full parse first, then partial
         match = re.search(r'\{.*\}', text, re.DOTALL)
         if match:
             try:
                 return json.loads(match.group())
             except json.JSONDecodeError:
-                return {"error": f"Model returned malformed JSON: {text[:120]}"}
-        return {"error": f"No JSON found. Model said: {text[:120]}"}
+                pass  # fall through to partial extraction
+
+        # Partial extraction: grab whatever keys are present
+        partial: dict = {}
+        for key in ("tags","bpm","key","scale","time_sig","genre","mood","song_name","lyrics","instruments","vocal_tags"):
+            if key in ("instruments","vocal_tags"):
+                m = re.search(r'"' + key + r'"\s*:\s*\[(.*?)\]', text, re.DOTALL)
+                if m:
+                    raw = "[" + m.group(1) + "]"
+                    try:
+                        partial[key] = json.loads(raw)
+                    except json.JSONDecodeError:
+                        items = re.findall(r'"([^"]*?)"', raw)
+                        partial[key] = items[:10] if items else []
+            else:
+                m = re.search(r'"' + key + r'"\s*:\s*"((?:[^"\\]|\\.)*)', text, re.DOTALL)
+                if m:
+                    val = m.group(1).replace('\\"', '"')
+                    if key == "bpm":
+                        try: partial[key] = int(val)
+                        except: pass
+                    else:
+                        partial[key] = val
+
+        if partial:
+            return partial
+        return {"error": f"Model returned malformed JSON: {text[:200]}"}
     except CircuitOpenError:
         return {"error": "Ollama unavailable (circuit open)"}
     except Exception as exc:
