@@ -270,7 +270,7 @@ def deep_expand_prompt(description: str, model: str = "gemma4:latest") -> dict:
         f"Return ONLY the JSON: {description}"
     )
 
-    payload = {"model": model, "prompt": full_prompt, "stream": False}
+    payload = {"model": model, "prompt": full_prompt, "stream": False, "options": {"num_predict": 8192}}
     try:
         resp = ollama_breaker.call(_post_with_retry, f"{config.OLLAMA_URL}/api/generate", payload)
         text = resp.json().get("response", "").strip()

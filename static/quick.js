@@ -32,6 +32,13 @@ document.getElementById("btn-quick-expand").addEventListener("click", async () =
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({description: desc, model}),
     });
+    if (!resp.ok) {
+      status.innerHTML = `❌ <strong>Server error</strong> (HTTP ${resp.status}). The server may need a restart.`;
+      status.style.color = "var(--error)";
+      btn.disabled = false;
+      btn.textContent = "✨ Expand";
+      return;
+    }
     const data = await resp.json();
     if (data.error) {
       status.textContent = "Error: " + data.error;
@@ -94,7 +101,7 @@ document.getElementById("btn-quick-expand").addEventListener("click", async () =
     if (typeof updateTagTokenCount === "function") updateTagTokenCount();
     if (typeof updatePayloadPreview === "function") updatePayloadPreview();
 
-    status.innerHTML = "✅ <strong>Done</strong> — tags, lyrics, and production settings loaded. Review in the <strong>Generate</strong> tab and click <strong>Generate</strong> when ready.";
+    status.innerHTML = `✅ <strong>Done</strong> — <strong>${data.song_name || "song generated"}</strong>. All fields populated. Review in the <strong>Generate</strong> tab →`;
     status.style.color = "var(--accent2)";
 
     // ── Switch to Generate tab so the user sees populated fields ─────────────
