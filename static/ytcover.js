@@ -2,6 +2,109 @@ document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("btn-ytcover-submit");
   if (!btn) return;
 
+  let _ytActivePromptId = null;
+
+  // ── SSE — track job progress ──────────────────────────────────────────────
+  function connectYtSSE() {
+    const es = new EventSource("/events");
+    es.addEventListener("job_done", e => {
+      const data = JSON.parse(e.data);
+      if (data.prompt_id !== _ytActivePromptId) return;
+      showYtPlayer(data.files);
+    });
+    es.addEventListener("job_running", e => {
+      const data = JSON.parse(e.data);
+      if (data.prompt_id !== _ytActivePromptId) return;
+      const s = document.getElementById("ytcover-status");
+      if (s) { s.textContent = "Generating audio…"; s.style.color = "var(--accent2)"; }
+    });
+    es.addEventListener("job_error", e => {
+      const data = JSON.parse(e.data);
+      if (data.prompt_id !== _ytActivePromptId) return;
+      const s = document.getElementById("ytcover-status");
+      if (s) { s.textContent = "Error: generation failed"; s.style.color = "var(--error)"; }
+    });
+    es.onerror = () => { setTimeout(connectYtSSE, 3000); es.close(); };
+  }
+  connectYtSSE();
+
+  function showYtPlayer(files) {
+    const status = document.getElementById("ytcover-status");
+    const result = document.getElementById("ytcover-result");
+    status.textContent = "✓ Done — audio ready";
+    status.style.color = "var(--accent2)";
+    result.innerHTML = "";
+    const bust = "?t=" + Date.now();
+
+    files.forEach(f => {
+      const row = document.createElement("div");
+      row.style.cssText = "margin-top:8px";
+
+      const a = document.createElement("a");
+      a.href = "/download/" + encodeURIComponent(f) + bust;
+      a.download = f;
+      a.textContent = "⬇ " + f;
+      a.style.cssText = "color:var(--accent2);font-size:13px;";
+
+      const waveDiv = document.createElement("div");
+      waveDiv.style.cssText = "width:100%;border-radius:4px;overflow:hidden;cursor:pointer;margin-top:6px;";
+
+      const controls = document.createElement("div");
+      controls.style.cssText = "display:flex;align-items:center;gap:8px;margin-top:4px;";
+
+      const playBtn = document.createElement("button");
+      playBtn.className = "secondary small";
+      playBtn.textContent = "▶";
+      playBtn.style.cssText = "font-size:13px;padding:2px 10px;min-width:36px;";
+
+      const timeEl = document.createElement("span");
+      timeEl.style.cssText = "font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;";
+      timeEl.textContent = "0:00 / 0:00";
+
+      controls.appendChild(playBtn);
+      controls.appendChild(timeEl);
+      row.appendChild(a);
+      row.appendChild(waveDiv);
+      row.appendChild(controls);
+      result.appendChild(row);
+
+      const audioSrc = "/download/" + encodeURIComponent(f) + bust;
+      if (typeof WaveSurfer !== "undefined") {
+        const cs = getComputedStyle(document.documentElement);
+        const waveColor = cs.getPropertyValue("--border").trim() || "#444";
+        const progressColor = cs.getPropertyValue("--accent").trim() || "#7c3aed";
+        const ws = WaveSurfer.create({
+          container: waveDiv,
+          waveColor,
+          progressColor,
+          height: 40,
+          barWidth: 2,
+          barGap: 1,
+          barRadius: 2,
+          url: audioSrc,
+          interact: true,
+        });
+        const fmt = s => {
+          const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+          return `${m}:${sec.toString().padStart(2, "0")}`;
+        };
+        ws.on("ready", () => { timeEl.textContent = `0:00 / ${fmt(ws.getDuration())}`; });
+        ws.on("timeupdate", t => { timeEl.textContent = `${fmt(t)} / ${fmt(ws.getDuration())}`; });
+        ws.on("play", () => { playBtn.textContent = "⏸"; });
+        ws.on("pause", () => { playBtn.textContent = "▶"; });
+        ws.on("finish", () => { playBtn.textContent = "▶"; });
+        playBtn.addEventListener("click", () => ws.playPause());
+      } else {
+        const audioEl = document.createElement("audio");
+        audioEl.controls = true;
+        audioEl.src = audioSrc;
+        audioEl.style.cssText = "width:100%;height:36px;";
+        waveDiv.replaceWith(audioEl);
+      }
+    });
+  }
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
   btn.addEventListener("click", async () => {
     const status = document.getElementById("ytcover-status");
     const result = document.getElementById("ytcover-result");
@@ -40,6 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
         status.style.color = "var(--error)";
         return;
       }
+      _ytActivePromptId = data.prompt_id;
       status.textContent = `Queued — prompt ${data.prompt_id.slice(0, 8)}… (position ${data.queue_position})`;
       status.style.color = "var(--accent2)";
     } catch (e) {
