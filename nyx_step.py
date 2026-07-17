@@ -85,6 +85,7 @@ from routes.lrc import router as lrc_router
 from routes.quality import router as quality_router
 from routes.video import router as video_router
 from routes.daw import router as daw_router
+from routes.youtube import router as youtube_router
 
 app.include_router(gen_router)
 app.include_router(queue_router)
@@ -104,6 +105,7 @@ app.include_router(lrc_router)
 app.include_router(quality_router)
 app.include_router(video_router)
 app.include_router(daw_router)
+app.include_router(youtube_router)
 
 import json as _json
 from fastapi.responses import JSONResponse

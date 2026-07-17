@@ -958,6 +958,7 @@
         <button class="inner-tab-btn" data-inner="lego-mode">Lego Mode</button>
         <button class="inner-tab-btn" data-inner="complete-mode">Complete Mode</button>
         <button class="inner-tab-btn" data-inner="extract-mode" title="Diffusion-based stem isolation — describe the target stem, Nyx-Step extracts it">Extract Mode</button>
+        <button class="inner-tab-btn" data-inner="ytcover-mode" title="Download audio from a YouTube URL and generate a cover">YouTube Cover</button>
       </div>
       <button class="secondary small" onclick="openGuideSection('ch6')" title="Open Operations guide">📖 Guide</button>
     </div>
@@ -1120,6 +1121,48 @@
       <button id="btn-extract-submit" title="Extract the target stem via diffusion-based isolation">🔬 Extract Stem</button>
       <div id="extract-status" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
       <div id="extract-result" style="margin-top:10px"></div>
+    </div>
+
+    <!-- YOUTUBE COVER inner panel -->
+    <div class="inner-panel" id="ytcover-mode">
+      <p style="font-size:12px;color:var(--muted);margin:0 0 10px" title="Paste a YouTube URL to download its audio and feed it through the cover pipeline">Paste a YouTube Music / YouTube URL. Nyx-Step downloads the audio and generates a cover using your tags.</p>
+      <div class="field-group">
+        <label>YouTube URL</label>
+        <input type="url" id="ytcover-url" placeholder="https://music.youtube.com/watch?v=… or https://youtu.be/…" style="width:100%">
+      </div>
+      <div class="field-group">
+        <label title="Tags describing the desired output style (genre, mood, instruments, etc.)">Style Tags</label>
+        <input type="text" id="ytcover-tags" placeholder="e.g. jazz piano trio, upbeat, swing" style="width:100%">
+      </div>
+      <div class="field-group">
+        <label>Lyrics <span style="font-size:10px;color:var(--muted)">(optional)</span></label>
+        <textarea id="ytcover-lyrics" rows="4" placeholder="Leave blank to keep instrumental" style="width:100%;resize:vertical;font-size:12px"></textarea>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+        <div class="field-group" style="flex:1;min-width:140px">
+          <label>Song Name</label>
+          <input type="text" id="ytcover-song-name" value="YouTube Cover" style="width:100%">
+        </div>
+        <div class="field-group" style="min-width:110px">
+          <label title="How aggressively to reskin. 0.6–0.8 preserves melody well; 0.9+ loses structure.">Denoise ⓘ</label>
+          <input type="number" id="ytcover-denoise" value="0.75" min="0.1" max="0.95" step="0.05" style="width:80px">
+        </div>
+        <div class="field-group" style="min-width:80px">
+          <label title="Inference steps — 20–50 recommended (SFT model)">Steps ⓘ</label>
+          <input type="number" id="ytcover-steps" value="20" min="1" max="150" step="1" style="width:70px">
+        </div>
+        <div class="field-group" style="min-width:80px">
+          <label title="Guidance scale — 7.0 recommended for SFT cover mode">CFG ⓘ</label>
+          <input type="number" id="ytcover-cfg" value="7.0" min="0.1" max="20" step="0.5" style="width:70px">
+        </div>
+        <div class="field-group" style="min-width:90px">
+          <label title="Duration of the output in seconds">Duration ⓘ</label>
+          <input type="number" id="ytcover-duration" value="30" min="5" max="300" step="1" style="width:70px">
+        </div>
+      </div>
+      <button id="btn-ytcover-submit" title="Download audio from YouTube and generate a cover">Fetch &amp; Cover</button>
+      <div id="ytcover-status" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
+      <div id="ytcover-result" style="margin-top:10px"></div>
     </div>
   </div>
 
@@ -2175,6 +2218,7 @@
 <script src="/static/lint.js?v=2"></script>
 <script src="/static/stems.js?v=1"></script>
 <script src="/static/cover.js?v=1"></script>
+<script src="/static/ytcover.js?v=1"></script>
 <script src="/static/lego.js?v=1"></script>
 <script src="/static/extract.js?v=1"></script>
 <script src="/static/radio.js?v=5"></script>
