@@ -9,11 +9,9 @@ from pydantic import BaseModel, Field
 
 from core.rate_limit import check as rate_check
 from core.youtube import download_audio
-from core.comfyui import ComfyUIClient
 from nyx_step import tracker, get_user_email
 
 router = APIRouter()
-_client = ComfyUIClient()
 
 
 class YouTubeCoverRequest(BaseModel):
@@ -47,41 +45,21 @@ async def youtube_cover(req: YouTubeCoverRequest, request: Request):
         shutil.rmtree(_tmpdir, ignore_errors=True)
         return JSONResponse({"error": f"Download failed: {e}"}, status_code=400)
 
-    # 2. Copy into ComfyUI input dir
+    # 2. Copy into ComfyUI output dir so /download/ can serve it
+    import config
+    import uuid
     try:
-        input_name = _client.copy_to_input(Path(audio_path))
+        src = Path(audio_path)
+        dest_name = f"ytcover_{uuid.uuid4().hex[:8]}{src.suffix}"
+        dest = config.COMFYUI_OUTPUT_DIR / dest_name
+        config.COMFYUI_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(str(src), str(dest))
     finally:
         shutil.rmtree(_tmpdir, ignore_errors=True)
 
-    # 3. Build cover workflow
-    state = {
-        "steps": req.steps,
-        "cfg_scale": req.cfg_scale,
-        "duration": req.duration,
-        "temperature": req.temperature,
-        "top_p": req.top_p,
-        "top_k": req.top_k,
-        "min_p": req.min_p,
-        "seed": req.seed,
-        "lock_seed": req.lock_seed,
-    }
-    result = _client.build_cover_workflow(
-        input_name=input_name,
-        caption=req.tags.strip(),
-        lyrics=req.lyrics,
-        state=state,
-        denoise=req.denoise,
-    )
-    if "error" in result:
-        return JSONResponse({"error": result["error"]}, status_code=400)
+    # 3. Register in tracker so /download/ ownership check passes
+    prompt_id = f"ytcover_{uuid.uuid4().hex}"
+    tracker.register(prompt_id, user_email, req.song_name, caption=req.tags.strip(), lyrics=req.lyrics)
+    tracker.update(prompt_id, status="done", output_files=[dest_name])
 
-    # 4. Send to ComfyUI
-    send_result = _client.send_workflow(result["workflow"])
-    if "error" in send_result:
-        return JSONResponse({"error": "ComfyUI unreachable: " + send_result["error"]}, status_code=400)
-
-    prompt_id = send_result.get("prompt_id", "")
-    tracker.register(prompt_id, user_email, req.song_name, seed=result.get("seed", 0),
-                     caption=req.tags.strip(), lyrics=req.lyrics)
-    q = tracker.get_queue_counts()
-    return {"prompt_id": prompt_id, "queue_position": q["pending"]}
+    return {"prompt_id": prompt_id, "files": [dest_name]}

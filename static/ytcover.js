@@ -2,32 +2,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("btn-ytcover-submit");
   if (!btn) return;
 
-  let _ytActivePromptId = null;
-
-  // ── SSE — track job progress ──────────────────────────────────────────────
-  function connectYtSSE() {
-    const es = new EventSource("/events");
-    es.addEventListener("job_done", e => {
-      const data = JSON.parse(e.data);
-      if (data.prompt_id !== _ytActivePromptId) return;
-      showYtPlayer(data.files);
-    });
-    es.addEventListener("job_running", e => {
-      const data = JSON.parse(e.data);
-      if (data.prompt_id !== _ytActivePromptId) return;
-      const s = document.getElementById("ytcover-status");
-      if (s) { s.textContent = "Generating audio…"; s.style.color = "var(--accent2)"; }
-    });
-    es.addEventListener("job_error", e => {
-      const data = JSON.parse(e.data);
-      if (data.prompt_id !== _ytActivePromptId) return;
-      const s = document.getElementById("ytcover-status");
-      if (s) { s.textContent = "Error: generation failed"; s.style.color = "var(--error)"; }
-    });
-    es.onerror = () => { setTimeout(connectYtSSE, 3000); es.close(); };
-  }
-  connectYtSSE();
-
   function showYtPlayer(files) {
     const status = document.getElementById("ytcover-status");
     const result = document.getElementById("ytcover-result");
@@ -131,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     try {
-      status.textContent = "Generating cover…";
+      status.textContent = "Downloading…";
       const resp = await fetch("/youtube/cover", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -143,9 +117,12 @@ document.addEventListener("DOMContentLoaded", () => {
         status.style.color = "var(--error)";
         return;
       }
-      _ytActivePromptId = data.prompt_id;
-      status.textContent = `Queued — prompt ${data.prompt_id.slice(0, 8)}… (position ${data.queue_position})`;
-      status.style.color = "var(--accent2)";
+      if (data.files && data.files.length > 0) {
+        showYtPlayer(data.files);
+      } else {
+        status.textContent = "Error: No files returned";
+        status.style.color = "var(--error)";
+      }
     } catch (e) {
       status.textContent = "Error: " + e.message;
       status.style.color = "var(--error)";
