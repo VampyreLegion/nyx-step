@@ -1692,8 +1692,30 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.12.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; July 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.12.1 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; July 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.12.1 — Security Audit &amp; Stability Fixes</h3>
+        <ul>
+          <li><strong>XSS prevention</strong> — all user-supplied values (song names, captions, styles) are now HTML-escaped via a shared <code>esc()</code> function before being inserted into the DOM; radio replay buttons use <code>data-</code> attributes + event listeners instead of inline <code>onclick</code></li>
+          <li><strong>Rate limiter memory leak fixed</strong> — stale user entries are automatically purged from the rate-limiter window dict every 200 calls to prevent unbounded memory growth</li>
+          <li><strong>Radio IP no longer hardcoded</strong> — <code>192.168.1.236</code> replaced with <code>RADIO_HOST</code>/<code>RADIO_PORT</code> config vars, settable via environment variables</li>
+          <li><strong>Radio stop requires auth</strong> — <code>/radio/stop</code> now validates the user session before stopping the stream</li>
+          <li><strong>All audio formats supported for extend</strong> — <code>_trim_for_extend</code> uses <code>ffprobe</code> instead of MP3-only <code>mutagen</code>, so WAV/FLAC/OGG/M4A files work as remix source</li>
+          <li><strong>Demucs auth added</strong> — both <code>/stems/demucs/upload</code> and <code>/stems/demucs/download</code> now require authentication</li>
+          <li><strong>Duplicate SSE connection eliminated</strong> — <code>app.js</code> had its own <code>connectSSE()</code> that created a second EventSource; removed in favor of the single connection in <code>jobs.js</code></li>
+          <li><strong>Dead code removed</strong> — duplicate <code>addJobCard</code>, <code>updateJobCard</code>, <code>addDownloadLinks</code>, and <code>statusLabel</code> stripped from <code>app.js</code>; the better implementations in <code>jobs.js</code> (with dismiss tracking, cancel buttons, card caps, waveform players) now run without being overridden</li>
+          <li><strong>SSE exponential backoff</strong> — reconnect delay starts at 1s and doubles up to 30s max, resets to 1s on successful connection</li>
+          <li><strong>Negative tags in remix</strong> — the Avoid field is now wired into remix, cover, and repaint workflows</li>
+          <li><strong>Email privacy</strong> — <code>user_email</code> removed from the <code>all_jobs</code> queue API response</li>
+          <li><strong>Path traversal prevention</strong> — <code>/quality/{filename}</code> sanitizes via <code>Path(filename).name</code> before filesystem access</li>
+          <li><strong>Stale job detection</strong> — jobs stuck in "running" or "queued" for over 30 minutes with no ComfyUI queue entry are auto-marked as error</li>
+          <li><strong>RemixRequest model expanded</strong> — added <code>negative_tags</code>, <code>dit_model</code>, <code>sampler_name</code>, <code>scheduler</code> fields so the remix API supports all generation parameters</li>
+          <li><strong>Parenthetical opt-out</strong> — a <code>keep_parentheticals</code> flag in the generate API lets you preserve <code>(whispered)</code>, <code>(instrumental)</code>, etc. in lyrics instead of auto-stripping them</li>
+          <li><strong>Ollama retry jitter</strong> — retry sleep now includes random jitter (<code>1 + random(0,1)</code> seconds) to avoid thundering herd on recovery</li>
+        </ul>
       </div>
 
       <div class="about-section">
