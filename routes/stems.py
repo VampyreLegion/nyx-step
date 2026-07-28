@@ -70,8 +70,10 @@ async def list_audio_files():
 
 
 @router.post("/demucs/upload")
-async def demucs_upload(audio: UploadFile = File(...)):
+async def demucs_upload(audio: UploadFile = File(...), request: Request = None):
     """Upload a local file into COMFYUI_OUTPUT_DIR for demucs processing."""
+    if request:
+        get_user_email(request)
     suffix = Path(audio.filename).suffix or ".mp3"
     tmp = await stream_upload(audio, suffix)
     if isinstance(tmp, JSONResponse):
@@ -118,8 +120,9 @@ async def demucs_files(filename: str, model: str = "htdemucs"):
 
 
 @router.get("/demucs/download/{model}/{track}/{stem_file}")
-async def demucs_download(model: str, track: str, stem_file: str):
+async def demucs_download(model: str, track: str, stem_file: str, request: Request):
     """Download an individual separated stem file."""
+    get_user_email(request)
     safe_model = Path(model).name
     safe_track = Path(track).name
     safe_stem = Path(stem_file).name

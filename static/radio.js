@@ -63,17 +63,20 @@
     item.className = "radio-history-item";
     item.style.cssText = "font-size:11px;padding:5px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:flex-start";
     const label = entry.song_name
-      ? `<span style="color:var(--text);font-weight:600">${entry.song_name}</span><br><span style="color:var(--muted);font-size:10px">${entry.file}</span>`
-      : `<span style="color:var(--muted)">${entry.file}</span>`;
+      ? `<span style="color:var(--text);font-weight:600">${esc(entry.song_name)}</span><br><span style="color:var(--muted);font-size:10px">${esc(entry.file)}</span>`
+      : `<span style="color:var(--muted)">${esc(entry.file)}</span>`;
     item.innerHTML = `
       <span style="color:var(--muted);min-width:28px;padding-top:2px">S${String(entry.segment).padStart(3,"0")}</span>
       <div style="flex:1;overflow:hidden">${label}
-        ${entry.style ? `<br><span style="color:var(--muted);font-size:10px;font-style:italic">${entry.style.slice(0,60)}${entry.style.length>60?"…":""}</span>` : ""}
+        ${entry.style ? `<br><span style="color:var(--muted);font-size:10px;font-style:italic">${esc(entry.style.slice(0,60))}${entry.style.length>60?"…":""}</span>` : ""}
       </div>
-      <button onclick="playRadioFile('${entry.file}')" style="font-size:10px;padding:2px 6px;flex-shrink:0" title="Replay">▶</button>
-      <a href="/download/${entry.file}" download style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:3px;color:var(--muted);text-decoration:none;flex-shrink:0" title="Download">⬇</a>
+      <button class="radio-replay-btn" data-file="${esc(entry.file)}" style="font-size:10px;padding:2px 6px;flex-shrink:0" title="Replay">▶</button>
+      <a href="/download/${encodeURIComponent(entry.file)}" download style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:3px;color:var(--muted);text-decoration:none;flex-shrink:0" title="Download">⬇</a>
     `;
     el.prepend(item);
+    item.querySelector(".radio-replay-btn").addEventListener("click", function() {
+      window.playRadioFile(this.dataset.file);
+    });
   }
 
   // ── Playback ─────────────────────────────────────────────────────────────────

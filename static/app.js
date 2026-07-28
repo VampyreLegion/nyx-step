@@ -770,36 +770,6 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
   }
 });
 
-// ── SSE — job status ──────────────────────────────────────────────────────────
-function connectSSE() {
-  const es = new EventSource("/events");
-
-  es.addEventListener("job_done", e => {
-    const data = JSON.parse(e.data);
-    addJobCard(data.prompt_id, data.song_name || "Song", "done", data.files);
-    if (data.prompt_id === _activeGenPromptId) setGenProgress("done", "✓ Done — audio ready");
-    if (data.files && data.files.length) mwState.lastAudioFile = data.files[0];
-  });
-  es.addEventListener("job_running", e => {
-    const data = JSON.parse(e.data);
-    addJobCard(data.prompt_id, data.song_name || "Song", "running", []);
-    if (data.prompt_id === _activeGenPromptId) setGenProgress("running", "Generating audio…");
-  });
-  es.addEventListener("job_error", e => {
-    const data = JSON.parse(e.data);
-    updateJobCard(data.prompt_id, "error");
-    if (data.prompt_id === _activeGenPromptId) setGenProgress("error", "Generation failed");
-  });
-  es.addEventListener("queue_update", e => {
-    const data = JSON.parse(e.data);
-    document.getElementById("queue-badge").textContent =
-      `Queue: ${data.running} running, ${data.pending} pending`;
-  });
-
-  es.onerror = () => { setTimeout(connectSSE, 3000); es.close(); };
-}
-connectSSE();
-
 // Initial queue load
 fetch("/queue").then(r => r.json()).then(data => {
   data.my_jobs.forEach(j => addJobCard(j.prompt_id, j.song_name, j.status, j.output_files));
@@ -807,56 +777,6 @@ fetch("/queue").then(r => r.json()).then(data => {
   document.getElementById("queue-badge").textContent =
     `Queue: ${c.running} running, ${c.pending} pending`;
 });
-
-function addJobCard(promptId, songName, status, files) {
-  if (document.getElementById("job-" + promptId)) {
-    updateJobCard(promptId, status, files);
-    return;
-  }
-  const card = document.createElement("div");
-  card.className = "job-card";
-  card.id = "job-" + promptId;
-  card.innerHTML = `
-    <div style="font-weight:600">${songName}</div>
-    <div class="status ${status}">${statusLabel(status)}</div>
-    <div class="job-progress"><div class="job-progress-bar ${status}"></div></div>
-    <div class="job-files" style="margin-top:6px"></div>
-  `;
-  if (files && files.length) addDownloadLinks(card.querySelector(".job-files"), files);
-  document.getElementById("jobs-list").prepend(card);
-}
-
-function updateJobCard(promptId, status, files) {
-  const card = document.getElementById("job-" + promptId);
-  if (!card) return;
-  card.querySelector(".status").className = "status " + status;
-  card.querySelector(".status").textContent = statusLabel(status);
-  const bar = card.querySelector(".job-progress-bar");
-  if (bar) bar.className = "job-progress-bar " + status;
-  if (files && files.length) addDownloadLinks(card.querySelector(".job-files"), files);
-}
-
-function addDownloadLinks(container, files) {
-  container.innerHTML = "";
-  const bust = "?t=" + Date.now();
-  files.forEach(f => {
-    const row = document.createElement("div");
-    row.style.cssText = "display:flex;align-items:center;gap:8px;margin-top:4px;";
-    const a = document.createElement("a");
-    a.href = "/download/" + encodeURIComponent(f) + bust;
-    a.download = f;
-    a.textContent = "\u2b07 " + f;
-    a.style.cssText = "color:var(--accent2);font-size:12px;flex:1;";
-    const remixBtn = document.createElement("button");
-    remixBtn.className = "secondary small";
-    remixBtn.textContent = "\uD83D\uDD00 Remix";
-    remixBtn.style.cssText = "font-size:11px;padding:2px 8px;";
-    remixBtn.addEventListener("click", () => toggleRemixPanel(container.closest(".job-card"), f));
-    row.appendChild(a);
-    row.appendChild(remixBtn);
-    container.appendChild(row);
-  });
-}
 
 function toggleRemixPanel(card, sourceFile) {
   let panel = card.querySelector(".remix-panel");
@@ -945,10 +865,6 @@ function toggleRemixPanel(card, sourceFile) {
   });
 
   card.appendChild(panel);
-}
-
-function statusLabel(s) {
-  return {queued: "\u23f3 Queued", running: "\u2699 Running\u2026", done: "\u2705 Done", error: "\u274c Error"}[s] || s;
 }
 
 // ── Easy tab — Ollama ─────────────────────────────────────────────────────────

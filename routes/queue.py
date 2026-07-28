@@ -29,7 +29,6 @@ async def get_queue(request: Request, limit: int = 50, offset: int = 0):
         "all_jobs": [
             {
                 "prompt_id": j.prompt_id,
-                "user_email": j.user_email,
                 "song_name": j.song_name,
                 "status": j.status,
             }

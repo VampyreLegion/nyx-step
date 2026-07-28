@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def _post_with_retry(url: str, payload: dict, timeout: int = 120, retries: int = 3) -> requests.Response:
+    import random
     last_exc: Exception | None = None
     for attempt in range(retries):
         try:
@@ -22,7 +23,7 @@ def _post_with_retry(url: str, payload: dict, timeout: int = 120, retries: int =
         except Exception as exc:
             last_exc = exc
             if attempt < retries - 1:
-                time.sleep(1)
+                time.sleep(1 + random.uniform(0, 1))
     raise last_exc
 
 

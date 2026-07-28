@@ -43,6 +43,10 @@ class RemixRequest(BaseModel):
     repaint_start: float = Field(default=0.0, ge=0.0)
     repaint_end: float = Field(default=10.0, ge=0.0)
     song_name: str = "Remix"
+    negative_tags: str = ""
+    dit_model: str = "turbo"
+    sampler_name: str = "er_sde"
+    scheduler: str = "linear_quadratic"
 
 
 @router.post("/remix")

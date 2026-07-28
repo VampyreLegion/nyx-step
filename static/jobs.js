@@ -98,6 +98,9 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
 });
 
 // ── SSE — job status ──────────────────────────────────────────────────────────
+let _sseRetryMs = 1000;
+const _SSE_MAX_RETRY = 30000;
+
 function connectSSE() {
   const es = new EventSource("/events");
   es.addEventListener("job_done", e => {
@@ -105,6 +108,7 @@ function connectSSE() {
     addJobCard(data.prompt_id, data.song_name || "Song", "done", data.files);
     if (data.files && data.files.length) mwState.lastAudioFile = data.files[0];
     if (data.prompt_id === _activeGenPromptId) setGenProgress("done", "✓ Done — audio ready");
+    _sseRetryMs = 1000;
   });
   es.addEventListener("job_running", e => {
     const data = JSON.parse(e.data);
@@ -121,7 +125,11 @@ function connectSSE() {
     document.getElementById("queue-badge").textContent =
       `Queue: ${data.running} running, ${data.pending} pending`;
   });
-  es.onerror = () => { setTimeout(connectSSE, 3000); es.close(); };
+  es.onerror = () => {
+    es.close();
+    setTimeout(connectSSE, _sseRetryMs);
+    _sseRetryMs = Math.min(_sseRetryMs * 2, _SSE_MAX_RETRY);
+  };
 }
 
 // ── Job cards ─────────────────────────────────────────────────────────────────
@@ -136,7 +144,7 @@ function addJobCard(promptId, songName, status, files) {
   card.id = "job-" + promptId;
   card.innerHTML = `
     <div style="font-weight:600;display:flex;justify-content:space-between;align-items:center">
-      <span>${songName}</span>
+      <span>${esc(songName)}</span>
       <button class="secondary small btn-cancel-job" data-pid="${promptId}" style="font-size:10px;padding:2px 7px;color:var(--error,#f38ba8);display:none" title="Cancel this job">✕ Cancel</button>
     </div>
     <div class="status ${status}">${statusLabel(status)}</div>

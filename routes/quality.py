@@ -253,13 +253,14 @@ async def quality_score(filename: str, request: Request):
     get_user_email(request)
 
     audio_path: Path | None = None
-    for p in config.COMFYUI_OUTPUT_DIR.rglob(filename):
-        audio_path = p
-        break
+    safe_name = Path(filename).name
+    direct = config.COMFYUI_OUTPUT_DIR / safe_name
+    if direct.exists():
+        audio_path = direct
     if audio_path is None:
-        direct = config.COMFYUI_OUTPUT_DIR / filename
-        if direct.exists():
-            audio_path = direct
+        for p in config.COMFYUI_OUTPUT_DIR.rglob(safe_name):
+            audio_path = p
+            break
     if audio_path is None:
         return JSONResponse({"error": f"File not found: {filename}"}, status_code=404)
 

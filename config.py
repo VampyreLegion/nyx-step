@@ -3,6 +3,8 @@ import pathlib
 
 COMFYUI_URL = "http://127.0.0.1:8188"
 OLLAMA_URL = "http://localhost:11434"
+RADIO_HOST = os.getenv("RADIO_HOST", "127.0.0.1")
+RADIO_PORT = int(os.getenv("RADIO_PORT", "8001"))
 BRAVE_API_KEY = os.getenv("BRAVE_API_KEY", "")
 
 _ACETALK = pathlib.Path("/home/legion/legionprojects/ComfyUI/AceUser")

@@ -512,9 +512,11 @@ async def radio_start(request: Request, body: RadioStartRequest):
 
 
 @router.post("/radio/stop")
-async def radio_stop():
+async def radio_stop(request: Request):
+    get_user_email(request)
     with _lock:
         _state["active"] = False
+        _state["generating_params"] = False
     return {"status": "stopped", "segments": _state["segment"]}
 
 
@@ -542,7 +544,7 @@ async def radio_next_for_stream():
         with _lock:
             if _state["stream_queue"]:
                 filename = _state["stream_queue"].pop(0)
-                return f"http://192.168.1.236:8001/download/{filename}"
+                return f"http://{config.RADIO_HOST}:{config.RADIO_PORT}/download/{filename}"
         await asyncio.sleep(2)
     return ""
 

@@ -365,6 +365,7 @@ class ComfyUIClient:
         seed = _gen_seed(state)
         _apply_ksampler(workflow, state, seed, denoise=denoise, default_steps=8)
         _apply_seed_to_encoder(workflow, seed)
+        _apply_negative_tags(workflow, state)
 
         return {"workflow": workflow, "seed": seed}
 
@@ -647,12 +648,16 @@ class ComfyUIClient:
             return {"error": str(exc)}
 
     def _trim_for_extend(self, source_path: pathlib.Path, seed_seconds: float) -> str | None:
+        import json as _json
         import subprocess
         try:
-            from mutagen.mp3 import MP3
-            duration = MP3(source_path).info.length
+            probe = subprocess.run(
+                ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", str(source_path)],
+                capture_output=True, text=True, timeout=10,
+            )
+            duration = float(_json.loads(probe.stdout)["format"]["duration"])
             start = max(0.0, duration - seed_seconds)
-            out_name = f"extend_seed_{source_path.stem}.mp3"
+            out_name = f"extend_seed_{source_path.stem}{source_path.suffix or '.mp3'}"
             out_path = config.COMFYUI_INPUT_DIR / out_name
             subprocess.run(
                 ["ffmpeg", "-y", "-ss", str(start), "-i", str(source_path), "-c", "copy", str(out_path)],

@@ -65,6 +65,7 @@ class GenerateRequest(BaseModel):
     negative_tags: str = ""
     variance_mode: bool = False
     variance_count: int = Field(default=1, ge=1, le=8)
+    keep_parentheticals: bool = False
 
 
 @router.post("/generate")
@@ -78,7 +79,11 @@ async def generate(req: GenerateRequest, request: Request):
     caption = req.tags.strip()
     # Strip parenthetical content — ACE-Step sings everything verbatim,
     # so (backing vocal cues) / (oh yeah) end up being performed as lyrics.
-    lyrics = re.sub(r'\([^)]*\)', '', req.lyrics)
+    # Pass keep_parentheticals=True to preserve them.
+    if req.keep_parentheticals:
+        lyrics = req.lyrics
+    else:
+        lyrics = re.sub(r'\([^)]*\)', '', req.lyrics)
     lyrics = re.sub(r'\n{3,}', '\n\n', lyrics).strip()
 
     if req.variance_mode and req.variance_count > 1:

@@ -68,13 +68,13 @@ function _renderHistory(query) {
     card.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
         <div>
-          <span style="font-weight:600;color:var(--text)">${r.song_name || "Untitled"}</span>
+          <span style="font-weight:600;color:var(--text)">${esc(r.song_name || "Untitled")}</span>
           <span style="color:var(--muted);margin-left:8px;font-size:11px">${ts}</span>
         </div>
         <button class="secondary small hist-load-btn" style="font-size:11px;padding:2px 8px"
           title="Re-load these settings into the current state">📥 Load</button>
       </div>
-      <div style="color:var(--accent2);margin-top:4px;word-break:break-word">${r.caption || "(no tags)"}</div>
+      <div style="color:var(--accent2);margin-top:4px;word-break:break-word">${esc(r.caption || "(no tags)")}</div>
       ${params.bpm ? `<div style="color:var(--muted);margin-top:2px">${params.bpm} BPM · ${params.key || ""}${params.scale ? " " + params.scale : ""} · ${params.duration || "?"}s · seed ${r.seed}</div>` : `<div style="color:var(--muted);margin-top:2px">seed ${r.seed}</div>`}
       <div class="hist-files" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px"></div>
     `;

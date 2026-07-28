@@ -160,6 +160,7 @@ class JobTracker:
                 self._last_purge = now
 
     def _poll_once(self):
+        import time
         q = self._client.get_queue()
         running_ids = {item[1] for item in q.get("queue_running", [])}
         pending_ids = {item[1] for item in q.get("queue_pending", [])}
@@ -186,3 +187,8 @@ class JobTracker:
                             _tag_output_files(completed)
                     else:
                         self.update(pid, status="error", error_msg="No output files in history")
+                else:
+                    submitted = job.submitted_at.timestamp() if hasattr(job.submitted_at, 'timestamp') else 0
+                    age_min = (time.time() - submitted) / 60
+                    if age_min > 30:
+                        self.update(pid, status="error", error_msg="Stale — removed from ComfyUI with no output")
