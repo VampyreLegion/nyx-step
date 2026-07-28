@@ -279,10 +279,10 @@ def _submit_radio_segment(
         "key": settings.get("key", "C"),
         "scale": settings.get("scale", "Major"),
         "time_sig": settings.get("time_sig", "4/4"),
-        "steps": settings.get("steps", 20),
+        "steps": settings.get("steps", 8),
         "cfg_scale": settings.get("cfg", 2.0),
-        "temperature": settings.get("temperature", 1.05),
-        "top_p": settings.get("top_p", 0.95),
+        "temperature": settings.get("temperature", 0.85),
+        "top_p": settings.get("top_p", 0.9),
         "top_k": settings.get("top_k", 0),
         "duration": settings.get("duration", 30),
         "seed": 0, "lock_seed": False,
@@ -434,10 +434,10 @@ class RadioStartRequest(BaseModel):
     key: str = "C"
     scale: str = "Major"
     time_sig: str = "4/4"
-    steps: int = 20
+    steps: int = 8
     cfg: float = 2.0
-    temperature: float = 1.05
-    top_p: float = 0.95
+    temperature: float = 0.85
+    top_p: float = 0.9
     top_k: int = 0
     duration: float = 30.0
     audio_format: str = "mp3"

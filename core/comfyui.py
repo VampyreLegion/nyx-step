@@ -481,7 +481,7 @@ class ComfyUIClient:
                 node.setdefault("inputs", {})["seconds"] = duration
 
         seed = random.randint(0, 2**32 - 1)
-        _apply_ksampler(workflow, state, seed, denoise=1.0, default_steps=20)
+        _apply_ksampler(workflow, state, seed, denoise=1.0, default_steps=8)
         _apply_seed_to_encoder(workflow, seed)
         _apply_dit_model(workflow, state, default="turbo")
         _apply_audio_format(workflow, state, label="Save Radio Segment")

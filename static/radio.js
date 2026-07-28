@@ -179,7 +179,7 @@
     const dur   = +(document.getElementById("radio-duration")?.value)    || 160;
     const steps = +(document.getElementById("radio-steps")?.value)       || 8;
     const timeSig =  document.getElementById("radio-timesig")?.value     || "4/4";
-    const temp  = +(document.getElementById("radio-temperature")?.value) || 1.05;
+    const temp  = +(document.getElementById("radio-temperature")?.value) || 0.85;
     const s = mwState;
 
     const body = {
@@ -189,7 +189,7 @@
       bpm, key, scale, duration: dur, steps,
       time_sig: timeSig,
       temperature: temp,
-      top_p: 0.95,
+      top_p: 0.9,
       cfg:           s.cfg_scale    || 2.0,
       audio_format:  s.audio_format  || "mp3",
       audio_quality: s.audio_quality || "V0",
