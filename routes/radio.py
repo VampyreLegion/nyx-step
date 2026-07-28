@@ -62,7 +62,25 @@ _DJ_STYLES = [
     "indie rock, electric guitar, male vocals, driving drums, energetic, 120 BPM",
     "classical crossover, string quartet, piano, wordless female vocals, elegant",
     "afrobeats, percussion, talking drum, Afro-pop male vocals, joyful, 105 BPM",
+    "dark ambient, droning synths, field recordings, whispered spoken word, eerie, 70 BPM",
+    "psychedelic rock, fuzz guitar, phaser effects, reverb-heavy male vocals, trippy, 95 BPM",
+    "bluegrass, banjo, fiddle, mandolin, tight harmonies, lively, 130 BPM",
+    "latin jazz, piano montuno, conga drums, female scat, salsa influence, mambo, 120 BPM",
+    "minimal techno, repetitive kick, glitch effects, atmospheric pads, no vocals, driving, 130 BPM",
+    "disco, four-on-the-floor, string section, funky bass, female vocals, dance, 118 BPM",
+    "folk metal, accordion, distorted guitars, harsh male vocals, epic, 140 BPM",
+    "downtempo electronica, warm bass, glitch percussion, ethereal wordless vocals, chill, 90 BPM",
+    "gospel choir, organ, piano, powerful female lead, call-and-response, uplifting, 85 BPM",
+    "jazz fusion, electric bass slap, syncopated drums, synthesizer leads, complex harmonies, 110 BPM",
+    "shoegaze, wall of sound, distorted guitar, ethereal male vocals, atmospheric, 90 BPM",
+    "soul blues, slide guitar, Hammond organ, gravelly male vocals, emotional, slow, 72 BPM",
+    "drum and bass, breakbeats, sub-bass, atmospheric pads, female vocal samples, 170 BPM",
+    "krautrock, motorik beat, analog synths, repetitive bassline, minimal male vocals, 125 BPM",
+    "flamenco, acoustic guitar rasgueado, handclaps, passionate male vocals, dance, 105 BPM",
+    "vaporwave, slowed samples, cassette warmth, nostalgic synths, pitch-shifted vocals, 90 BPM",
 ]
+
+_dj_style_iter: list[str] | None = None
 
 
 # ── Shared radio state ─────────────────────────────────────────────────────────
@@ -159,10 +177,18 @@ def _ollama_generate_params(
         }
 
 
-def _pick_auto_style(style_override: str) -> str:
+def _next_dj_style(style_override: str) -> str:
+    """Return a DJ style, cycling through a shuffled list to avoid repeats."""
+    global _dj_style_iter
     if style_override.strip():
         return style_override.strip()
-    return random.choice(_DJ_STYLES)
+    if not _dj_style_iter:
+        _dj_style_iter = random.sample(_DJ_STYLES, len(_DJ_STYLES))
+    try:
+        return _dj_style_iter.pop()
+    except IndexError:
+        _dj_style_iter = random.sample(_DJ_STYLES, len(_DJ_STYLES))
+        return _dj_style_iter.pop()
 
 
 def _ollama_dj_choice(model: str = "gemma4:latest") -> str:
@@ -241,6 +267,7 @@ def _submit_radio_segment(
     settings: dict,
     seg_num: int,
     song_params: dict,
+    fresh: bool = False,
 ) -> str:
     """Build and submit one radio segment. Returns prompt_id."""
     caption = _build_caption(song_params)
@@ -267,7 +294,7 @@ def _submit_radio_segment(
         "generate_audio_codes": True,
     }
 
-    if prev_file is None:
+    if prev_file is None or fresh:
         result = _client.build_workflow(caption, lyrics, state_dict)
         if "workflow" in result:
             for node in result["workflow"].values():
@@ -352,7 +379,7 @@ def _watcher():
             # Generate song params for next segment
             mode = settings.get("mode", "manual")
             if mode == "auto":
-                style = _pick_auto_style(settings.get("style_override", ""))
+                style = _next_dj_style(settings.get("style_override", ""))
             else:
                 style = settings.get("tags", "")
 
@@ -374,7 +401,8 @@ def _watcher():
                 _state["current_style"] = style
 
             try:
-                next_pid = _submit_radio_segment(user_email, output_file, settings, next_seg, song_params)
+                fresh = (next_seg % 4 == 0)
+                next_pid = _submit_radio_segment(user_email, output_file, settings, next_seg, song_params, fresh=fresh)
                 with _lock:
                     if _state["active"]:
                         _state["prompt_id"] = next_pid
@@ -468,7 +496,7 @@ async def radio_start(request: Request, body: RadioStartRequest):
 
     # Pick style for first segment
     if body.mode == "auto":
-        style = _pick_auto_style(body.style_override)
+        style = _next_dj_style(body.style_override)
     else:
         style = body.tags or "pop music, vocals, upbeat"
 
