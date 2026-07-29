@@ -35,6 +35,7 @@ import config
 from core.comfyui import ComfyUIClient
 from core.executor import get_audio_pool
 from nyx_step import tracker, get_user_email
+from routes.generate import GenerateRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -206,7 +207,6 @@ def _ollama_dj_choice(model: str = "gemma4:latest") -> str:
         "experimental glitch-hop with granular synth textures, breakbeat edits, and spoken word, 100 BPM\n"
         "Now invent a fresh style unlike any of those:"
     )
-    )
     try:
         resp = requests.post(
             f"{config.OLLAMA_URL}/api/generate",
@@ -246,16 +246,6 @@ def _copy_to_radio_dir(filename: str) -> None:
         logger.info("Radio: copied %s → %s", src.name, config.RADIO_OUTPUT_DIR)
 
 
-def _copy_output_to_input(filename: str) -> str | None:
-    src = _find_output_file(filename)
-    if src is None:
-        logger.warning("Radio: output file not found: %s", filename)
-        return None
-    dest = config.COMFYUI_INPUT_DIR / f"radio_ref_{src.name}"
-    shutil.copy2(src, dest)
-    return dest.name
-
-
 def _build_caption(song_params: dict) -> str:
     """Combine tags + caption into a single ACE-Step caption string."""
     tags = song_params.get("tags", "")
@@ -267,50 +257,46 @@ def _build_caption(song_params: dict) -> str:
 
 def _submit_radio_segment(
     user_email: str,
-    prev_file: str | None,
     settings: dict,
     seg_num: int,
     song_params: dict,
-    fresh: bool = False,
 ) -> str:
-    """Build and submit one radio segment. Returns prompt_id."""
+    """Build and submit one radio segment. Returns prompt_id.
+    Every segment uses the same build_workflow as the Generate tab — no timbre
+    reference chaining, identical parameters."""
     caption = _build_caption(song_params)
     lyrics = song_params.get("lyrics", "")
     song_name = song_params.get("song_name") or f"Radio S{seg_num:03d}"
 
-    state_dict = {
-        "bpm": settings.get("bpm", 120),
-        "key": settings.get("key", "C"),
-        "scale": settings.get("scale", "Major"),
-        "time_sig": settings.get("time_sig", "4/4"),
-        "steps": settings.get("steps", 8),
-        "cfg_scale": settings.get("cfg", 2.0),
-        "temperature": settings.get("temperature", 0.85),
-        "top_p": settings.get("top_p", 0.9),
-        "top_k": settings.get("top_k", 0),
-        "duration": settings.get("duration", 30),
-        "seed": 0, "lock_seed": False,
-        "audio_format": settings.get("audio_format", "mp3"),
-        "audio_quality": settings.get("audio_quality", "V0"),
-        "dit_model": settings.get("dit_model", "turbo"),
-        "sampler_name": settings.get("sampler_name", "er_sde"),
-        "scheduler": settings.get("scheduler", "linear_quadratic"),
-        "generate_audio_codes": True,
-    }
+    radio_req = GenerateRequest(
+        tags=caption,
+        lyrics=lyrics,
+        bpm=settings.get("bpm", 120),
+        key=settings.get("key", "C"),
+        scale=settings.get("scale", "Major"),
+        time_sig=settings.get("time_sig", "4/4"),
+        steps=settings.get("steps", 8),
+        cfg_scale=settings.get("cfg", 2.0),
+        temperature=settings.get("temperature", 0.85),
+        top_p=settings.get("top_p", 0.9),
+        top_k=settings.get("top_k", 0),
+        duration=settings.get("duration", 30),
+        seed=0, lock_seed=False,
+        audio_format=settings.get("audio_format", "mp3"),
+        audio_quality=settings.get("audio_quality", "V0"),
+        dit_model=settings.get("dit_model", "turbo"),
+        sampler_name=settings.get("sampler_name", "er_sde"),
+        scheduler=settings.get("scheduler", "linear_quadratic"),
+    )
+    state_dict = radio_req.model_dump()
 
-    if prev_file is None or fresh:
-        result = _client.build_workflow(caption, lyrics, state_dict)
-        if "workflow" in result:
-            for node in result["workflow"].values():
-                if isinstance(node, dict) and node.get("class_type") in (
-                    "SaveAudioMP3", "SaveAudio", "SaveAudioOpus"
-                ):
-                    node.setdefault("inputs", {})["filename_prefix"] = "audio/Nyx_radio"
-    else:
-        input_name = _copy_output_to_input(prev_file)
-        if input_name is None:
-            raise RuntimeError(f"Cannot find previous segment: {prev_file}")
-        result = _client.build_radio_continue_workflow(input_name, caption, state_dict, lyrics=lyrics)
+    result = _client.build_workflow(caption, lyrics, state_dict)
+    if "workflow" in result:
+        for node in result["workflow"].values():
+            if isinstance(node, dict) and node.get("class_type") in (
+                "SaveAudioMP3", "SaveAudio", "SaveAudioOpus"
+            ):
+                node.setdefault("inputs", {})["filename_prefix"] = "audio/Nyx_radio"
 
     if "error" in result:
         raise RuntimeError(result["error"])
@@ -407,8 +393,7 @@ def _watcher():
                 _state["current_style"] = style
 
             try:
-                fresh = (next_seg % 2 == 0)
-                next_pid = _submit_radio_segment(user_email, output_file, settings, next_seg, song_params, fresh=fresh)
+                next_pid = _submit_radio_segment(user_email, settings, next_seg, song_params)
                 with _lock:
                     if _state["active"]:
                         _state["prompt_id"] = next_pid
@@ -517,7 +502,7 @@ async def radio_start(request: Request, body: RadioStartRequest):
 
     settings = body.model_dump()
     try:
-        pid = _submit_radio_segment(user_email, None, settings, 0, song_params)
+        pid = _submit_radio_segment(user_email, settings, 0, song_params)
     except Exception as exc:
         return JSONResponse({"error": str(exc)}, status_code=502)
 
