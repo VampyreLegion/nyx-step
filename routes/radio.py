@@ -306,8 +306,10 @@ def _submit_radio_segment(
         raise RuntimeError(send["error"])
 
     pid = send["prompt_id"]
-    tracker.register(pid, user_email, song_name, caption=caption, seed=result.get("seed", 0),
-                     params={"radio": True, "segment": seg_num})
+    safe_params = {k: v for k, v in state_dict.items() if k not in ("tags", "lyrics")}
+    safe_params.update({"radio": True, "segment": seg_num})
+    tracker.register(pid, user_email, song_name, caption=caption, lyrics=lyrics,
+                     seed=result.get("seed", 0), params=safe_params)
     return pid
 
 
