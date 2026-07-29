@@ -178,7 +178,7 @@ def _ollama_generate_params(
 
 
 def _next_dj_style(style_override: str) -> str:
-    """Return a DJ style, cycling through a shuffled list to avoid repeats."""
+    """Return a DJ style — either from static list or Ollama-generated for variety."""
     global _dj_style_iter
     if style_override.strip():
         return style_override.strip()
@@ -194,14 +194,18 @@ def _next_dj_style(style_override: str) -> str:
 def _ollama_dj_choice(model: str = "gemma4:latest") -> str:
     """Ask Ollama to freely invent a creative music style for the next set."""
     prompt = (
-        "You are the AI DJ for Nyx Radio. Invent a creative, specific music style for the next song. "
+        "You are the AI DJ for Nyx Radio, curating a diverse electronic music stream. "
+        "Invent a COMPLETELY NEW music style for the next song — do NOT repeat anything you've suggested before. "
         "Return ONLY a short style description (10-30 words) — no explanation, no quotes, no JSON, no preamble. "
         "Be inventive and specific: include genre, mood, tempo feel, and instrumentation. "
+        "AVOID generic or overused combinations. Think of unusual genre fusions and rare instruments.\n"
         "Examples of the exact format:\n"
         "cinematic synthwave with lush pads, punchy drums, and a wistful melodic lead, 100 BPM\n"
         "upbeat bossa nova with nylon guitar, brushed drums, and warm female vocals, 92 BPM\n"
         "dark industrial techno with distorted bass, mechanical rhythms, and cold atmosphere, 135 BPM\n"
-        "Now invent a fresh style:"
+        "experimental glitch-hop with granular synth textures, breakbeat edits, and spoken word, 100 BPM\n"
+        "Now invent a fresh style unlike any of those:"
+    )
     )
     try:
         resp = requests.post(
@@ -379,7 +383,9 @@ def _watcher():
             # Generate song params for next segment
             mode = settings.get("mode", "manual")
             if mode == "auto":
-                style = _next_dj_style(settings.get("style_override", ""))
+                ollama_model = settings.get("ollama_model", "gemma4:latest")
+                dj = _ollama_dj_choice(ollama_model)
+                style = dj if dj else _next_dj_style(settings.get("style_override", ""))
             else:
                 style = settings.get("tags", "")
 
@@ -401,7 +407,7 @@ def _watcher():
                 _state["current_style"] = style
 
             try:
-                fresh = (next_seg % 4 == 0)
+                fresh = (next_seg % 2 == 0)
                 next_pid = _submit_radio_segment(user_email, output_file, settings, next_seg, song_params, fresh=fresh)
                 with _lock:
                     if _state["active"]:
