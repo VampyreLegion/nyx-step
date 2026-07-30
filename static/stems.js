@@ -1,3 +1,39 @@
+// ── Join Stems ────────────────────────────────────────────────────────────────
+document.getElementById("btn-stems-join").addEventListener("click", async () => {
+  const btn = document.getElementById("btn-stems-join");
+  const status = document.getElementById("stems-join-status");
+  const songName = document.getElementById("join-song-name").value || "Joined Stems";
+  const stemInputs = ["join-stem1", "join-stem2", "join-stem3", "join-stem4"];
+  const files = stemInputs.map(id => document.getElementById(id).files[0]).filter(Boolean);
+  if (files.length < 2) { status.textContent = "Upload at least 2 stem files."; return; }
+  btn.disabled = true; btn.textContent = "Mixing…";
+  status.textContent = "Uploading and mixing…";
+  const form = new FormData();
+  files.forEach((f, i) => form.append(`stem${i + 1}`, f));
+  form.append("song_name", songName);
+  try {
+    const resp = await fetch("/stems/join", {method: "POST", body: form});
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      status.textContent = "Error: " + (err.error || resp.statusText);
+      return;
+    }
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const disposition = resp.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const filename = match ? match[1] : "joined_stems.mp3";
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    status.textContent = "Done — " + filename;
+  } catch(e) {
+    status.textContent = "Error: " + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = "Mix Stems";
+  }
+});
+
 // ── Stems tab — Extract ───────────────────────────────────────────────────────
 document.getElementById("btn-stems-extract").addEventListener("click", async () => {
   const btn = document.getElementById("btn-stems-extract");

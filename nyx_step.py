@@ -58,7 +58,7 @@ def get_user_email(request: Request) -> str:
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "3.11.1"}
+    return {"status": "ok", "version": "3.12.2"}
 
 
 @app.get("/", response_class=HTMLResponse)

@@ -134,3 +134,52 @@ async def demucs_download(model: str, track: str, stem_file: str, request: Reque
         media_type="audio/mpeg",
         headers={"Content-Disposition": f'attachment; filename="{safe_stem}"'},
     )
+
+
+@router.post("/join")
+async def stems_join(
+    request: Request,
+    stem1: UploadFile = File(...),
+    stem2: UploadFile = File(...),
+    stem3: UploadFile = File(...),
+    stem4: UploadFile = File(...),
+    song_name: str = Form("Joined Stems"),
+):
+    """Join (overlay / mix) 4 stem audio files into a single mixed track."""
+    from pydub import AudioSegment
+
+    get_user_email(request)
+
+    stems: list[AudioSegment] = []
+    filenames: list[str] = []
+    for i, f in enumerate([stem1, stem2, stem3, stem4], 1):
+        suffix = Path(f.filename).suffix or ".mp3"
+        tmp = await stream_upload(f, suffix)
+        if isinstance(tmp, JSONResponse):
+            return tmp
+        seg = AudioSegment.from_file(tmp)
+        stems.append(seg)
+        filenames.append(Path(f.filename).name)
+        tmp.unlink()
+
+    if not stems:
+        return JSONResponse({"error": "No valid audio files provided"}, status_code=400)
+
+    max_len = max(len(s) for s in stems)
+    padded = [s if len(s) == max_len else s + AudioSegment.silent(duration=max_len - len(s)) for s in stems]
+
+    mixed = padded[0]
+    for s in padded[1:]:
+        mixed = mixed.overlay(s)
+
+    stem_name = Path(song_name).stem or "joined_stems"
+    out_name = f"{stem_name}_joined.mp3"
+    out_path = config.COMFYUI_OUTPUT_DIR / out_name
+    mixed.export(str(out_path), format="mp3", bitrate="320k")
+
+    return FileResponse(
+        path=str(out_path),
+        media_type="audio/mpeg",
+        filename=out_name,
+        headers={"Content-Disposition": f'attachment; filename="{out_name}"'},
+    )

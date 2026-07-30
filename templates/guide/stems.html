@@ -1,0 +1,33 @@
+<html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px}h3{color:#00d4b6;}p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
+
+<h2>Join Stems — Mix Stems Back Into One Track</h2>
+
+<h3>What It Does</h3>
+<p>The <strong>Join Stems</strong> feature is the reverse of Demucs separation. After splitting a track into its component stems (vocals, drums, bass, other), you can upload them back and mix them into a single audio file. This is useful for:</p>
+<ul>
+  <li>Re-mixing stems with external processing applied to individual tracks</li>
+  <li>Combining stems from different sources into a new composite track</li>
+  <li>Creating a reference mix after adjusting stem levels externally</li>
+</ul>
+
+<h3>How To Use It</h3>
+<ol>
+  <li>Go to the <strong>Stems</strong> tab and click <strong>Join Stems</strong></li>
+  <li>Upload 2–4 stem audio files (MP3, WAV, FLAC, OGG, M4A) into the Stem 1–4 slots</li>
+  <li>Enter a name for the output file (default: "Joined Stems")</li>
+  <li>Click <strong>Mix Stems</strong> — the files are uploaded and mixed server-side</li>
+  <li>The joined track downloads automatically as an MP3 file</li>
+</ol>
+
+<h3>How It Works</h3>
+<p>All uploaded stems are loaded and padded to the length of the longest stem (shorter stems get trailing silence). They are then overlaid sample-by-sample and exported as a 320 kbps MP3. Volume levels are preserved as-is — no normalisation is applied, so you can pre-adjust stem levels before uploading.</p>
+
+<h3>Tips</h3>
+<ul>
+  <li>For best results, use stems that share the same BPM and key</li>
+  <li>Pre-adjust individual stem volume in any audio editor before uploading</li>
+  <li>The output filename is sanitised and saved with a <code>_joined.mp3</code> suffix</li>
+  <li>A minimum of 2 stems is required; 4 stems gives the full Demucs reconstruction</li>
+</ul>
+
+</body></html>

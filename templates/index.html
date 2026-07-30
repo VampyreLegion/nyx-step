@@ -910,6 +910,7 @@
     <div class="inner-tabs">
       <button class="inner-tab-btn active" data-inner="stems-extract">Nyx-Step Extract</button>
       <button class="inner-tab-btn" data-inner="stems-demucs">Demucs Separate</button>
+      <button class="inner-tab-btn" data-inner="stems-join">Join Stems</button>
     </div>
     <div class="inner-panel active" id="stems-extract">
       <div class="field-group" data-dropzone="stems-file" style="border:1px solid transparent;border-radius:4px;padding:4px" title="Drag &amp; drop audio file here">
@@ -947,6 +948,33 @@
       <button id="btn-demucs-run">Separate</button>
       <div id="demucs-stem-links" style="margin-top:10px"></div>
       <div id="demucs-log" class="log-panel" style="margin-top:8px"></div>
+    </div>
+    <div class="inner-panel" id="stems-join">
+      <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Upload up to 4 stem audio files (vocals, drums, bass, other, etc.) and mix them into a single track. The stems are overlaid in parallel — shorter files are padded with silence.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="field-group" data-dropzone="join-stem1" style="border:1px solid transparent;border-radius:4px;padding:4px">
+          <label>Stem 1</label>
+          <input type="file" id="join-stem1" accept="audio/*">
+        </div>
+        <div class="field-group" data-dropzone="join-stem2" style="border:1px solid transparent;border-radius:4px;padding:4px">
+          <label>Stem 2</label>
+          <input type="file" id="join-stem2" accept="audio/*">
+        </div>
+        <div class="field-group" data-dropzone="join-stem3" style="border:1px solid transparent;border-radius:4px;padding:4px">
+          <label>Stem 3</label>
+          <input type="file" id="join-stem3" accept="audio/*">
+        </div>
+        <div class="field-group" data-dropzone="join-stem4" style="border:1px solid transparent;border-radius:4px;padding:4px">
+          <label>Stem 4</label>
+          <input type="file" id="join-stem4" accept="audio/*">
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Output Song Name</label>
+        <input type="text" id="join-song-name" value="Joined Stems" style="width:100%">
+      </div>
+      <button id="btn-stems-join">Mix Stems</button>
+      <div id="stems-join-status" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
     </div>
   </div>
 
@@ -1480,6 +1508,7 @@
       <button class="inner-tab-btn" data-guide="presets">Presets</button>
       <button class="inner-tab-btn" data-guide="radio">📻 Radio</button>
       <button class="inner-tab-btn" data-guide="extract">Extract</button>
+      <button class="inner-tab-btn" data-guide="stems">Stems</button>
       <button class="inner-tab-btn" data-guide="quality">📊 Quality</button>
       <button class="inner-tab-btn" data-guide="lrc">🎵 LRC</button>
       <button class="inner-tab-btn" data-guide="video">🎬 Video</button>
@@ -1692,8 +1721,16 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.12.1 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; July 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 3.12.2 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; July 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v3.12.2 — Join Stems</h3>
+        <ul>
+          <li><strong>Join Stems</strong> — new "Join Stems" inner tab in the Stems tab: upload 2–4 stem files (e.g. Demucs output) and mix them back into a single track. The reverse of stem separation — stems are overlaid in parallel, shorter files auto-padded, output downloaded as 320 kbps MP3</li>
+          <li><strong>Stems guide</strong> — new guide section documenting the Join Stems feature, accessible from the Guide tab</li>
+        </ul>
       </div>
 
       <div class="about-section">
@@ -2084,6 +2121,7 @@
           <li>Demucs Separate — 4-stem (htdemucs) or 6-stem (htdemucs_6s) separation with live log stream</li>
           <li>Button shows "Busy Separating…" while running; re-enables on completion or error</li>
           <li>After separation, per-stem download links appear inline (⬇ vocals.mp3, ⬇ drums.mp3, etc.)</li>
+          <li><strong>Join Stems</strong> — upload 2–4 stem files and mix them back into a single track (the reverse of Demucs); stems are overlaid in parallel, shorter files are padded with silence, output as 320 kbps MP3</li>
           <li>Uploads capped at 100 MB; server returns a clear error if exceeded</li>
         </ul>
       </div>
