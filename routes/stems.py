@@ -141,25 +141,25 @@ async def stems_join(
     request: Request,
     stem1: UploadFile = File(...),
     stem2: UploadFile = File(...),
-    stem3: UploadFile = File(...),
-    stem4: UploadFile = File(...),
+    stem3: UploadFile = File(None),
+    stem4: UploadFile = File(None),
     song_name: str = Form("Joined Stems"),
 ):
-    """Join (overlay / mix) 4 stem audio files into a single mixed track."""
+    """Join (overlay / mix) 2-4 stem audio files into a single mixed track."""
     from pydub import AudioSegment
 
     get_user_email(request)
 
     stems: list[AudioSegment] = []
-    filenames: list[str] = []
     for i, f in enumerate([stem1, stem2, stem3, stem4], 1):
+        if f is None or not f.filename:
+            continue
         suffix = Path(f.filename).suffix or ".mp3"
         tmp = await stream_upload(f, suffix)
         if isinstance(tmp, JSONResponse):
             return tmp
         seg = AudioSegment.from_file(tmp)
         stems.append(seg)
-        filenames.append(Path(f.filename).name)
         tmp.unlink()
 
     if not stems:
