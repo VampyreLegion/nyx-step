@@ -11,6 +11,9 @@ async function onDawTabOpen() {
   await dawLoadLibrary();
   renderTimeline();
   _dawSyncSnapControls();
+  // Scroll Clip Library into view so newly added grooves are visible
+  const lib = document.getElementById("daw-library");
+  if (lib) lib.scrollIntoView({ behavior: "smooth", block: "end" });
 }
 
 function _dawSyncSnapControls() {

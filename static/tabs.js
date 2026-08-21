@@ -11,6 +11,14 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     if (btn.dataset.tab === "history") { if (typeof loadHistory === "function" && _historyRecords.length === 0) loadHistory(); }
     if (btn.dataset.tab === "video") { if (typeof onVideoTabOpen === "function") onVideoTabOpen(); }
     if (btn.dataset.tab === "daw") { if (typeof onDawTabOpen === "function") onDawTabOpen(); }
+    if (btn.dataset.tab === "groovelab") {
+      const iframe = document.getElementById("groovelab-iframe");
+      if (iframe) {
+        // Force iframe reload to ensure audio context is alive
+        const src = iframe.src;
+        iframe.src = src;
+      }
+    }
   });
 });
 

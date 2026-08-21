@@ -33,6 +33,7 @@
   <button class="tab-btn" data-tab="analyze" title="Analyze Audio — detect BPM, key, scale, LUFS, chord progression, and lyrics from any audio file">Analyze</button>
   <button class="tab-btn" data-tab="video" title="Video — generate a beat-synced music video from your song using Wan AI">🎬 Video</button>
   <button class="tab-btn" data-tab="daw" title="DAW — multi-track timeline arranger for your clips and stems">🎚 DAW</button>
+  <button class="tab-btn" data-tab="groovelab" title="Groove Lab — TB-303 acid basslines + TR-808/909 drums; create grooves and send to DAW"> acid Groove Lab</button>
   <button class="tab-btn" data-tab="midi" title="MIDI — extract MIDI notes from any audio file (melody or piano polyphonic)">MIDI</button>
   <button class="tab-btn" data-tab="train" title="Train LoRA — train a custom LoRA adapter on your own audio dataset">Train LoRA</button>
   <button class="tab-btn" data-tab="guide" title="Guide — full documentation, flowcharts, scales reference, and workflow tips">Guide</button>
@@ -2174,6 +2175,46 @@
     </div>
   </div>
 
+  <!-- GROOVE LAB -->
+  <div class="tab-panel" id="tab-groovelab">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="font-size:14px;font-weight:600;color:var(--accent)"> acid Groove Lab</span>
+      <span style="font-size:11px;color:var(--muted)">TB-303 acid basslines + TR-808/909 drums — create grooves, then send them to the DAW</span>
+    </div>
+
+    <!-- TB-303 Iframe -->
+    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;background:#000">
+      <iframe
+        id="groovelab-iframe"
+        style="width:100%;height:700px;border:none;display:block"
+        allow="autoplay; microphone"
+        title="TB-303 Groove Lab"
+      ></iframe>
+      <script>
+        (function() {
+          var h = window.location.hostname;
+          var url = (h && h !== 'localhost' && h !== '127.0.0.1' && h !== '0.0.0.0')
+            ? 'https://acid.' + h.split('.').slice(-2).join('.')
+            : 'http://localhost:7870';
+          document.getElementById('groovelab-iframe').src = url;
+        })();
+      </script>
+    </div>
+
+    <!-- Controls -->
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+      <span style="font-size:12px;font-weight:600;color:var(--accent)">Send to DAW</span>
+      <span style="font-size:11px;color:var(--muted)">Record a groove in the TB-303 above, export it, then upload it here to add to your DAW library.</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+      <label style="font-size:12px;font-weight:600;color:var(--text)">Groove Audio File</label>
+      <input type="file" id="groovelab-file" accept="audio/*" style="flex:1;min-width:200px;font-size:12px">
+      <input type="text" id="groovelab-name" placeholder="e.g. Acid 303 Jam" style="flex:1;min-width:150px;font-size:12px">
+      <button id="groovelab-send" style="white-space:nowrap"> acid Send to DAW</button>
+      <span id="groovelab-status" style="font-size:11px;color:var(--muted)"></span>
+    </div>
+  </div>
+
   <!-- DAW -->
   <div class="tab-panel" id="tab-daw">
     <div id="daw-root">
@@ -2302,6 +2343,7 @@
 <script src="/static/daw-ai.js?v=4"></script>
 <script src="/static/daw-session.js?v=1"></script>
 <script src="/static/daw.js?v=9"></script>
+<script src="/static/groovelab.js?v=1"></script>
 <script src="/static/init.js?v=2"></script>
 </body>
 </html>

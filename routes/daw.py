@@ -85,6 +85,14 @@ async def library(request: Request):
                 "duration": params.get("duration"),
             })
 
+    # Groove Lab clips
+    for gc in db.get_groove_clips(user):
+        clips.append({
+            "file": gc["file_path"],
+            "name": gc["name"],
+            "duration": 0,
+        })
+
     # Songs this user owns (filename without extension) → match stem folders.
     owned_song_names = set()
     for c in clips:
@@ -117,6 +125,10 @@ def _user_owns_daw_file(user: str, filename: str) -> bool:
     # Generated clip the user owns?
     if db.user_owns_file(user, filename):
         return True
+    # Groove Lab clip?
+    for gc in db.get_groove_clips(user):
+        if gc["file_path"] == filename:
+            return True
     # Stem whose parent-song folder matches a song the user owns?
     parts = filename.split("/")
     if len(parts) >= 4 and parts[0] == "separated":

@@ -64,6 +64,15 @@ def init_db(path: pathlib.Path) -> None:
                 updated_at  TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_daw_user ON daw_projects(user_email);
+
+            CREATE TABLE IF NOT EXISTS groove_clips (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_email  TEXT NOT NULL,
+                name        TEXT NOT NULL DEFAULT 'Groove',
+                file_path   TEXT NOT NULL,
+                created_at  TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_groove_user ON groove_clips(user_email);
         """)
     with _get_conn() as conn:
         try:
@@ -306,3 +315,24 @@ def delete_daw_project(user_email: str, project_id: int) -> bool:
             "DELETE FROM daw_projects WHERE id=? AND user_email=?", (project_id, user_email),
         )
         return cur.rowcount > 0
+
+
+# ── Groove clips (Groove Lab) ────────────────────────────────────────────────
+
+def insert_groove_clip(user_email: str, name: str, file_path: str) -> int:
+    now = utcnow().isoformat()
+    with _get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO groove_clips (user_email, name, file_path, created_at) VALUES (?,?,?,?)",
+            (user_email, name, file_path, now),
+        )
+        return int(cur.lastrowid)
+
+
+def get_groove_clips(user_email: str) -> list[dict]:
+    with _get_conn() as conn:
+        rows = conn.execute(
+            "SELECT id, name, file_path, created_at FROM groove_clips "
+            "WHERE user_email=? ORDER BY created_at DESC", (user_email,),
+        ).fetchall()
+    return [dict(r) for r in rows]
