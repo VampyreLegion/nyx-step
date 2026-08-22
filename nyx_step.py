@@ -58,7 +58,7 @@ def get_user_email(request: Request) -> str:
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "3.12.2"}
+    return {"status": "ok", "version": "4.0.0"}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -87,6 +87,21 @@ from routes.video import router as video_router
 from routes.daw import router as daw_router
 from routes.youtube import router as youtube_router
 from routes.groovelab import router as groovelab_router
+from routes.tag_library import router as tag_library_router
+from routes.templates_route import router as templates_router
+from routes.favorites import router as favorites_router
+from routes.versions import router as versions_router
+from routes.mood_arc import router as mood_arc_router
+from routes.auto_genre import router as auto_genre_router
+from routes.collections import router as collections_router
+from routes.arrangement import router as arrangement_router
+from routes.layers import router as layers_router
+from routes.call_response import router as call_response_router
+from routes.quick_remix import router as quick_remix_router
+from routes.batch import router as batch_router
+from routes.voice_prompt import router as voice_prompt_router
+from routes.groove_to_song import router as groove_to_song_router
+from routes.smart_fill import router as smart_fill_router
 
 app.include_router(gen_router)
 app.include_router(queue_router)
@@ -108,6 +123,21 @@ app.include_router(video_router)
 app.include_router(daw_router)
 app.include_router(youtube_router)
 app.include_router(groovelab_router)
+app.include_router(tag_library_router)
+app.include_router(templates_router)
+app.include_router(favorites_router)
+app.include_router(versions_router)
+app.include_router(mood_arc_router)
+app.include_router(auto_genre_router)
+app.include_router(collections_router)
+app.include_router(arrangement_router)
+app.include_router(layers_router)
+app.include_router(call_response_router)
+app.include_router(quick_remix_router)
+app.include_router(batch_router)
+app.include_router(voice_prompt_router)
+app.include_router(groove_to_song_router)
+app.include_router(smart_fill_router)
 
 import json as _json
 from fastapi.responses import JSONResponse

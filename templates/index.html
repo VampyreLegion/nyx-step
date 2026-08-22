@@ -34,6 +34,7 @@
   <button class="tab-btn" data-tab="video" title="Video — generate a beat-synced music video from your song using Wan AI">🎬 Video</button>
   <button class="tab-btn" data-tab="daw" title="DAW — multi-track timeline arranger for your clips and stems">🎚 DAW</button>
   <button class="tab-btn" data-tab="groovelab" title="Groove Lab — TB-303 acid basslines + TR-808/909 drums; create grooves and send to DAW"> acid Groove Lab</button>
+  <button class="tab-btn" data-tab="arrange" title="Arrange — multi-section arrangement builder, layers, call-and-response, dynamics"> Arrange</button>
   <button class="tab-btn" data-tab="midi" title="MIDI — extract MIDI notes from any audio file (melody or piano polyphonic)">MIDI</button>
   <button class="tab-btn" data-tab="train" title="Train LoRA — train a custom LoRA adapter on your own audio dataset">Train LoRA</button>
   <button class="tab-btn" data-tab="guide" title="Guide — full documentation, flowcharts, scales reference, and workflow tips">Guide</button>
@@ -64,6 +65,17 @@
     <div class="field-group">
       <label>Lyrics <span style="font-size:11px;color:var(--muted);opacity:0.7">(editable — synced from Lyrics tab)</span></label>
       <textarea id="overview-lyrics" style="min-height:140px"></textarea>
+    </div>
+    <div class="field-group">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px">
+        <div class="section-title" style="margin-bottom:0">📦 Template Starter Kit</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="template-name-input" placeholder="Save current as…" style="width:150px;font-size:11px;padding:4px 8px">
+          <button class="secondary small" id="btn-template-save-current" title="Save the current state (tags, lyrics, style, parameters) as a reusable template">💾 Save current</button>
+        </div>
+      </div>
+      <div id="template-save-status" style="font-size:11px;color:var(--muted);min-height:14px;margin-bottom:4px"></div>
+      <div id="song-templates-panel"></div>
     </div>
     <div class="field-group">
       <div class="section-title">What gets sent</div>
@@ -185,6 +197,7 @@
   <!-- STYLE -->
   <div class="tab-panel" id="tab-style">
     <div style="text-align:right;margin-bottom:8px">
+      <button class="secondary small" id="btn-open-tag-library" title="Tag Library — your saved tag combos; click one to load it into the Tags field">📚 Tag Library</button>
       <button class="secondary small" onclick="openGuideSection('scale')" title="Open Scales &amp; Modes guide">📖 Guide</button>
     </div>
     <div class="field-group">
@@ -195,6 +208,10 @@
       <div id="genre-grid" style="flex:1;overflow-y:auto;padding:8px"></div>
     </div>
     <div id="genre-info" style="font-size:12px;color:var(--muted);margin-bottom:10px;min-height:16px">Select a genre above.</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      <button onclick="detectGenre()" class="secondary small" title="AI-detect matching genres from current tags">🔍 Auto-Detect Genre</button>
+      <span id="auto-genre-status" style="font-size:11px;color:var(--muted);align-self:center"></span>
+    </div>
     <div class="row">
       <div class="field-group">
         <label>BPM</label>
@@ -1490,8 +1507,14 @@
       <button class="secondary small" onclick="openGuideSection('ch8')" title="Open Troubleshooting guide">📖 Guide</button>
     </div>
     <div id="history-insights" style="display:none;margin:8px 0"></div>
+    <div class="inner-tabs" style="margin-bottom:10px">
+      <button class="inner-tab-btn active" id="hist-view-all" title="All generations">All</button>
+      <button class="inner-tab-btn" id="hist-view-favorites" title="Your bookmarked tracks with notes">★ Favorites</button>
+    </div>
     <div id="history-list" style="display:flex;flex-direction:column;gap:8px"></div>
     <div id="history-empty" style="color:var(--muted);font-size:13px;display:none;padding:12px 0">No history found.</div>
+    <div id="favorites-list" style="display:none;flex-direction:column;gap:8px"></div>
+    <div id="favorites-empty" style="color:var(--muted);font-size:13px;display:none;padding:12px 0">No favorites yet — click ☆ on a history card to bookmark it.</div>
   </div>
 
   <!-- GUIDE -->
@@ -1514,6 +1537,9 @@
       <button class="inner-tab-btn" data-guide="lrc">🎵 LRC</button>
       <button class="inner-tab-btn" data-guide="video">🎬 Video</button>
       <button class="inner-tab-btn" data-guide="dawguide">🎚 DAW</button>
+      <button class="inner-tab-btn" data-guide="arrange"> Arrange</button>
+      <button class="inner-tab-btn" data-guide="creation"> Quick Create</button>
+      <button class="inner-tab-btn" data-guide="organization"> Organization</button>
       <button class="inner-tab-btn" data-guide="ch1">1. Philosophy</button>
       <button class="inner-tab-btn" data-guide="ch2">2. Tags</button>
       <button class="inner-tab-btn" data-guide="ch3">3. Lyrics</button>
@@ -1722,8 +1748,35 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 3.12.2 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; July 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 4.0.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; August 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v4.0.0 — Song Complexity &amp; Quick Creation</h3>
+        <ul>
+          <li><strong>Arrange Tab</strong> — new tab with 8 sub-panels for advanced song construction</li>
+          <li><strong>Multi-Section Arrangement Builder</strong> — build song structures with drag-to-reorder section blocks (Intro, Verse, Chorus, Bridge, Break, Drop, Build, Outro, Custom). Each section has its own caption/tags and duration. "Generate All" queues sequential generation</li>
+          <li><strong>Layer Stacking</strong> — generate multiple musical layers independently with per-layer volume/pan controls</li>
+          <li><strong>Call and Response</strong> — create musical conversations between two phrases with configurable interleave patterns (1:1, 2:1, 1:2)</li>
+          <li><strong>Dynamics Automation</strong> — canvas-based intensity curve editor with presets (Build & Drop, Wave, Crescendo, Decrescendo, Constant High). Click to add points, drag to shape</li>
+          <li><strong>Tempo/Key Transitions</strong> — add mid-song transition markers with bar number, new BPM, new key, and transition type (sudden, crossfade, ramp)</li>
+          <li><strong>Chord Progression Presets</strong> — 12 common progressions (I-IV-V-I, ii-V-I, i-VII-III-VI, etc.) that inject harmonic tags into your caption</li>
+          <li><strong>Batch Generation</strong> — generate 2-8 variants at once with different seeds for comparison</li>
+          <li><strong>One-Click Remix</strong> — remix buttons on every History card (Drums, Tempo, Key, Mood) that auto-variate parameters and queue new generation</li>
+          <li><strong>Voice-to-Prompt</strong> — record a voice description, AI transcribes and converts to ACE style tags via Whisper + Ollama</li>
+          <li><strong>Quick Groove → Song</strong> — analyzes a Groove Lab clip's BPM/key and auto-suggests matching genre, tags, and lyrics</li>
+          <li><strong>Smart Fill</strong> — auto-generates bridging content for empty arrangement sections based on adjacent sections</li>
+          <li><strong>Tag Library</strong> — save and reuse favorite tag combos as one-click presets</li>
+          <li><strong>Song Templates</strong> — 6 built-in starter kits (Acid House, Lo-Fi Beat, Trance Journey, Techno Banger, Jazz Ballad, Ambient Soundscape) plus save your own</li>
+          <li><strong>Favorites & Notes</strong> — bookmark any generation and add production notes</li>
+          <li><strong>Versioning</strong> — save versioned snapshots of generations, view diffs between iterations, restore any version</li>
+          <li><strong>Collections / Playlists</strong> — group songs into named collections with drag-to-reorder and sequential playback</li>
+          <li><strong>Auto-Genre Detection</strong> — AI analyzes your tags and suggests matching genres with additional style tags</li>
+          <li><strong>Mood Arcs</strong> — visual mood curve editor with presets (Melancholy, Euphoric, Angry, Chill, Dark, Uplifting, Nostalgic, Anxious)</li>
+          <li><strong>Remote TB-303 Access</strong> — Groove Lab accessible via acid.nyxstudios.net for phone/tablet use</li>
+          <li><strong>120 API routes</strong> — expanded from 70+ to 120 endpoints</li>
+        </ul>
       </div>
 
       <div class="about-section">
@@ -2213,7 +2266,159 @@
       <button id="groovelab-send" style="white-space:nowrap"> acid Send to DAW</button>
       <span id="groovelab-status" style="font-size:11px;color:var(--muted)"></span>
     </div>
+    <div style="margin-top:8px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+      <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:4px">Quick Groove → Song</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">Select a groove clip above, then click to auto-generate a full song matching its tempo and key.</div>
+      <span id="gts-status" style="font-size:11px;color:var(--muted)"></span>
+    </div>
   </div>
+
+
+  <!-- Arrange Tab -->
+  <div class="tab-panel" id="tab-arrange">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <span style="font-size:14px;font-weight:600;color:var(--accent)"> Arrange</span>
+      <span style="font-size:11px;color:var(--muted)">Multi-section arrangements, layers, call-and-response, dynamics, transitions</span>
+    </div>
+
+    <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="secondary small arr-subtab active" onclick="showArrSubtab('arr-sections')">Sections</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-layers')">Layers</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-callresp')">Call &amp; Response</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-dynamics')">Dynamics</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-transitions')">Transitions</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-harmonies')">Harmonies</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-batch')">Batch</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-voice')">Voice Input</button>
+    </div>
+
+    <!-- Sections -->
+    <div class="arr-subpanel active" id="arr-sections" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <input id="arr-name" value="My Arrangement" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:600">
+        <button onclick="generateArrangement()" class="primary small">Generate All</button>
+        <span id="arr-status" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div id="arrangement-timeline"></div>
+      <script>document.addEventListener('DOMContentLoaded', renderArrangement);</script>
+    </div>
+
+    <!-- Layers -->
+    <div class="arr-subpanel" id="arr-layers" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <button onclick="addLayer()" class="secondary small">+ Add Layer</button>
+        <button onclick="generateLayers()" class="primary small">Generate All Layers</button>
+        <span id="layers-status" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div id="layers-panel"></div>
+    </div>
+
+    <!-- Call & Response -->
+    <div class="arr-subpanel" id="arr-callresp" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px">Call (first phrase)</div>
+          <textarea id="cr-call" rows="4" placeholder="Describe the call/melody..." style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;resize:vertical"></textarea>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:4px">Response (answer phrase)</div>
+          <textarea id="cr-response" rows="4" placeholder="Describe the response/answer..." style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;resize:vertical"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <label style="font-size:11px;color:var(--muted)">Pattern:</label>
+        <select id="cr-interleave" style="font-size:11px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+          <option value="1:1">1:1 (equal)</option>
+          <option value="2:1">2:1 (call heavy)</option>
+          <option value="1:2">1:2 (response heavy)</option>
+          <option value="3:1">3:1</option>
+        </select>
+        <button onclick="generateCallResponse()" class="primary small">Generate Both</button>
+        <span id="cr-status" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+    </div>
+
+    <!-- Dynamics -->
+    <div class="arr-subpanel" id="arr-dynamics" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:11px;font-weight:700;color:var(--accent)">Intensity Curve</span>
+        <select onchange="loadDynPreset(this.value)" style="font-size:11px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+          <option value="">Presets...</option>
+          <option value="Build & Drop">Build & Drop</option>
+          <option value="Constant High">Constant High</option>
+          <option value="Wave">Wave</option>
+          <option value="Crescendo">Crescendo</option>
+          <option value="Decrescendo">Decrescendo</option>
+        </select>
+        <span style="font-size:10px;color:var(--muted)">Click canvas to add points</span>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden">
+        <canvas id="dyn-canvas" style="width:100%;height:140px;cursor:crosshair"></canvas>
+      </div>
+      <script>document.addEventListener('DOMContentLoaded', () => { renderDynamics(); initDynCanvas(); });</script>
+    </div>
+
+    <!-- Transitions -->
+    <div class="arr-subpanel" id="arr-transitions" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <label style="font-size:11px;color:var(--muted)">Bar:</label>
+        <input id="trans-bar" type="number" value="8" min="1" max="512" style="width:60px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px">
+        <label style="font-size:11px;color:var(--muted)">BPM:</label>
+        <input id="trans-bpm" type="number" value="120" min="40" max="300" style="width:60px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px">
+        <label style="font-size:11px;color:var(--muted)">Key:</label>
+        <input id="trans-key" placeholder="e.g. Am" style="width:50px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px">
+        <select id="trans-type" style="font-size:11px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+          <option value="sudden">Sudden</option>
+          <option value="crossfade">Crossfade</option>
+          <option value="ramp">Ramp</option>
+        </select>
+        <button onclick="addTransition()" class="secondary small">+ Add</button>
+      </div>
+      <div id="trans-list"></div>
+    </div>
+
+    <!-- Harmonies -->
+    <div class="arr-subpanel" id="arr-harmonies" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:8px">Chord Progression Presets</div>
+      <div id="harmonies-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px"></div>
+      <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const el = document.getElementById('harmonies-grid');
+        if (!el || typeof CHORD_PROGRESSIONS === 'undefined') return;
+        el.innerHTML = Object.entries(CHORD_PROGRESSIONS).map(([name, tags]) =>
+          '<button onclick="injectChordTags(\'' + name.replace(/'/g, "\\'") + '\')" style="text-align:left;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;transition:border-color .15s" onmouseenter="this.style.borderColor=\'var(--accent)\'" onmouseleave="this.style.borderColor=\'var(--border)\'">' + name + '</button>'
+        ).join('');
+      });
+      </script>
+    </div>
+
+    <!-- Batch -->
+    <div class="arr-subpanel" id="arr-batch" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:700;color:var(--accent)">Batch Generation</span>
+        <label style="font-size:11px;color:var(--muted)">Variants:</label>
+        <select id="batch-count" style="font-size:11px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+          <option value="2">2</option>
+          <option value="4" selected>4</option>
+          <option value="6">6</option>
+          <option value="8">8</option>
+        </select>
+        <button onclick="batchGenerate()" class="primary small">Generate Batch</button>
+        <span id="batch-status" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">Generates multiple variants with different seeds from the current caption/tags for comparison.</div>
+    </div>
+
+    <!-- Voice Input -->
+    <div class="arr-subpanel" id="arr-voice" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="voice-btn" onclick="if(_voiceMediaRecorder?.state==='recording'){stopVoiceRecording()}else{startVoiceRecording()}" class="secondary small">🎙 Record Voice Description</button>
+        <span id="voice-status" style="font-size:11px;color:var(--muted)">Click to describe your song idea by voice</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">Speak a description like "upbeat acid house, 130 BPM, squelchy 303". The AI transcribes and converts to ACE style tags.</div>
+    </div>
+  </div>
+
 
   <!-- DAW -->
   <div class="tab-panel" id="tab-daw">
@@ -2302,6 +2507,22 @@
   </div>
 </div>
 
+<!-- Tag Library modal -->
+<div id="tag-library-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;width:420px;max-height:80vh;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="color:var(--accent);font-weight:600;font-size:14px">📚 Tag Library</span>
+      <button class="secondary small" id="btn-tag-library-close">✕</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="tag-library-name-input" placeholder="Name this combo… e.g. Dark Psy Night" style="flex:1;font-size:12px">
+      <button class="small" id="btn-tag-library-save" title="Save the current Tags field as a reusable combo">💾 Save current tags</button>
+    </div>
+    <div id="tag-library-list" style="overflow-y:auto;flex:1;border:1px solid var(--border);border-radius:6px;min-height:120px;padding:4px"></div>
+    <div id="tag-library-status" style="font-size:11px;color:var(--muted);min-height:16px"></div>
+  </div>
+</div>
+
 <script src="/static/wavesurfer.min.js"></script>
 <script src="/static/state.js?v=12"></script>
 <script src="/static/utils.js?v=5"></script>
@@ -2325,7 +2546,10 @@
 <script src="/static/radio.js?v=7"></script>
 <script src="/static/train.js?v=2"></script>
 <script src="/static/midi.js?v=1"></script>
-<script src="/static/history.js?v=4"></script>
+<script src="/static/history.js?v=5"></script>
+<script src="/static/favorites.js?v=1"></script>
+<script src="/static/tag-library.js?v=1"></script>
+<script src="/static/song-templates.js?v=1"></script>
 <script src="/static/dropzone.js?v=1"></script>
 <script src="/static/tabs.js?v=4"></script>
 <script src="/static/video.js?v=2"></script>
@@ -2344,6 +2568,18 @@
 <script src="/static/daw-session.js?v=1"></script>
 <script src="/static/daw.js?v=9"></script>
 <script src="/static/groovelab.js?v=1"></script>
+<script src="/static/arrangement.js?v=1"></script>
+<script src="/static/layers.js?v=1"></script>
+<script src="/static/call-response.js?v=1"></script>
+<script src="/static/dynamics.js?v=1"></script>
+<script src="/static/transitions.js?v=1"></script>
+<script src="/static/harmonies.js?v=1"></script>
+<script src="/static/quick-remix.js?v=1"></script>
+<script src="/static/batch.js?v=1"></script>
+<script src="/static/voice-prompt.js?v=1"></script>
+<script src="/static/groove-to-song.js?v=1"></script>
+<script src="/static/smart-fill.js?v=1"></script>
+<script src="/static/auto-genre.js?v=1"></script>
 <script src="/static/init.js?v=2"></script>
 </body>
 </html>

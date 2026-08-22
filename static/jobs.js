@@ -424,6 +424,12 @@ function addDownloadLinks(container, files) {
     }
 
     container.appendChild(retakeRow);
+
+    // Phase 4 hook — lets feature modules (versions, auto-genre, …) attach
+    // their own controls to completed generations without editing jobs.js.
+    document.dispatchEvent(new CustomEvent("nyx-job-files", {
+      detail: { promptId, files, container: retakeRow },
+    }));
   }
 }
 

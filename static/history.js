@@ -71,12 +71,23 @@ function _renderHistory(query) {
           <span style="font-weight:600;color:var(--text)">${esc(r.song_name || "Untitled")}</span>
           <span style="color:var(--muted);margin-left:8px;font-size:11px">${ts}</span>
         </div>
-        <button class="secondary small hist-load-btn" style="font-size:11px;padding:2px 8px"
-          title="Re-load these settings into the current state">📥 Load</button>
+        <div style="display:flex;gap:6px">
+          <button class="secondary small hist-bookmark-btn" style="font-size:11px;padding:2px 8px"
+            title="${r.bookmarked ? "Remove from favorites" : "Bookmark this track"}">${r.bookmarked ? "★" : "☆"}</button>
+          <button class="secondary small hist-load-btn" style="font-size:11px;padding:2px 8px"
+            title="Re-load these settings into the current state">📥 Load</button>
+        </div>
       </div>
       <div style="color:var(--accent2);margin-top:4px;word-break:break-word">${esc(r.caption || "(no tags)")}</div>
       ${params.bpm ? `<div style="color:var(--muted);margin-top:2px">${params.bpm} BPM · ${params.key || ""}${params.scale ? " " + params.scale : ""} · ${params.duration || "?"}s · seed ${r.seed}</div>` : `<div style="color:var(--muted);margin-top:2px">seed ${r.seed}</div>`}
       <div class="hist-files" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px"></div>
+      <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">
+        <button onclick="quickRemix(${r.id},'drums')" class="secondary small" style="font-size:10px;padding:2px 6px" title="Remix with different drums">🥁 Remix Drums</button>
+        <button onclick="quickRemix(${r.id},'tempo')" class="secondary small" style="font-size:10px;padding:2px 6px" title="Remix at different tempo">⚡ Remix Tempo</button>
+        <button onclick="quickRemix(${r.id},'key')" class="secondary small" style="font-size:10px;padding:2px 6px" title="Remix in different key">🎵 Remix Key</button>
+        <button onclick="quickRemix(${r.id},'mood')" class="secondary small" style="font-size:10px;padding:2px 6px" title="Remix with different mood">🎭 Remix Mood</button>
+        <span id="remix-status-${r.id}" style="font-size:10px;color:var(--muted);align-self:center"></span>
+      </div>
     `;
 
     const filesDiv = card.querySelector(".hist-files");
@@ -93,6 +104,26 @@ function _renderHistory(query) {
 
     card.querySelector(".hist-load-btn").addEventListener("click", () => {
       _loadHistoryRecord(r);
+    });
+
+    // Phase 4 hook — feature modules (collections drag-drop, …) can decorate cards.
+    document.dispatchEvent(new CustomEvent("nyx-history-card", {
+      detail: { card, record: r },
+    }));
+
+    card.querySelector(".hist-bookmark-btn").addEventListener("click", async e => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      try {
+        const resp = await fetch(`/api/favorites/${r.id}/bookmark`, { method: "POST" });
+        const data = await resp.json();
+        if (data.error) { showToast(data.error, "error"); return; }
+        r.bookmarked = data.bookmarked;
+        btn.textContent = data.bookmarked ? "★" : "☆";
+        btn.title = data.bookmarked ? "Remove from favorites" : "Bookmark this track";
+      } finally {
+        btn.disabled = false;
+      }
     });
 
     list.appendChild(card);
