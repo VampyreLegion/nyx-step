@@ -145,16 +145,19 @@ def init_db(path: pathlib.Path) -> None:
 
 
 def _ensure_builtin_templates() -> None:
-    """Seed the six starter templates once (stored under the shared __builtin__ user)."""
+    """Seed starter templates once (stored under the shared __builtin__ user)."""
     with _get_conn() as conn:
-        count = conn.execute(
-            "SELECT COUNT(*) AS n FROM song_templates WHERE user_email=?",
-            (_BUILTIN_USER,),
-        ).fetchone()["n"]
-        if count >= len(BUILTIN_TEMPLATES):
-            return
+        existing = {
+            r["name"]
+            for r in conn.execute(
+                "SELECT name FROM song_templates WHERE user_email=?",
+                (_BUILTIN_USER,),
+            ).fetchall()
+        }
         now = utcnow().isoformat()
         for tpl in BUILTIN_TEMPLATES:
+            if tpl["name"] in existing:
+                continue
             conn.execute(
                 "INSERT INTO song_templates (user_email, name, data, created_at) VALUES (?,?,?,?)",
                 (_BUILTIN_USER, tpl["name"], json.dumps(tpl["data"]), now),
@@ -544,6 +547,214 @@ BUILTIN_TEMPLATES = [
             "vocal_tags": [],
             "lyrics": "",
             "steps": 8, "cfg_scale": 1.8, "duration": 480.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Drum & Bass Roller",
+        "data": {
+            "_version": 1,
+            "song_name": "Neon Cascade",
+            "tags": "liquid drum and bass, 174 BPM, D Minor, 4/4 time, rolling breakbeat, deep sub bass, lush pads, soulful vocal chops",
+            "genre": "drum and bass", "bpm": 174, "key": "D", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - VI - III - VII", "notes": "fast break with melodic top line",
+            "instruments": ["amen break", "deep sub bass", "atmospheric pad", "vocal chop"],
+            "vocal_tags": ["soulful", "chopped"],
+            "lyrics": "",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Synthwave Night Drive",
+        "data": {
+            "_version": 1,
+            "song_name": "Chrome Horizon",
+            "tags": "synthwave, 108 BPM, B Minor, 4/4 time, analog arpeggios, gated reverb snare, pulsing bass, retro neon atmosphere",
+            "genre": "synthwave", "bpm": 108, "key": "B", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - VI - III - VII", "notes": "rolling 16th-note arp, wide stereo",
+            "instruments": ["analog synth arp", "gated snare", "retro bass", "pad wash"],
+            "vocal_tags": [],
+            "lyrics": "",
+            "steps": 8, "cfg_scale": 2.0, "duration": 240.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Dark Psytrance",
+        "data": {
+            "_version": 1,
+            "song_name": "Third Eye Protocol",
+            "tags": "dark psytrance, 148 BPM, F# Minor, 4/4 time, psychedelic acid squelch, driving kick, hypnotic FX, layered textures",
+            "genre": "psytrance", "bpm": 148, "key": "F#", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - i - VII - VI", "notes": "trippy acid runs, build and release",
+            "instruments": ["acid squelch", "psy kick", "trance lead", "FX sweep"],
+            "vocal_tags": [],
+            "lyrics": "",
+            "steps": 8, "cfg_scale": 2.2, "duration": 360.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.9, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Orchestral Epic",
+        "data": {
+            "_version": 1,
+            "song_name": "Rise of the Fallen",
+            "tags": "epic orchestral, 90 BPM, C Minor, 4/4 time, full string section, brass fanfare, cinematic percussion, choir, war drums",
+            "genre": "cinematic orchestral", "bpm": 90, "key": "C", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - VI - III - VII", "notes": "massive build from solo cello to full orchestra",
+            "instruments": ["string section", "brass", "timpani", "war drums", "choir"],
+            "vocal_tags": ["epic choir"],
+            "lyrics": "[Intro]\n(solo cello)\n\n[Verse]\nFrom ashes we arise\nThrough fire we are forged\n\n[Chorus]\n(sweeping strings)\nRise — we were never fallen\n\n[Outro]\n(full orchestra, fff)",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Deep House Sunset",
+        "data": {
+            "_version": 1,
+            "song_name": "Golden Hour",
+            "tags": "deep house, 122 BPM, Ab Major, 4/4 time, warm Rhodes chords, groovy bassline, filtered hi-hats, sunset terrace vibes",
+            "genre": "deep house", "bpm": 122, "key": "G#", "scale": "Major",
+            "mode": "", "time_sig": "4/4",
+            "chords": "Imaj7 - VIm7 - iiim7 - IVmaj7", "notes": "smooth groove, warm low end",
+            "instruments": ["rhodes piano", "deep bass", "shaker", "filtered hat"],
+            "vocal_tags": ["soft spoken"],
+            "lyrics": "[Verse]\nSun setting on the terrace\nGold light on the water\n\n[Chorus]\nStay a little longer\nFeel it in your bones",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Breakbeat Hardcore",
+        "data": {
+            "_version": 1,
+            "song_name": "Rave Architect",
+            "tags": "oldskool breakbeat hardcore, 150 BPM, G Minor, 4/4 time, Amen break, piano stab, deep sub, rave stabs, 90s energy",
+            "genre": "breakbeat hardcore", "bpm": 150, "key": "G", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - VI - VII - VI", "notes": "chopped breaks, piano breakdown",
+            "instruments": ["amen break", "piano stab", "rave stab", "sub bass"],
+            "vocal_tags": ["MC hype"],
+            "lyrics": "[Drop]\nBass — drop the bass\nFeel it in your chest\n\n[Bridge]\n(piano breakdown)\n\n[Drop]\n(let the breaks roll)",
+            "steps": 8, "cfg_scale": 2.0, "duration": 240.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.9, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Afrobeat Groove",
+        "data": {
+            "_version": 1,
+            "song_name": "Lagos Sunrise",
+            "tags": "afrobeat, 105 BPM, D Major, 4/4 time, talking drum, horn section, funky guitar, polyrhythmic percussion, joyful energy",
+            "genre": "afrobeat", "bpm": 105, "key": "D", "scale": "Major",
+            "mode": "", "time_sig": "4/4",
+            "chords": "I - IV - V - IV", "notes": "interlocking rhythms, call and response horns",
+            "instruments": ["talking drum", "horn section", "funky guitar", "congas", "shekere"],
+            "vocal_tags": ["powerful", "group vocals"],
+            "lyrics": "[Verse]\nWake up, the sun is calling\nEvery voice is rising tall\n\n[Chorus]\nWe move together\nHeartbeat of the city\n\n[Bridge]\n(horn solo)\n\n[Chorus]\nWe move together",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Minimal Dubstep",
+        "data": {
+            "_version": 1,
+            "song_name": "Hollow Ground",
+            "tags": "minimal dubstep, 140 BPM, E Minor, half-time feel, deep wobble bass, sparse drums, dark atmosphere, sub pressure",
+            "genre": "dubstep", "bpm": 140, "key": "E", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - VII - III - i", "notes": "half-time at 70 BPM feel, heavy sub",
+            "instruments": ["wobble bass", "half-time drums", "dark pad", "sub drop"],
+            "vocal_tags": [],
+            "lyrics": "",
+            "steps": 8, "cfg_scale": 2.2, "duration": 240.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Bossa Nova Dream",
+        "data": {
+            "_version": 1,
+            "song_name": "Ipanema Twilight",
+            "tags": "bossa nova, 130 BPM, G Major, 4/4 time, nylon guitar, soft brushed snare, warm upright bass, gentle sway",
+            "genre": "bossa nova", "bpm": 130, "key": "G", "scale": "Major",
+            "mode": "", "time_sig": "4/4",
+            "chords": "Imaj7 - iiim7 - vim7 - IImaj7", "notes": "syncopated guitar pattern, relaxed feel",
+            "instruments": ["nylon guitar", "brushed snare", "upright bass", "flute"],
+            "vocal_tags": ["soft", "whispered", "female vocal"],
+            "lyrics": "[Verse]\nBarefoot on warm sand\nThe tide comes breathing in\n\n[Chorus]\nIpanema twilight\nColors on the wind\n\n[Outro]\n(soft flute solo)",
+            "steps": 8, "cfg_scale": 2.0, "duration": 240.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Glitch Hop",
+        "data": {
+            "_version": 1,
+            "song_name": "Digital Wobble",
+            "tags": "glitch hop, 110 BPM, C Minor, 4/4 time, chopped samples, heavy bass, bitcrushed drums, glitchy stutters",
+            "genre": "glitch hop", "bpm": 110, "key": "C", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - iv - V - iv", "notes": "stutter edits, detuned bass hits",
+            "instruments": ["glitch drums", "wobble bass", "chopped vocal", "bitcrush FX"],
+            "vocal_tags": ["chopped"],
+            "lyrics": "",
+            "steps": 8, "cfg_scale": 2.0, "duration": 240.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.9, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Reggae Dub",
+        "data": {
+            "_version": 1,
+            "song_name": "Kingston Echo",
+            "tags": "reggae dub, 78 BPM, A Minor, 4/4 time, skank guitar, heavy bass, echo delay, drum fill, tropical atmosphere",
+            "genre": "reggae dub", "bpm": 78, "key": "A", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - VII - III - VII", "notes": "offbeat skank, heavy bassweight",
+            "instruments": ["skank guitar", "dub bass", "echo delay", "rimshot"],
+            "vocal_tags": ["toasting"],
+            "lyrics": "[Verse]\nBassline rolling deep\nEcho through the streets\n\n[Chorus]\nDubwise — everything irie\n\n[Drop]\n(heavy dub breakdown)",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Trappy Boi Banger",
+        "data": {
+            "_version": 1,
+            "song_name": "Rollin",
+            "tags": "trap, 140 BPM, F Minor, 4/4 time, 808 sub, rolling hi-hats, dark piano, hard-hitting, energetic",
+            "genre": "trap", "bpm": 140, "key": "F", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - VI - III - VII", "notes": "triplet hi-hat rolls, heavy 808 slides",
+            "instruments": ["808 bass", "rolling hi-hats", "dark piano", "clap"],
+            "vocal_tags": ["autotune", "ad-libs"],
+            "lyrics": "[Verse]\nStack it up, never slow\nRunning up the score\n\n[Chorus]\nRollin — we don't stop\n\n[Verse 2]\nMoney long, pockets fat\nYeah we like it like that",
+            "steps": 8, "cfg_scale": 2.0, "duration": 180.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Progressive House Anthem",
+        "data": {
+            "_version": 1,
+            "song_name": "Atlas",
+            "tags": "progressive house, 126 BPM, A Minor, 4/4 time, layered pads, euphoric build, filtered arpeggios, festival energy",
+            "genre": "progressive house", "bpm": 126, "key": "A", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - VI - III - VII", "notes": "slowly evolving layers, long buildup to peak",
+            "instruments": ["layered pad", "arpeggiated synth", "driving bass", "crash cymbal"],
+            "vocal_tags": ["ethereal"],
+            "lyrics": "[Intro]\n(filtered arp, slow build)\n\n[Verse]\nWe carry the light\nThrough every fading night\n\n[Build]\n rising rising rising\n\n[Drop]\n(instrumental peak)\n\n[Outro]\n(filter sweep down)",
+            "steps": 8, "cfg_scale": 2.0, "duration": 360.0, "seed": 0, "lock_seed": False,
             "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
         },
     },

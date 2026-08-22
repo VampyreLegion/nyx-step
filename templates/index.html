@@ -67,17 +67,6 @@
       <textarea id="overview-lyrics" style="min-height:140px"></textarea>
     </div>
     <div class="field-group">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px">
-        <div class="section-title" style="margin-bottom:0">📦 Template Starter Kit</div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <input type="text" id="template-name-input" placeholder="Save current as…" style="width:150px;font-size:11px;padding:4px 8px">
-          <button class="secondary small" id="btn-template-save-current" title="Save the current state (tags, lyrics, style, parameters) as a reusable template">💾 Save current</button>
-        </div>
-      </div>
-      <div id="template-save-status" style="font-size:11px;color:var(--muted);min-height:14px;margin-bottom:4px"></div>
-      <div id="song-templates-panel"></div>
-    </div>
-    <div class="field-group">
       <div class="section-title">What gets sent</div>
       <div class="preview-box" id="payload-preview" style="font-size:11px;line-height:1.8;color:var(--text)"></div>
     </div>
@@ -192,6 +181,18 @@
     </div>
     <button id="btn-easy-gen">✨ Generate Music Idea</button>
     <div id="easy-log" class="log-panel" style="margin-top:12px;display:none"></div>
+    <!-- Template Starter Kit -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px">
+        <div class="section-title" style="margin-bottom:0">📦 Template Starter Kit</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="template-name-input" placeholder="Save current as…" style="width:150px;font-size:11px;padding:4px 8px">
+          <button class="secondary small" id="btn-template-save-current" title="Save the current state (tags, lyrics, style, parameters) as a reusable template">💾 Save current</button>
+        </div>
+      </div>
+      <div id="template-save-status" style="font-size:11px;color:var(--muted);min-height:14px;margin-bottom:4px"></div>
+      <div id="song-templates-panel"></div>
+    </div>
   </div>
 
   <!-- STYLE -->

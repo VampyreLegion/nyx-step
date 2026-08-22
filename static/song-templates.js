@@ -55,7 +55,7 @@ function renderSongTemplates() {
         const resp = await fetch(`/api/song-templates/${tpl.id}/apply`, { method: "POST" });
         const data = await resp.json();
         if (data.error) { showToast(data.error, "error"); return; }
-        _applyPreset(data);
+        _applyPreset(data.data || data);
         syncOverviewFromState();
         showToast(`Template applied: ${tpl.name}`, "success");
       } finally {
@@ -117,3 +117,7 @@ document.getElementById("btn-template-save-current").addEventListener("click", a
 });
 
 document.addEventListener("DOMContentLoaded", loadSongTemplates);
+
+// Reload templates when BioInfusor tab is opened
+const _tplTabBtn = document.querySelector('[data-tab="easy"]');
+if (_tplTabBtn) _tplTabBtn.addEventListener("click", () => setTimeout(loadSongTemplates, 50));
