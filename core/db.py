@@ -145,18 +145,26 @@ def init_db(path: pathlib.Path) -> None:
 
 
 def _ensure_builtin_templates() -> None:
-    """Seed starter templates once (stored under the shared __builtin__ user)."""
+    """Seed starter templates once (stored under the shared __builtin__ user).
+    Also updates existing builtins if the code-side data has changed (e.g. duration caps)."""
     with _get_conn() as conn:
-        existing = {
-            r["name"]
-            for r in conn.execute(
-                "SELECT name FROM song_templates WHERE user_email=?",
-                (_BUILTIN_USER,),
-            ).fetchall()
-        }
+        existing = {}
+        for r in conn.execute(
+            "SELECT id, name, data FROM song_templates WHERE user_email=?",
+            (_BUILTIN_USER,),
+        ).fetchall():
+            existing[r["name"]] = r
         now = utcnow().isoformat()
         for tpl in BUILTIN_TEMPLATES:
             if tpl["name"] in existing:
+                row = existing[tpl["name"]]
+                old_data = json.loads(row["data"])
+                new_data = tpl["data"]
+                if old_data != new_data:
+                    conn.execute(
+                        "UPDATE song_templates SET data=? WHERE id=?",
+                        (json.dumps(new_data), row["id"]),
+                    )
                 continue
             conn.execute(
                 "INSERT INTO song_templates (user_email, name, data, created_at) VALUES (?,?,?,?)",
@@ -914,6 +922,166 @@ BUILTIN_TEMPLATES = [
             "instruments": ["reggaeton kick", "dutch lead", "dembow snare", "sub bass"],
             "vocal_tags": ["party"],
             "lyrics": "[Verse]\nFuego lento, sube el volumen\nLa noche es solo nuestra\n\n[Chorus]\nFuego — fuego — fuego\nBaila con el ritmo\n\n[Drop]\n(dembow drop)\n\n[Chorus]\nFuego — fuego",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Footwork / Juke",
+        "data": {
+            "_version": 1,
+            "song_name": "160BPM",
+            "tags": "footwork, 160 BPM, F Minor, 4/4 time, chopped vocal samples, rapid-fire kicks, restless energy, Chicago underground",
+            "genre": "footwork", "bpm": 160, "key": "F", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - iv - i - VII", "notes": "rapid chopped repetition, constant motion",
+            "instruments": ["808 kick", "chopped vocal", "clap", "sub pulse"],
+            "vocal_tags": ["chopped"],
+            "lyrics": "",
+            "steps": 8, "cfg_scale": 2.0, "duration": 180.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.9, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Afro House",
+        "data": {
+            "_version": 1,
+            "song_name": "Ancestral Pulse",
+            "tags": "afro house, 122 BPM, F# Minor, 4/4 time, organic percussion, deep bass, spiritual atmosphere, tribal rhythms, hypnotic",
+            "genre": "afro house", "bpm": 122, "key": "F#", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - VI - III - VII", "notes": "tribal percussion loops, deep spiritual groove",
+            "instruments": ["djembe", "talking drum", "deep bass", "shaker", "wood block"],
+            "vocal_tags": ["chanting"],
+            "lyrics": "[Verse]\nFeel the pulse beneath the earth\nAncestors calling us\n\n[Chorus]\nWe dance to remember\nWe move to survive\n\n[Percussion Break]\n(drums only)\n\n[Chorus]\nAncestral pulse",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Liquid Funk",
+        "data": {
+            "_version": 1,
+            "song_name": "Crystal Current",
+            "tags": "liquid funk, 174 BPM, Bb Major, 4/4 time, melodic breaks, lush pads, soulful chords, flowing energy, warm bass",
+            "genre": "liquid funk", "bpm": 174, "key": "A#", "scale": "Major",
+            "mode": "", "time_sig": "4/4",
+            "chords": "Imaj7 - VIm7 - IVmaj7 - V", "notes": "fast breakbeat with warm melodic top",
+            "instruments": ["melodic breakbeat", "warm bass", "rhodes chord", "atmospheric pad"],
+            "vocal_tags": ["soulful"],
+            "lyrics": "[Verse]\nWater flowing through my veins\nCarrying the melody\n\n[Drop]\n(instrumental warmth)\n\n[Verse 2]\nCrystal clear and neverending\nThis current carries me",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Bassline / Speed Garage",
+        "data": {
+            "_version": 1,
+            "song_name": "Weighty",
+            "tags": "speed garage, 135 BPM, E Minor, 4/4 time, wobbly bass, chopped vocal stabs, skipper hats, UK underground, energetic",
+            "genre": "speed garage", "bpm": 135, "key": "E", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - VII - III - VI", "notes": "wobbly 2-step bass, skip beats",
+            "instruments": ["wobble bass", "skipper hats", "vocal stab", "sub low"],
+            "vocal_tags": ["MC hype"],
+            "lyrics": "[Drop]\nBassline — weighty\n\n[Bridge]\n(skipper breakdown)\n\n[Drop]\nBassline — weighty\n\n[Outro]\n(sub fade)",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Electro Swing",
+        "data": {
+            "_version": 1,
+            "song_name": "Speakeasy",
+            "tags": "electro swing, 125 BPM, D Major, 4/4 time, vintage swing samples, modern bass, brass stabs, upbeat retro, danceable",
+            "genre": "electro swing", "bpm": 125, "key": "D", "scale": "Major",
+            "mode": "", "time_sig": "4/4",
+            "chords": "I - vi - IV - V", "notes": "swing rhythm with modern drop",
+            "instruments": ["swing drums", "brass stab", "upright bass", "vinyl texture"],
+            "vocal_tags": ["vintage female"],
+            "lyrics": "[Verse]\nStep into the speakeasy\nWhere the old meets the new\n\n[Chorus]\nSwing that body\nFeel the rhythm take control\n\n[Drop]\n(electro drop)\n\n[Chorus]\nSwing that body",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Witch House",
+        "data": {
+            "_version": 1,
+            "song_name": "Void Temple",
+            "tags": "witch house, 130 BPM, C# Minor, 4/4 time, detuned synths, pitched-down vocals, dark reverb, occult atmosphere, ethereal",
+            "genre": "witch house", "bpm": 130, "key": "C#", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - VI - III - VII", "notes": "slow dark reverb-drenched textures",
+            "instruments": ["detuned synth", "pitched vocal", "dark reverb pad", "tape hiss"],
+            "vocal_tags": ["pitched down", "reverb-drenched"],
+            "lyrics": "[Verse]\nIn the temple of the void\nWhere shadows come alive\n\n[Chorus]\nWe are the witches\nOf the digital night\n\n[Outro]\n(ambient fade into static)",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Dancehall",
+        "data": {
+            "_version": 1,
+            "song_name": "Baddest",
+            "tags": "dancehall, 100 BPM, A Minor, 4/4 time, dembow rhythm, heavy 808, toasting vocals, Caribbean energy, party anthem",
+            "genre": "dancehall", "bpm": 100, "key": "A", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - VII - III - VII", "notes": "dembow riddim, sparse hard-hitting",
+            "instruments": ["dembow drum", "808 sub", "synth stab", "rimshot"],
+            "vocal_tags": ["toasting", "patois"],
+            "lyrics": "[Verse]\nStep up inna di place\nDi bassline shake di place\n\n[Chorus]\nWe di baddest — nobody test\n\n[Verse 2]\nFrom di morning to di night\nDi rhythm feel so right\n\n[Chorus]\nWe di baddest",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Darkwave",
+        "data": {
+            "_version": 1,
+            "song_name": "Obsidian",
+            "tags": "darkwave, 118 BPM, D Minor, 4/4 time, gothic synth, deep bass, mournful melody, post-punk energy, cold beauty",
+            "genre": "darkwave", "bpm": 118, "key": "D", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - iv - v - i", "notes": "cold analog textures, driving bass",
+            "instruments": ["analog synth", "driving bass", "gothic pad", "drum machine"],
+            "vocal_tags": ["haunting", "baritone"],
+            "lyrics": "[Verse]\nObsidian skies above\nCold light on the sea\n\n[Chorus]\nWe dance in the darkness\nWhere shadows are free\n\n[Bridge]\n(synth solo)\n\n[Chorus]\nWe dance in the darkness",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Samba Electronica",
+        "data": {
+            "_version": 1,
+            "song_name": "Carnival Circuit",
+            "tags": "samba electronica, 130 BPM, G Major, 4/4 time, surdo kick, electronic whistles, tropical synths, carnival energy, festive",
+            "genre": "samba electronica", "bpm": 130, "key": "G", "scale": "Major",
+            "mode": "", "time_sig": "4/4",
+            "chords": "I - IV - V - IV", "notes": "fast samba beat with electronic layers",
+            "instruments": ["surdo", "caixa", "electronic whistle", "tropical synth", "pandeiro"],
+            "vocal_tags": ["group vocals", "celebratory"],
+            "lyrics": "[Verse]\nFeel the rhythm of the circuit\nCarnival is here\n\n[Chorus]\nSamba —电子 — samba\nDance until the morning\n\n[Percussion Break]\n(surdo and whistles)\n\n[Chorus]\nSamba —电子 — samba",
+            "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
+            "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
+        },
+    },
+    {
+        "name": "Baile Funk",
+        "data": {
+            "_version": 1,
+            "song_name": "Favela Beats",
+            "tags": "baile funk, 130 BPM, E Minor, 4/4 time, tuntzão beat, heavy bass, raw energy, favela vibes, percussive vocal chops",
+            "genre": "baile funk", "bpm": 130, "key": "E", "scale": "Minor",
+            "mode": "", "time_sig": "4/4",
+            "chords": "i - VI - III - VII", "notes": "tuntzão rhythm, raw lo-fi texture",
+            "instruments": ["tuntzão drum", "heavy 808", "vocal chop", "metallic stab"],
+            "vocal_tags": ["aggressive", "chopped"],
+            "lyrics": "[Verse]\nFavela beat — feeling heat\nBass so deep — can't compete\n\n[Chorus]\nBaile — baile — baile\n\n[Drop]\n(tuntzão drop)\n\n[Chorus]\nBaile — baile — baile",
             "steps": 8, "cfg_scale": 2.0, "duration": 300.0, "seed": 0, "lock_seed": False,
             "temperature": 0.85, "top_p": 0.9, "top_k": 0, "min_p": 0.0,
         },
