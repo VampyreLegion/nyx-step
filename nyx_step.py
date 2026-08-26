@@ -75,6 +75,8 @@ from routes.ollama_routes import router as ollama_router
 from routes.presets import router as presets_router
 from routes.remix import router as remix_router
 from routes.history import router as history_router
+from routes.library import router as library_router
+from routes.jam import router as jam_router
 from routes.analyze import router as analyze_router
 from routes.train import router as train_router
 from routes.midi import router as midi_router
@@ -111,6 +113,8 @@ app.include_router(dl_router)
 app.include_router(presets_router)
 app.include_router(remix_router)
 app.include_router(history_router)
+app.include_router(library_router)
+app.include_router(jam_router)
 app.include_router(analyze_router)
 app.include_router(train_router)
 app.include_router(midi_router)

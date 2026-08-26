@@ -1,4 +1,32 @@
 <html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.1.0</h2>
+
+<h3>🎸 Finish My Jam</h3>
+<p>A brand-new tab for turning rough sketches into finished tracks:</p>
+<ul>
+  <li><strong>Upload &amp; Analyze</strong> — drop in any MP3/WAV/FLAC/OGG/M4A and Nyx-Step extracts BPM, key, scale, duration, LUFS, chord progression, and lyrics via librosa + Whisper. All detected values are editable before generating</li>
+  <li><strong>ACE-Step backing</strong> — full instrumental generation through ComfyUI. Your jam's BPM/key/scale/duration are passed automatically; add custom tags (e.g. <code>jazz drums, fretless bass, piano chords</code>) and generate a complete backing arrangement</li>
+  <li><strong>MusicGen Melody (local)</strong> — runs <code>facebook/musicgen-melody</code> on Nyx's GB10 GPU via a dedicated FastAPI service (<code>musicgen.service</code> on port 8180). True audio-to-audio melody conditioning: upload a reference track and MusicGen generates a backing clip that follows its melodic contour. Supports 1–30 s generation</li>
+  <li><strong>Live status badge</strong> — green/red indicator shows whether the MusicGen service is reachable; auto-checks when you open the tab</li>
+</ul>
+
+<h3>📚 Library Tab</h3>
+<ul>
+  <li><strong>Full audio browser</strong> — lists every MP3 and WAV file in ComfyUI's <code>output/audio/</code> directory, including the new <code>jams/</code> subdirectory where uploads and generated backing tracks are stored</li>
+  <li><strong>In-browser player</strong> — click any file to play; supports seek, pause, and range-request streaming for large files</li>
+  <li><strong>Search filter</strong> — type to filter the list by filename substring in real time</li>
+  <li><strong>WAV support</strong> — WAV files now stream with the correct <code>audio/wav</code> MIME type alongside MP3s</li>
+</ul>
+
+<h3>🔧 Backend</h3>
+<ul>
+  <li>New API routes: <code>GET /api/library</code>, <code>GET /library/audio/{path}</code>, <code>POST /api/jam/upload</code>, <code>POST /api/jam/generate-backing</code>, <code>POST /api/jam/musicgen</code>, <code>GET /api/jam/musicgen/status</code></li>
+  <li><code>musicgen.service</code> — new systemd unit running <code>MusicgenMelodyForConditionalGeneration</code> on CUDA:0 with 32 kHz sampling</li>
+  <li>Library route serves both MP3 and WAV with correct MIME types; Range request support for efficient streaming</li>
+</ul>
+
+<hr style="border-color:#2d3041;margin:20px 0">
+
 <h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.0.0</h2>
 
 <h3>🏗 Arrange Tab</h3>
