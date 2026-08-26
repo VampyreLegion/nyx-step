@@ -1,6 +1,9 @@
 from __future__ import annotations
+import shutil
+import uuid
+from pathlib import Path
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, UploadFile, File, Form
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
@@ -129,6 +132,9 @@ def _user_owns_daw_file(user: str, filename: str) -> bool:
     for gc in db.get_groove_clips(user):
         if gc["file_path"] == filename:
             return True
+    # Imported DAW clip?
+    if filename.startswith("daw_imports/"):
+        return True
     # Stem whose parent-song folder matches a song the user owns?
     parts = filename.split("/")
     if len(parts) >= 4 and parts[0] == "separated":
@@ -196,3 +202,43 @@ async def audio(file: str, request: Request):
     media = {"mp3": "audio/mpeg", "flac": "audio/flac", "wav": "audio/wav",
              "opus": "audio/ogg", "ogg": "audio/ogg"}.get(ext, "application/octet-stream")
     return FileResponse(str(path), media_type=media)
+
+
+_DAW_IMPORTS_DIR = config.COMFYUI_OUTPUT_DIR / "daw_imports"
+
+
+@router.post("/import")
+async def import_audio(
+    request: Request,
+    file: UploadFile = File(...),
+):
+    """Upload an audio file (WAV/MP3/FLAC/OGG) and add it to the DAW clip library."""
+    user = get_user_email(request)
+    _DAW_IMPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    ext = Path(file.filename or "audio.wav").suffix.lower() or ".wav"
+    if ext not in (".wav", ".mp3", ".flac", ".ogg", ".m4a", ".opus", ".wma"):
+        return JSONResponse({"error": f"Unsupported format: {ext}"}, status_code=400)
+
+    safe_name = f"import_{uuid.uuid4().hex[:12]}{ext}"
+    dest = _DAW_IMPORTS_DIR / safe_name
+
+    with open(dest, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    # Detect duration via soundfile
+    duration = 0.0
+    try:
+        import soundfile as sf
+        info = sf.info(str(dest))
+        duration = info.duration
+    except Exception:
+        pass
+
+    rel = f"daw_imports/{safe_name}"
+    return {
+        "ok": True,
+        "file": rel,
+        "name": Path(file.filename or safe_name).stem,
+        "duration": round(duration, 3),
+    }

@@ -115,4 +115,46 @@ function _dawWireTransport() {
     renderTimeline();
     _dawSyncSnapControls();
   });
+
+  // ── Import Audio ──────────────────────────────────────────────────────────
+  const importBtn = document.getElementById("daw-import-btn");
+  const importFile = document.getElementById("daw-import-file");
+  if (importBtn && importFile) {
+    importBtn.addEventListener("click", () => importFile.click());
+    importFile.addEventListener("change", async () => {
+      const file = importFile.files[0];
+      if (!file) return;
+      importBtn.disabled = true;
+      importBtn.textContent = "⬆ Uploading…";
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const resp = await fetch("/daw/import", { method: "POST", body: fd });
+        const data = await resp.json();
+        if (!resp.ok || data.error) throw new Error(data.error || "Upload failed");
+
+        // Add as clip to the first audio track (or any track if none)
+        const track = dawState.tracks.find(t => t.kind !== "midi") || dawState.tracks[0];
+        if (!track) throw new Error("No track — add one first");
+
+        const clip = dawAddClip(track.id, {
+          file: data.file,
+          name: data.name || file.name.replace(/\.[^.]+$/, ""),
+          source_duration: data.duration || 0,
+        }, _dawPlayhead || 0);
+
+        if (clip) {
+          await dawGetBuffer(clip.file);
+          renderTimeline();
+          dawLoadLibrary();  // refresh library so it shows up
+        }
+      } catch (e) {
+        alert("Import failed: " + e.message);
+      } finally {
+        importBtn.disabled = false;
+        importBtn.textContent = "⬆ Import Audio";
+        importFile.value = "";
+      }
+    });
+  }
 }
