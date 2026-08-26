@@ -1601,6 +1601,32 @@
       </div>
       <div id="jam-mg-status" style="color:var(--muted);font-size:11px">Requires musicgen.service running on Nyx (GB10 GPU)</div>
     </div>
+
+    <!-- MiniMax Music3 -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-weight:600;color:var(--text);font-size:13px">3c. MiniMax Music3 — Full song with vocals (up to 5 min)</span>
+        <span style="font-size:11px;color:var(--accent,#7c65d9)">LOCAL</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <label style="flex:1;min-width:300px">Music Description (caption)
+            <textarea id="jam-mm-caption" rows="3" placeholder="Female spoken-word vocals, breathy, raw, vulnerable, whispered, acoustic guitar, piano, cello, brushed snare, subtle reverb tail, 76 BPM, A Major, 4/4 time, singer-songwriter" style="width:100%;font-size:12px;resize:vertical;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px"></textarea>
+          </label>
+          <label style="flex:1;min-width:300px">Lyrics
+            <textarea id="jam-mm-lyrics" rows="3" placeholder="[Verse]&#10;Whispered words in the morning light&#10;Breathy sighs that feel so right&#10;&#10;[Chorus]&#10;Raw and vulnerable tonight" style="width:100%;font-size:12px;resize:vertical;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px"></textarea>
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <label>Duration <input type="number" id="jam-mm-duration" value="120" min="5" max="300" step="1" style="width:60px;font-size:12px">s</label>
+          <label>CFG <input type="number" id="jam-mm-cfg" value="7.0" min="1" max="20" step="0.5" style="width:55px;font-size:12px"></label>
+          <label>Seed <input type="number" id="jam-mm-seed" value="0" min="0" max="4294967295" style="width:80px;font-size:12px"></label>
+          <label>Format <select id="jam-mm-format" style="font-size:12px"><option value="mp3">MP3</option><option value="wav">WAV</option><option value="flac">FLAC</option></select></label>
+          <button id="jam-mm-btn" style="background:var(--accent,#7c65d9);color:#fff;border:none;border-radius:6px;padding:7px 18px;font-size:12px;cursor:pointer;font-weight:600">Generate Song</button>
+        </div>
+      </div>
+      <div id="jam-mm-status" style="color:var(--muted);font-size:11px;margin-top:6px">MiniMax Music3 — runs on ComfyUI (GB10 GPU). Up to 5 min songs with vocals + lyrics.</div>
+    </div>
   </div>
 
   <!-- GUIDE -->

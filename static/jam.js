@@ -88,6 +88,35 @@ async function jamMusicGen() {
   } catch (err) { status.textContent = "Error: " + err.message; }
 }
 
+async function jamMiniMax() {
+  const status = document.getElementById("jam-mm-status");
+  const caption = document.getElementById("jam-mm-caption").value.trim();
+  const lyrics = document.getElementById("jam-mm-lyrics").value.trim();
+  if (!caption) { showToast("Enter a music description", "error"); return; }
+  if (!lyrics) { showToast("Enter lyrics (or [Instrumental] for no vocals)", "error"); return; }
+  status.textContent = "Submitting to MiniMax Music3… (may take 2–5 min)";
+  const body = {
+    caption,
+    lyrics,
+    duration: parseFloat(document.getElementById("jam-mm-duration").value) || 120,
+    cfg_scale: parseFloat(document.getElementById("jam-mm-cfg").value) || 7.0,
+    seed: parseInt(document.getElementById("jam-mm-seed").value) || 0,
+    save_format: document.getElementById("jam-mm-format").value || "mp3",
+    song_name: document.getElementById("jam-song-name").value.trim() || "MiniMax Song",
+  };
+  try {
+    const resp = await fetch("/api/jam/minimax", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+    if (data.error) { status.textContent = "Error: " + data.error; return; }
+    status.textContent = "Queued — job " + (data.prompt_id || "").substring(0, 8) + " (position " + data.queue_position + "). MiniMax Music3 generates up to 5 min songs — watch History tab for completion.";
+    showToast("MiniMax Music3 song queued!", "success");
+  } catch (err) { status.textContent = "Error: " + err.message; }
+}
+
 function _checkMusicGenStatus() {
   fetch("/api/jam/musicgen/status").then(r => r.json()).then(d => {
     const badge = document.getElementById("jam-mg-badge");
@@ -110,4 +139,5 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("jam-file-input")?.addEventListener("change", jamUpload);
   document.getElementById("jam-generate-btn")?.addEventListener("click", jamGenerateBacking);
   document.getElementById("jam-mg-btn")?.addEventListener("click", jamMusicGen);
+  document.getElementById("jam-mm-btn")?.addEventListener("click", jamMiniMax);
 });

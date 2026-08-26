@@ -11,6 +11,7 @@ import config
 from core.analyze import analyze
 from core.comfyui import ComfyUIClient
 from core.executor import get_audio_pool, stream_upload
+from core.minimax_music3 import build_minimax_workflow
 from nyx_step import get_user_email, tracker
 
 router = APIRouter(prefix="/api/jam")
@@ -196,3 +197,59 @@ async def musicgen_status(request: Request):
             return resp.json()
     except Exception:
         return {"status": "offline"}
+
+
+# ── MiniMax Music3 generation ─────────────────────────────────────────────
+
+class MiniMaxRequest(BaseModel):
+    caption: str = "acoustic guitar, piano, cello, brushed snare, female vocal"
+    lyrics: str = "[Verse]\nWhispered words in the morning light"
+    duration: float = Field(default=120.0, ge=5.0, le=300.0)
+    seed: int = Field(default=0, ge=0, le=4294967295)
+    cfg_scale: float = Field(default=7.0, ge=1.0, le=20.0)
+    top_k: int = Field(default=250, ge=1, le=1000)
+    save_format: str = "mp3"
+    song_name: str = "MiniMax Song"
+
+
+@router.post("/minimax")
+async def minimax_generate(req: MiniMaxRequest, request: Request):
+    """Generate a song via MiniMax Music3 through ComfyUI."""
+    user_email = get_user_email(request)
+
+    seed = req.seed if req.seed != 0 else None
+    result = build_minimax_workflow(
+        caption=req.caption,
+        lyrics=req.lyrics,
+        duration=req.duration,
+        seed=seed,
+        cfg_scale=req.cfg_scale,
+        top_k=req.top_k,
+        save_format=req.save_format,
+    )
+
+    send_result = _comfy.send_workflow(result["workflow"])
+    if "error" in send_result:
+        return JSONResponse(
+            {"error": "ComfyUI unreachable: " + send_result["error"]},
+            status_code=502,
+        )
+
+    prompt_id = send_result.get("prompt_id", "")
+    safe_params = {
+        "caption": req.caption,
+        "duration": req.duration,
+        "cfg_scale": req.cfg_scale,
+        "top_k": req.top_k,
+        "save_format": req.save_format,
+        "engine": "minimax_music3",
+    }
+    tracker.register(
+        prompt_id, user_email, req.song_name,
+        seed=result.get("seed", 0),
+        caption=req.caption,
+        lyrics=req.lyrics,
+        params=safe_params,
+    )
+    q = tracker.get_queue_counts()
+    return {"prompt_id": prompt_id, "queue_position": q["pending"]}
