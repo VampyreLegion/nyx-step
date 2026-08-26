@@ -45,7 +45,8 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
 
   btn.disabled = true;
   btn.textContent = "🎵 Submitting…";
-  setGenProgress("queued", "Submitting to ComfyUI…");
+  const engineLabel = mwState.engine === "minimax" ? "MiniMax Music3" : "ACE-Step";
+  setGenProgress("queued", `Submitting to ${engineLabel}…`);
   status.textContent = "";
 
   const payload = {
@@ -84,9 +85,9 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
     _dismissedJobs.delete(data.prompt_id);
     _saveDismissed();
     addJobCard(data.prompt_id, songName, "queued", []);
-    status.textContent = `Queued — ${data.prompt_id}`;
+    status.textContent = `Queued — ${data.prompt_id} (${engineLabel})`;
     status.style.color = "var(--muted)";
-    setGenProgress("queued", "Queued — waiting for ComfyUI to start…");
+    setGenProgress("queued", `Queued — waiting for ${engineLabel} to start…`);
     btn.disabled = false; btn.textContent = "🎵 Generate Music Idea";
   } catch (e) {
     const msg = e.message.includes("JSON") ? "ComfyUI is offline or unreachable" : e.message;

@@ -73,6 +73,10 @@
       <div class="preview-box" id="payload-preview" style="font-size:11px;line-height:1.8;color:var(--text)"></div>
     </div>
     <div style="margin:14px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <select id="generate-engine" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px" title="Choose which AI engine generates the music">
+        <option value="ace-step">ACE-Step v1.5</option>
+        <option value="minimax">MiniMax Music3</option>
+      </select>
       <button id="btn-generate">🎵 Generate Music Idea</button>
       <button class="secondary small" id="btn-save-preset" title="Save all settings to server">💾 Save</button>
       <button class="secondary small" id="btn-load-preset" title="Load a saved preset">📂 Load</button>
@@ -1860,8 +1864,22 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 4.1.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; August 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 4.2.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; August 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v4.2.0 — MiniMax Music3 &amp; Engine Selector</h3>
+        <ul>
+          <li><strong>🎵 Engine Selector</strong> — the Generate tab now has a dropdown to choose between <strong>ACE-Step v1.5</strong> and <strong>MiniMax Music3</strong> before generating. Your choice is remembered in the payload and preserved on retake/replay</li>
+          <li><strong>MiniMax Music3 integration</strong> — full-song AI generation with vocals + lyrics up to 5 minutes, running entirely on the GB10 GPU via ComfyUI. Uses an 8B Global LLM + 2.4B flow-matching DiT + DAV VAE (23.6 GB total). Produces 32 kHz stereo output with clean instrument separation and natural-sounding vocals</li>
+          <li><strong>MiniMax workflow builder</strong> — <code>core/minimax_music3.py</code> builds ComfyUI API workflows for MiniMax with caption, lyrics, duration, CFG, seed, and format controls</li>
+          <li><strong>Generate tab dispatch</strong> — backend <code>POST /generate</code> now accepts an <code>engine</code> field and routes to ACE-Step or MiniMax accordingly. Both engines share the same job tracker, SSE events, and history</li>
+          <li><strong>Payload preview</strong> — the "What gets sent" preview now shows which engine is selected</li>
+          <li><strong>Finish My Jam — MiniMax section</strong> — new section 3c in the Finish My Jam tab for dedicated MiniMax Music3 generation with caption (music description) and lyrics fields</li>
+          <li><strong>DAW Import Audio</strong> — new "Import Audio" button in the DAW tab sidebar lets you upload WAV/MP3 files directly into the DAW clip library. Files are saved to <code>daw_imports/</code> and appear as draggable clips</li>
+          <li><strong>ComfyUI updated to v0.34.0</strong> — 952 nodes loaded (was 843 at v0.27.1). Systemd service updated with <code>UV_BREAK_SYSTEM_PACKAGES=1</code> for ComfyUI-Manager compatibility</li>
+        </ul>
       </div>
 
       <div class="about-section">

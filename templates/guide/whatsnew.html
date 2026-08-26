@@ -1,4 +1,40 @@
 <html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.2.0</h2>
+
+<h3>🎵 Engine Selector</h3>
+<p>The <strong>Generate</strong> tab now has a dropdown to choose which AI engine generates your music:</p>
+<table>
+<tr><th>Engine</th><th>Best For</th><th>Max Duration</th><th>Speed (GB10)</th></tr>
+<tr><td><strong>ACE-Step v1.5</strong></td><td>Fast drafts, exact durations, BPM/key control, editing (cover/repaint), iteration</td><td>10 min</td><td>~25–60 s</td></tr>
+<tr><td><strong>MiniMax Music3</strong></td><td>Final renders, vocals + lyrics, cleaner mixes, pop/singer-songwriter, cinematic</td><td>5 min</td><td>~4–5 min per 2.5 min song</td></tr>
+</table>
+<p>Your engine choice is preserved in the payload and carried over on retake/replay. The "What gets sent" preview shows which engine is selected.</p>
+
+<h3>MiniMax Music3</h3>
+<p>Full-song generation with vocals and lyrics, running entirely on the GB10 GPU via ComfyUI:</p>
+<ul>
+  <li><strong>Architecture</strong> — 8B Global LLM (Qwen3-based) plans the song frame-by-frame, 0.6B Local LLM fills acoustic detail, 2.4B flow-matching DiT renders the waveform, DAV VAE decodes to 32 kHz stereo</li>
+  <li><strong>Lyrics with section tags</strong> — put <code>[Verse]</code>, <code>[Chorus]</code>, <code>[Bridge]</code>, <code>[Outro]</code> on their own lines and they land exactly where you put them</li>
+  <li><strong>Music description</strong> — describe the genre, instruments, mood, vocal style in a caption. The model interprets your description rather than requiring tag-list input</li>
+  <li><strong>Models installed</strong> — DiT (4.6 GB), text encoder (18 GB), VAE (207 MB) in ComfyUI's model directories</li>
+  <li><strong>Finish My Jam integration</strong> — section 3c in the Finish My Jam tab for dedicated MiniMax generation</li>
+</ul>
+
+<h3>🔧 DAW Import Audio</h3>
+<ul>
+  <li><strong>Import Audio button</strong> — new button in the DAW tab sidebar. Upload WAV/MP3 files directly into the DAW clip library</li>
+  <li><strong>Backend</strong> — <code>POST /daw/import</code> saves files to <code>daw_imports/</code>, returns filename and duration</li>
+  <li><strong>Drag-and-drop</strong> — imported clips appear in the DAW library and can be dragged onto tracks</li>
+</ul>
+
+<h3>ComfyUI v0.34.0</h3>
+<ul>
+  <li>Updated from v0.27.1 — 952 nodes loaded (was 843)</li>
+  <li>Systemd service now includes <code>UV_BREAK_SYSTEM_PACKAGES=1</code> for ComfyUI-Manager compatibility</li>
+</ul>
+
+<hr style="border-color:#2d3041;margin:20px 0">
+
 <h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.1.0</h2>
 
 <h3>🎸 Finish My Jam</h3>

@@ -159,6 +159,7 @@ function updatePayloadPreview() {
     ? lyricsLines.slice(0, 3).join(" / ") + (lyricsLines.length > 3 ? " …" : "")
     : "(empty)";
   el.textContent = [
+    `Engine:   ${s.engine === "minimax" ? "MiniMax Music3" : "ACE-Step v1.5"}`,
     `Tags:     ${tags || "(empty)"}`,
     `Lyrics:   ${lyricsSnippet}`,
     `BPM: ${s.bpm}   Key: ${s.key} ${s.scale}   Time: ${s.time_sig}`,

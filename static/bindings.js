@@ -183,3 +183,8 @@ document.getElementById("overview-lyrics").addEventListener("input", e => {
 
 document.getElementById("overview-tags").addEventListener("input", () => { updateTagTokenCount(); updatePayloadPreview(); });
 document.getElementById("btn-sync-overview").addEventListener("click", syncOverviewFromState);
+
+document.getElementById("generate-engine").addEventListener("change", e => {
+  mwState.engine = e.target.value;
+  updatePayloadPreview();
+});

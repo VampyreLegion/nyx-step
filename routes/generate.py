@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from core.comfyui import ComfyUIClient
+from core.minimax_music3 import build_minimax_workflow
 from core.rate_limit import check as rate_check
 from nyx_step import tracker, get_user_email
 
@@ -66,6 +67,7 @@ class GenerateRequest(BaseModel):
     variance_mode: bool = False
     variance_count: int = Field(default=1, ge=1, le=8)
     keep_parentheticals: bool = False
+    engine: str = "ace-step"
 
 
 @router.post("/generate")
@@ -86,6 +88,30 @@ async def generate(req: GenerateRequest, request: Request):
         lyrics = re.sub(r'\([^)]*\)', '', req.lyrics)
     lyrics = re.sub(r'\n{3,}', '\n\n', lyrics).strip()
 
+    # ── MiniMax Music3 engine ────────────────────────────────────────────────
+    if req.engine == "minimax":
+        mm_result = build_minimax_workflow(
+            caption=caption,
+            lyrics=lyrics,
+            duration=req.duration,
+            seed=req.seed if req.lock_seed else None,
+            cfg_scale=req.cfg_scale,
+            top_k=max(1, req.top_k) if req.top_k else 50,
+            save_format=req.audio_format,
+        )
+        workflow = mm_result["workflow"]
+        send_result = _client.send_workflow(workflow)
+        if "error" in send_result:
+            return JSONResponse({"error": "ComfyUI unreachable: " + send_result["error"]}, status_code=400)
+
+        prompt_id = send_result.get("prompt_id", "")
+        safe_params = {k: v for k, v in state.items() if k not in ("lyrics", "tags")}
+        tracker.register(prompt_id, user_email, req.song_name, seed=mm_result.get("seed", 0),
+                         caption=caption, lyrics=lyrics, params=safe_params)
+        q = tracker.get_queue_counts()
+        return {"prompt_id": prompt_id, "queue_position": q["pending"]}
+
+    # ── ACE-Step engine (default) ────────────────────────────────────────────
     if req.variance_mode and req.variance_count > 1:
         variance_workflows = _client.build_variance_batch(caption, lyrics, state, req.variance_count)
         if not variance_workflows:

@@ -17,4 +17,5 @@ const mwState = {
   lora2_name: "",
   lora2_scale: 1.0,
   negative_tags: "",
+  engine: "ace-step",
 };
