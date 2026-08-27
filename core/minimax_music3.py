@@ -110,7 +110,7 @@ def build_minimax_workflow(
             "class_type": save_class,
             "inputs": {
                 "audio": ["7", 0],
-                "filename_prefix": "audio/minimax_music",
+                "filename_prefix": "audio/Nyx_music_m",
                 "quality": "V0",
             },
         },
