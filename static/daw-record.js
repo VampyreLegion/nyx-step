@@ -13,6 +13,46 @@ let _dawAudioInputDev = null;
 let _dawMetronomeOn = true;
 let _dawRecMon = new Map();             // trackId -> Map(pitch -> { g, oscs }) — live monitor voices
 
+// Shared MIDI message fan-out (record handler + monitor both subscribe).
+const _dawMidiListeners = new Set();
+dawAddMidiListener(_dawRecOnMidi);      // recording handler guards itself on _dawRec
+function dawAddMidiListener(fn) { _dawMidiListeners.add(fn); }
+function dawRemoveMidiListener(fn) { _dawMidiListeners.delete(fn); }
+function _dawMidiDispatch(e) { for (const fn of _dawMidiListeners) { try { fn(e); } catch (_) {} } }
+
+// Shared microphone stream with reference counting (record + monitor).
+let _dawMicStream = null, _dawMicRefs = 0, _dawMicDevice = null;
+async function _dawMicAcquire() {
+  _dawMicRefs++;
+  if (_dawMicStream && _dawMicStream.active && _dawMicDevice === _dawAudioInputDev) return _dawMicStream;
+  if (_dawMicStream) {
+    try { _dawMicStream.getTracks().forEach(tr => tr.stop()); } catch (_) {}
+    _dawMicStream = null;
+  }
+  try {
+    const c = _dawAudioInputDev ? { audio: { deviceId: { exact: _dawAudioInputDev } } } : { audio: true };
+    _dawMicStream = await navigator.mediaDevices.getUserMedia(c);
+    _dawMicDevice = _dawAudioInputDev;
+  } catch (err) {
+    _dawMicRefs = Math.max(0, _dawMicRefs - 1);
+    _dawMicStream = null;
+    throw err;
+  }
+  return _dawMicStream;
+}
+function _dawMicRelease() {
+  _dawMicRefs = Math.max(0, _dawMicRefs - 1);
+  if (_dawMicRefs === 0 && _dawMicStream) {
+    try { _dawMicStream.getTracks().forEach(tr => tr.stop()); } catch (_) {}
+    _dawMicStream = null; _dawMicDevice = null;
+  }
+}
+
+// Monitor state.
+let _dawMonOpen = false, _dawMonRaf = null, _dawMonAnalyser = null, _dawMonSource = null;
+let _dawMonActive = new Map(), _dawMonKeyEls = new Map(), _dawMonMsgCount = 0;
+let _dawMonPeakHold = 0;
+
 // ── UI wiring ───────────────────────────────────────────────────────────────
 function dawRecWireUi() {
   const recBtn = document.getElementById("daw-record-btn");
@@ -20,13 +60,22 @@ function dawRecWireUi() {
   const audioSel = document.getElementById("daw-audio-in-select");
   const clickCb = document.getElementById("daw-metronome");
   if (recBtn) recBtn.addEventListener("click", () => dawToggleRecord());
+  const monBtn = document.getElementById("daw-monitor-toggle");
+  if (monBtn) monBtn.addEventListener("click", () => dawToggleMonitor());
   if (midiSel) {
     midiSel.addEventListener("focus", () => dawRecPopulateMidiInputs());
     midiSel.addEventListener("change", () => { _dawMidiInputSel = midiSel.value; dawRecAttachMidi(); });
   }
   if (audioSel) {
     audioSel.addEventListener("focus", () => dawRecPopulateAudioInputs());
-    audioSel.addEventListener("change", () => { _dawAudioInputDev = audioSel.value || null; });
+    audioSel.addEventListener("change", () => {
+      _dawAudioInputDev = audioSel.value || null;
+      if (_dawMonOpen && _dawMicRefs <= 1 && !(_dawRec && _dawRec.active)) {
+        _dawMicRelease();
+        _dawMicAcquire().then(s => { _dawMonSetupAnalyser(s); _dawMonSetMicDevice(); })
+          .catch(() => _dawMonSetMicDevice("microphone unavailable"));
+      }
+    });
   }
   if (clickCb) clickCb.addEventListener("change", () => { _dawMetronomeOn = clickCb.checked; });
   dawRecPopulateAudioInputs();
@@ -95,7 +144,7 @@ function dawRecAttachMidi() {
   } else {
     for (const i of _dawMidiAccess.inputs.values()) if (i.id === _dawMidiInputSel) { _dawRecInput = i; break; }
   }
-  if (_dawRecInput) _dawRecInput.onmidimessage = _dawRecOnMidi;
+  if (_dawRecInput) _dawRecInput.onmidimessage = _dawMidiDispatch;
 }
 
 async function dawToggleRecord() {
@@ -252,16 +301,24 @@ function _dawMonitorRelease(trackIds) {
 // ── Audio-in → clip ────────────────────────────────────────────────────────────
 async function _dawRecStartAudio(trackIds) {
   const t0 = _dawRec.t0;
+  let stream;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia(
-      _dawAudioInputDev ? { audio: { deviceId: { exact: _dawAudioInputDev } } } : { audio: true });
-    _dawRec.stream = stream;
-    const mime = (typeof MediaRecorder === "undefined") ? "" :
-      MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" :
-      MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" :
-      MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "";
-    const ext = mime.includes("mp4") ? "m4a" : "webm";
+    stream = await _dawMicAcquire();
+  } catch (err) {
+    // Mic denied/unavailable — audio tracks fall back to nothing, MIDI still works.
+    _dawRec.audioTracks = [];
     _dawRec.recorders = [];
+    dawRecStatus("mic unavailable (audio tracks skipped)");
+    return;
+  }
+  _dawRec.stream = stream;
+  const mime = (typeof MediaRecorder === "undefined") ? "" :
+    MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" :
+    MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" :
+    MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "";
+  const ext = mime.includes("mp4") ? "m4a" : "webm";
+  _dawRec.recorders = [];
+  try {
     for (const tid of trackIds) {
       const track = dawState.tracks.find(t => t.id === tid);
       if (!track) continue;
@@ -275,7 +332,8 @@ async function _dawRecStartAudio(trackIds) {
       _dawRec.recorders.push(rec);
     }
   } catch (err) {
-    // Mic denied/unavailable — audio tracks fall back to nothing, MIDI still works.
+    _dawMicRelease();
+    _dawRec.stream = null;
     _dawRec.audioTracks = [];
     _dawRec.recorders = [];
     dawRecStatus("mic unavailable (audio tracks skipped)");
@@ -330,7 +388,7 @@ async function dawStopRecord() {
   const hadMidi = r.midiTracks.length > 0;
   const recs = r.recorders || [];
   _dawMonitorRelease(r.midiTracks);
-  if (r.stream) { try { r.stream.getTracks().forEach(tr => tr.stop()); } catch (_) {} }
+  if (r.stream) { _dawMicRelease(); r.stream = null; }
   for (const rec of recs) { try { if (rec.state !== "inactive") rec.stop(); } catch (_) {} }
 
   _dawRec = null;
@@ -371,6 +429,156 @@ function _dawRecClickSched() {
     if (_dawMetronomeOn) _dawRecPlayClick(bIdx % 4 === 0, _dawRec.ctx0 + bIdx * beat);
     _dawRecClickSched();
   }, waitMs);
+}
+
+// ── Monitor: live MIDI in + audio-input level ───────────────────────────────────
+const _DAW_MON_NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+function _dawNoteName(p) { return _DAW_MON_NOTES[p % 12] + (Math.floor(p / 12) - 1); }
+function _dawMonIsBlack(p) { return (p % 12 === 1 || p % 12 === 3 || p % 12 === 6 || p % 12 === 8 || p % 12 === 10); }
+
+function dawToggleMonitor() {
+  if (_dawMonOpen) dawMonClose();
+  else dawMonOpen();
+}
+
+async function dawMonOpen() {
+  if (_dawMonOpen) return;
+  _dawMonOpen = true;
+  const panel = document.getElementById("daw-monitor-panel");
+  const btn = document.getElementById("daw-monitor-toggle");
+  if (panel) panel.style.display = "flex";
+  if (btn) { btn.style.background = "#7c65d9"; btn.style.color = "#fff"; }
+
+  // MIDI side — populate the input list + attach the dispatcher so activity shows live.
+  if (typeof dawRecPopulateMidiInputs === "function") { try { await dawRecPopulateMidiInputs(); } catch (_) {} }
+  dawAddMidiListener(_dawMidMonMsg);
+  _dawMidMonStatus();
+  _dawMidMonReset();
+
+  // Mic side — acquire the shared stream and build the analyser.
+  try {
+    const stream = await _dawMicAcquire();
+    _dawMonSetupAnalyser(stream);
+    _dawMonSetMicDevice();
+  } catch (_) {
+    _dawMonSetMicDevice("microphone unavailable");
+  }
+  if (_dawMonRaf) cancelAnimationFrame(_dawMonRaf);
+  _dawMonRaf = requestAnimationFrame(_dawMonTick);
+}
+
+function dawMonClose() {
+  if (!_dawMonOpen) return;
+  _dawMonOpen = false;
+  if (_dawMonRaf) cancelAnimationFrame(_dawMonRaf); _dawMonRaf = null;
+  dawRemoveMidiListener(_dawMidMonMsg);
+  _dawMonActive.clear();
+  _dawMicRelease();
+  _dawMonAnalyser = null;
+  if (_dawMonSource) { try { _dawMonSource.disconnect(); } catch (_) {} _dawMonSource = null; }
+  const panel = document.getElementById("daw-monitor-panel");
+  const btn = document.getElementById("daw-monitor-toggle");
+  if (panel) panel.style.display = "none";
+  if (btn) { btn.style.background = ""; btn.style.color = ""; }
+}
+
+function _dawMonSetupAnalyser(stream) {
+  const ctx = (typeof _dawEnsureCtx === "function") ? _dawEnsureCtx() : null;
+  if (!ctx || !stream) return false;
+  if (ctx.state === "suspended") { try { ctx.resume(); } catch (_) {} }
+  if (_dawMonSource) { try { _dawMonSource.disconnect(); } catch (_) {} _dawMonSource = null; }
+  const src = ctx.createMediaStreamSource(stream);
+  const an = ctx.createAnalyser();
+  an.fftSize = 2048; an.smoothingTimeConstant = 0.4;
+  src.connect(an);
+  _dawMonSource = src; _dawMonAnalyser = an;
+  return true;
+}
+
+function _dawMonTick() {
+  if (!_dawMonOpen) return;
+  const a = _dawMonAnalyser;
+  const bar = document.getElementById("daw-mon-mic-meter");
+  const dbEl = document.getElementById("daw-mon-mic-db");
+  if (a) {
+    const buf = new Float32Array(a.fftSize);
+    a.getFloatTimeDomainData(buf);
+    let sum = 0;
+    for (let i = 0; i < buf.length; i++) { const v = buf[i] || 0; sum += v * v; }
+    const rms = Math.sqrt(sum / buf.length);
+    _dawMonPeakHold = Math.max(_dawMonPeakHold * 0.985, rms);
+    const db = 20 * Math.log10(Math.max(rms, 1e-5));
+    const peakDb = 20 * Math.log10(Math.max(_dawMonPeakHold, 1e-5));
+    if (bar) bar.style.width = Math.max(0, Math.min(1, (db + 55) / 55) * 100).toFixed(1) + "%";
+    if (dbEl) dbEl.textContent = `rms ${db.toFixed(1)} dB · peak ${peakDb.toFixed(1)} dB`;
+  }
+  _dawMonRaf = requestAnimationFrame(_dawMonTick);
+}
+
+function _dawMidMonStatus() {
+  const el = document.getElementById("daw-mon-midi-device");
+  if (el) el.textContent = _dawRecInput ? ("listening — " + (_dawRecInput.name || "MIDI input")) : "no MIDI input found";
+}
+
+function _dawMonSetMicDevice(txt) {
+  const el = document.getElementById("daw-mon-mic-device");
+  if (el) el.textContent = txt || (_dawMicStream && _dawMicStream.active ? "input active" : "input idle");
+}
+
+function _dawMidMonReset() {
+  _dawMonActive.clear();
+  _dawMidMonRenderKeys();
+  const last = document.getElementById("daw-mon-midi-last");
+  if (last) last.textContent = "waiting for MIDI…";
+}
+
+function _dawMidMonMsg(e) {
+  const d = e.data;
+  if (!d || d.length < 3) return;
+  const st = d[0] & 0xf0, ch = (d[0] & 0x0f) + 1;
+  const pitch = d[1] & 127, vel = d[2] & 127;
+  _dawMonMsgCount++;
+  const name = _dawNoteName(pitch);
+  const last = document.getElementById("daw-mon-midi-last");
+  if (st === 0x90 && vel > 0) {
+    _dawMonActive.set(pitch, performance.now());
+    if (last) last.textContent = `#${_dawMonMsgCount} · note ${pitch} (${name}) on · vel ${vel} · ch ${ch}`;
+  } else if (st === 0x80 || (st === 0x90 && vel === 0)) {
+    _dawMonActive.delete(pitch);
+    if (last) last.textContent = `#${_dawMonMsgCount} · note ${pitch} (${name}) off · ch ${ch}`;
+  }
+  _dawMidMonRenderKeys();
+}
+
+function _dawMidMonRenderKeys() {
+  if (!_dawMonKeyEls || !_dawMonKeyEls.size) _dawMidMonBuildKeys();
+  for (const [p, el] of _dawMonKeyEls) {
+    const on = _dawMonActive.has(p);
+    el.style.background = on ? "#00d4b6" : (_dawMonIsBlack(p) ? "linear-gradient(180deg,#3a3f4c,#0e1017)" : "linear-gradient(180deg,#f0f2f7,#c9cdd8)");
+  }
+}
+
+function _dawMidMonBuildKeys() {
+  const el = document.getElementById("daw-mon-midi-keys");
+  if (!el || el.dataset.built === "1") return;
+  el.dataset.built = "1";
+  _dawMonKeyEls = new Map();
+  const LO = 48, HI = 71, BW = 18, BH = 42, BBW = 11;   // C3..B4 (two octaves)
+  const whitePos = new Map();
+  let wc = 0;
+  for (let p = LO; p <= HI; p++) if (!_dawMonIsBlack(p)) whitePos.set(p, wc++);
+  for (let p = LO; p <= HI; p++) {
+    const k = document.createElement("div");
+    if (_dawMonIsBlack(p)) {
+      const r = whitePos.get(p - 1) + 1;
+      k.style.cssText = `position:absolute;top:0;height:${Math.round(BH * 0.62)}px;width:${BBW}px;left:${Math.round(r * BW - BBW / 2)}px;z-index:2;border:1px solid #000;border-radius:0 0 3px 3px;background:linear-gradient(180deg,#3a3f4c,#0e1017)`;
+    } else {
+      k.style.cssText = `position:absolute;top:0;height:${BH}px;width:${BW}px;left:${whitePos.get(p) * BW}px;z-index:1;border:1px solid #7d828f;border-radius:0 0 3px 3px;background:linear-gradient(180deg,#f0f2f7,#c9cdd8)`;
+    }
+    k.title = `${p} · ${_dawNoteName(p)}`;
+    _dawMonKeyEls.set(p, k);
+    el.appendChild(k);
+  }
 }
 
 document.addEventListener("DOMContentLoaded", dawRecWireUi);

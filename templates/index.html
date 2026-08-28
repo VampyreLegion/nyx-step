@@ -1878,6 +1878,7 @@
           <li><strong>Metronome</strong> — tempo-following <strong>Click</strong> checkbox keeps you in time while recording</li>
           <li><strong>Device pickers</strong> — <strong>MIDI in</strong> and <strong>Mic</strong> selectors on the transport choose which keyboard/microphone the DAW listens to</li>
           <li><strong>Backend</strong> — <code>POST /daw/import</code> now accepts <code>.webm</code>/<code>.mp4</code> (browser MediaRecorder output) alongside WAV/MP3/FLAC/OGG</li>
+          <li><strong>📊 MIDI + audio-input monitor</strong> — a <strong>📊 Monitor</strong> panel on the transport shows live MIDI-in activity on a mini keyboard (with a note/pitch/velocity/channel log) and a real-time mic level meter (rms + peak dB), sharing the same input devices as recording</li>
         </ul>
       </div>
 
@@ -2599,6 +2600,7 @@
         <select id="daw-audio-in-select" title="Audio input (mic) for recording" style="font-size:11px;max-width:150px"><option value="">Mic: default</option></select>
         <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px"><input type="checkbox" id="daw-metronome" checked> Click</label>
         <span style="width:1px;height:18px;background:#2d3041"></span>
+        <button class="secondary small" id="daw-monitor-toggle" title="Show/hide MIDI + audio input monitor">📊 Monitor</button>
         <button class="secondary small" id="daw-zoom-out">🔍−</button>
         <button class="secondary small" id="daw-zoom-in">🔍+</button>
         <button class="secondary small" id="daw-mixer-toggle" title="Show/hide mixer">🎚 Mixer</button>
@@ -2611,6 +2613,24 @@
           <option value="bar">Bar</option><option value="half">½</option><option value="beat">Beat</option><option value="quarter">¼</option>
         </select>
         <span id="daw-save-status" style="font-size:11px;color:var(--muted);margin-left:auto">—</span>
+      </div>
+      <div id="daw-monitor-panel" style="display:none;border:1px solid #2d3041;border-top:none;border-radius:0 0 6px 6px;padding:8px;background:#101218;align-items:stretch">
+        <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:stretch">
+          <div style="flex:1;min-width:270px;border-right:1px solid #2d3041;padding-right:18px">
+            <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px">🎹 MIDI in monitor</div>
+            <div id="daw-mon-midi-device" style="font-size:10px;color:var(--muted);margin-bottom:4px"></div>
+            <div id="daw-mon-midi-keys" style="position:relative;height:42px;border:1px solid #2d3041;border-radius:4px;background:#000;overflow:hidden"></div>
+            <div id="daw-mon-midi-last" style="font-size:10px;color:#a6e3a1;margin-top:5px;min-height:13px;font-family:monospace"></div>
+          </div>
+          <div style="flex:0 0 250px">
+            <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px">🎤 Audio input level</div>
+            <div id="daw-mon-mic-meter-wrap" style="height:10px;background:#1a1c26;border:1px solid #2d3041;border-radius:4px;overflow:hidden">
+              <div id="daw-mon-mic-meter" style="height:100%;width:0%;background:linear-gradient(90deg,#2ea043,#d29922,#e05f5f)"></div>
+            </div>
+            <div id="daw-mon-mic-db" style="font-size:11px;color:var(--muted);margin-top:5px;font-family:monospace"></div>
+            <div id="daw-mon-mic-device" style="font-size:10px;color:var(--muted);margin-top:3px"></div>
+          </div>
+        </div>
       </div>
       <div id="daw-arranger" style="display:flex;border:1px solid #2d3041;border-top:none;height:420px;overflow:hidden">
         <div id="daw-track-headers" style="width:150px;flex:0 0 150px;background:#101218;overflow-y:auto;border-right:1px solid #2d3041">
@@ -2725,7 +2745,7 @@
 <script src="/static/vendor/soundtouch.js"></script>
 <script src="/static/daw-engine.js?v=10"></script>
 <script src="/static/daw-midi.js?v=1"></script>
-<script src="/static/daw-record.js?v=1"></script>
+<script src="/static/daw-record.js?v=2"></script>
 <script src="/static/daw-pianoroll.js?v=1"></script>
 <script src="/static/daw-stretch.js?v=1"></script>
 <script src="/static/daw-library.js?v=2"></script>
