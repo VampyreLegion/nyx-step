@@ -63,7 +63,9 @@ async def health():
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse(request, "index.html")
+    resp = templates.TemplateResponse(request, "index.html")
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
 
 
 # Register routers
