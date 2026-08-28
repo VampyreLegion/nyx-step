@@ -70,6 +70,7 @@ function dawRecWireUi() {
     audioSel.addEventListener("focus", () => dawRecPopulateAudioInputs());
     audioSel.addEventListener("change", () => {
       _dawAudioInputDev = audioSel.value || null;
+      if (typeof dawP2MOnStreamChanged === "function") dawP2MOnStreamChanged();
       if (_dawMonOpen && _dawMicRefs <= 1 && !(_dawRec && _dawRec.active)) {
         _dawMicRelease();
         _dawMicAcquire().then(s => { _dawMonSetupAnalyser(s); _dawMonSetMicDevice(); })
@@ -167,7 +168,7 @@ async function dawStartRecord() {
   if (!midiTracks.length && !audioTracks.length) { dawRecStatus("arm a track first (●)"); return; }
 
   const ctx = (typeof _dawEnsureCtx === "function") ? _dawEnsureCtx() : null;
-  if (ctx && ctx.state === "suspended") { try { await ctx.resume(); } catch (_) {} }
+  if (ctx && ctx.state === "suspended") { try { ctx.resume(); } catch (_) {} }
   _dawRec = {
     active: true,
     t0: (typeof dawGetPlayhead === "function") ? dawGetPlayhead() : 0,

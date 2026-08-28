@@ -1864,8 +1864,17 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 4.3.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; August 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 4.4.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; August 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v4.4.0 — Mic on/off &amp; 🎵 Hum → MIDI</h3>
+        <ul>
+          <li><strong>🎙 Mic button</strong> — one-tap mic on/off on the DAW transport (green when live), shared with recording and the monitor</li>
+          <li><strong>🎵 Hum→MIDI</strong> — live pitch detection turns your voice into MIDI notes; records to the armed MIDI track with ● REC, in or out of the DAW's key/scale</li>
+          <li><strong>Force a key + scale</strong> — pick key (A…C#) and scale (Major, Minor, Pentatonic, Blues…); every note snaps to the nearest scale tone</li>
+        </ul>
       </div>
 
       <div class="about-section">
@@ -2598,6 +2607,11 @@
         <span id="daw-record-status" style="font-size:11px;color:var(--muted)"></span>
         <select id="daw-midi-in-select" title="MIDI input device" style="font-size:11px;max-width:130px"><option value="auto">MIDI in: auto</option></select>
         <select id="daw-audio-in-select" title="Audio input (mic) for recording" style="font-size:11px;max-width:150px"><option value="">Mic: default</option></select>
+        <button class="secondary small" id="daw-mic-btn">🎙 Mic</button>
+        <button class="secondary small" id="daw-p2m-toggle">🎵 Hum→MIDI</button>
+        <select id="daw-p2m-key" title="Key the Hum→MIDI output is forced into" style="font-size:11px;max-width:52px"><option value="9" selected>A</option></select>
+        <select id="daw-p2m-scale" title="Scale the Hum→MIDI output is forced into" style="font-size:11px;max-width:88px"><option value="major" selected>Major</option></select>
+        <span id="daw-p2m-stat" title="Detected note from the microphone" style="font-size:11px;color:var(--muted)">—</span>
         <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px"><input type="checkbox" id="daw-metronome" checked> Click</label>
         <span style="width:1px;height:18px;background:#2d3041"></span>
         <button class="secondary small" id="daw-monitor-toggle" title="Show/hide MIDI + audio input monitor">📊 Monitor</button>
@@ -2746,6 +2760,7 @@
 <script src="/static/daw-engine.js?v=11"></script>
 <script src="/static/daw-midi.js?v=2"></script>
 <script src="/static/daw-record.js?v=4"></script>
+<script src="/static/daw-p2m.js?v=1"></script>
 <script src="/static/daw-pianoroll.js?v=1"></script>
 <script src="/static/daw-stretch.js?v=1"></script>
 <script src="/static/daw-library.js?v=2"></script>
