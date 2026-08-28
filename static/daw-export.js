@@ -65,7 +65,7 @@ async function dawRenderArrangement() {
     for (const clip of track.clips) {
       const buf = _dawBufferCache.get(clip.file);
       if (!buf || buf === "error") continue;
-      const srcLen = clip.src_len ?? clip.duration;
+      const srcLen = (clip.src_len ?? clip.duration) || buf.duration;
       const r = (srcLen > 0) ? (clip.duration / srcLen) : 1;
       const src = off.createBufferSource();
       const cg = off.createGain();

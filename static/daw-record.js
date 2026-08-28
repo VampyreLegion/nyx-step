@@ -357,7 +357,7 @@ async function _dawRecUploadAudio(track, chunks, mime, ext, t0) {
     try {
       await dawGetBuffer(clip.file);
       const buf = (typeof _dawBufferCache !== "undefined") ? _dawBufferCache.get(clip.file) : null;
-      if (buf && buf !== "error") { clip.duration = clip.source_duration = buf.duration; }
+      if (buf && buf !== "error") { clip.duration = clip.source_duration = clip.src_len = buf.duration; }
     } catch (_) {}
   }
   if (typeof renderTimeline === "function") renderTimeline();

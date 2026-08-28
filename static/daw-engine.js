@@ -214,7 +214,7 @@ function _dawScheduleAll() {
       if (clipEnd <= _dawPlayhead) continue;
       const buf = _dawBufferCache.get(clip.file);
       if (!buf || buf === "error") continue;
-      const srcLen = clip.src_len ?? clip.duration;
+      const srcLen = (clip.src_len ?? clip.duration) || buf.duration;
       const r = (srcLen > 0) ? (clip.duration / srcLen) : 1;
       const rate = 1 / r;
       let when, srcStart, srcConsume, timelineDur;

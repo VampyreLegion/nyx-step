@@ -1,5 +1,6 @@
 from __future__ import annotations
 import shutil
+import subprocess
 import uuid
 from pathlib import Path
 
@@ -227,14 +228,25 @@ async def import_audio(
     with open(dest, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    # Detect duration via soundfile
+    # Detect duration via soundfile, then ffprobe fallback (webm/opus, m4a/aac,
+    # mp4 are not readable by libsndfile but the browser decodes them fine).
     duration = 0.0
     try:
         import soundfile as sf
         info = sf.info(str(dest))
         duration = info.duration
     except Exception:
-        pass
+        duration = 0.0
+    if not duration:
+        try:
+            p = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                 "-of", "default=noprint_wrappers=1:nokey=1", str(dest)],
+                capture_output=True, text=True, timeout=20,
+            )
+            duration = float((p.stdout or "").strip() or 0.0)
+        except Exception:
+            duration = 0.0
 
     rel = f"daw_imports/{safe_name}"
     return {
