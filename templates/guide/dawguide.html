@@ -81,6 +81,16 @@
   <li><strong>Preview</strong> — click any key on the left to hear that pitch through the track's synth. Hold <kbd>Ctrl</kbd> while dragging to bypass snap.</li>
 </ul>
 
+<h3>Recording — MIDI-in &amp; audio-in</h3>
+<p>Capture live performances straight into the timeline. Arm one or more tracks (the red <strong>●</strong> on a track header), then press the transport's <strong>● REC</strong> button. Play your part, then press <strong>● STOP</strong> — the transport's <strong>⏹</strong> stop button also finalizes a take.</p>
+<ul>
+  <li><strong>MIDI tracks</strong> — connect a keyboard over USB MIDI and pick it in the <strong>MIDI in</strong> selector (or leave <em>auto</em> for the first input found). NoteOn/NoteOff with velocity are captured as piano-roll notes on the armed track, timed against the DAW's audio clock so they land correctly whether or not the transport is playing.</li>
+  <li><strong>Audio tracks</strong> — the browser microphone records straight into an audio clip at the record start position. Pick a specific mic in the <strong>Mic</strong> selector or use the default. Recordings upload to <code>daw_imports/</code> and join the clip library for dragging anywhere.</li>
+  <li><strong>Live monitoring</strong> — while recording, MIDI tracks running the internal synth play your keys in real time through the track's chain (volume / mute / FX apply). Tracks routed to a USB MIDI output send notes to your hardware synth instead, so you can record into the hardware's sound.</li>
+  <li><strong>Metronome</strong> — the <strong>Click</strong> checkbox plays a beat-synced tick at the project tempo while recording; switch project tempo and the click follows.</li>
+  <li>The playhead keeps moving during a take even when the transport isn't running, so you can click the ruler to pick a punch-in position.</li>
+</ul>
+
 <h3>Session grid (looper)</h3>
 <p>Click <strong>🎛 Session</strong> for a clip-launch grid — one column per track, scene rows.</p>
 <ul>

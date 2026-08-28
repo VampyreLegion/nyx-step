@@ -102,6 +102,11 @@ function dawRenderTrackHeaders() {
     btns.appendChild(mk("M", t.mute, () => { dawToggleMute(t.id); dawReschedule(); }, "Mute"));
     btns.appendChild(mk("S", t.solo, () => { dawToggleSolo(t.id); dawReschedule(); }, "Solo"));
     btns.appendChild(mk("✕", false, () => { if (confirm("Remove track?")) dawRemoveTrack(t.id); }, "Remove"));
+    const armBtn = document.createElement("button");
+    armBtn.className = "secondary small"; armBtn.textContent = "●"; armBtn.title = "Record arm (MIDI in / audio in)";
+    armBtn.style.cssText = "font-size:10px;padding:1px 6px;" + (t.arm ? "background:#e05f5f;color:#fff" : "");
+    armBtn.addEventListener("click", () => { if (typeof dawToggleArm === "function") dawToggleArm(t.id); });
+    btns.appendChild(armBtn);
     const genActive = (typeof _dawGenTracks !== "undefined") && _dawGenTracks.has(t.id);
     const genBtn = document.createElement("button");
     genBtn.className = "secondary small";

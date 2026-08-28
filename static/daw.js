@@ -38,7 +38,7 @@ async function dawRefreshProjectList(projects) {
 function _dawWireTransport() {
   document.getElementById("daw-play").addEventListener("click", () => dawPlay());
   document.getElementById("daw-pause").addEventListener("click", () => dawPause());
-  document.getElementById("daw-stop").addEventListener("click", () => dawStop());
+  document.getElementById("daw-stop").addEventListener("click", () => { if (typeof dawRecStopAll === "function") dawRecStopAll(); dawStop(); });
   const loopBtn = document.getElementById("daw-loop");
   loopBtn.addEventListener("click", () => {
     const on = loopBtn.style.background === "";

@@ -1,4 +1,21 @@
 <html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.3.0</h2>
+
+<h3>🎚 DAW Recording — MIDI-in &amp; Audio-in</h3>
+<p>Record real performances straight into the DAW timeline.</p>
+<ul>
+  <li><strong>Record arm</strong> — the <strong>●</strong> on a track header arms it for recording (red when armed)</li>
+  <li><strong>● REC</strong> on the transport starts the take; timestamps anchor to the AudioContext clock, so notes and clips land on the timeline correctly whether or not the transport is playing</li>
+  <li><strong>🎹 MIDI keyboard in</strong> — USB MIDI keyboard notes (NoteOn/NoteOff + velocity) become notes on the armed MIDI track, fully editable in the piano roll afterwards</li>
+  <li><strong>🎤 Mic in → audio clip</strong> — recordings from the browser MediaRecorder upload to <code>daw_imports/</code> and become a draggable clip on the armed audio track</li>
+  <li><strong>Live monitoring</strong> — hear yourself while you play: internal synth routes through the track chain, or notes go straight to your USB MIDI hardware synth</li>
+  <li><strong>Metronome</strong> — tempo-following <strong>Click</strong> checkbox; pressing transport <strong>⏹</strong> (or ● STOP) finalizes a take</li>
+  <li><strong>Backend</strong> — <code>POST /daw/import</code> accepts <code>.webm</code>/<code>.mp4</code> browser recordings</li>
+</ul>
+<p>Full walkthrough in Guide → <strong>🎚 DAW</strong> (Recording section).</p>
+
+<hr style="border-color:#2d3041;margin:20px 0">
+
 <h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.2.0</h2>
 
 <h3>🎵 Engine Selector</h3>

@@ -1864,8 +1864,21 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 4.2.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; August 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 4.3.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; August 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v4.3.0 — DAW Recording (MIDI-in + Audio-in)</h3>
+        <ul>
+          <li><strong>🎚 Record directly into the DAW</strong> — a red <strong>● REC</strong> button on the DAW transport. Arm any track with the <strong>●</strong> button on its header, press REC, and play your part</li>
+          <li><strong>🎹 MIDI-in → notes</strong> — connect a MIDI keyboard over USB; every note (with velocity) is captured into the armed MIDI track's piano-roll notes at the playhead, whether or not the transport is running</li>
+          <li><strong>🎤 Audio-in → clip</strong> — the browser microphone records directly into an audio clip on armed audio tracks, placed at the record start and added to the clip library</li>
+          <li><strong>Live monitoring</strong> — internal-synth tracks play your keys in real time through the track chain (mixer + FX apply); external tracks note through the selected USB MIDI output</li>
+          <li><strong>Metronome</strong> — tempo-following <strong>Click</strong> checkbox keeps you in time while recording</li>
+          <li><strong>Device pickers</strong> — <strong>MIDI in</strong> and <strong>Mic</strong> selectors on the transport choose which keyboard/microphone the DAW listens to</li>
+          <li><strong>Backend</strong> — <code>POST /daw/import</code> now accepts <code>.webm</code>/<code>.mp4</code> (browser MediaRecorder output) alongside WAV/MP3/FLAC/OGG</li>
+        </ul>
       </div>
 
       <div class="about-section">
@@ -2580,6 +2593,11 @@
         <button class="secondary small" id="daw-stop">⏹</button>
         <button class="secondary small" id="daw-loop" title="Loop arrangement">↻</button>
         <span id="daw-time" style="font-family:monospace;font-size:12px;color:var(--muted)">0:00 / 0:00</span>
+        <button class="secondary small" id="daw-record-btn" title="Record armed tracks: MIDI in → notes, audio in → clip (arm with ● on a track)">● REC</button>
+        <span id="daw-record-status" style="font-size:11px;color:var(--muted)"></span>
+        <select id="daw-midi-in-select" title="MIDI input device" style="font-size:11px;max-width:130px"><option value="auto">MIDI in: auto</option></select>
+        <select id="daw-audio-in-select" title="Audio input (mic) for recording" style="font-size:11px;max-width:150px"><option value="">Mic: default</option></select>
+        <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px"><input type="checkbox" id="daw-metronome" checked> Click</label>
         <span style="width:1px;height:18px;background:#2d3041"></span>
         <button class="secondary small" id="daw-zoom-out">🔍−</button>
         <button class="secondary small" id="daw-zoom-in">🔍+</button>
@@ -2707,6 +2725,7 @@
 <script src="/static/vendor/soundtouch.js"></script>
 <script src="/static/daw-engine.js?v=10"></script>
 <script src="/static/daw-midi.js?v=1"></script>
+<script src="/static/daw-record.js?v=1"></script>
 <script src="/static/daw-pianoroll.js?v=1"></script>
 <script src="/static/daw-stretch.js?v=1"></script>
 <script src="/static/daw-library.js?v=2"></script>

@@ -200,7 +200,8 @@ async def audio(file: str, request: Request):
         return JSONResponse({"error": "File not on disk"}, status_code=404)
     ext = path.suffix.lower().lstrip(".")
     media = {"mp3": "audio/mpeg", "flac": "audio/flac", "wav": "audio/wav",
-             "opus": "audio/ogg", "ogg": "audio/ogg"}.get(ext, "application/octet-stream")
+             "opus": "audio/ogg", "ogg": "audio/ogg", "webm": "audio/webm",
+             "mp4": "audio/mp4", "m4a": "audio/mp4"}.get(ext, "application/octet-stream")
     return FileResponse(str(path), media_type=media)
 
 
@@ -217,7 +218,7 @@ async def import_audio(
     _DAW_IMPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
     ext = Path(file.filename or "audio.wav").suffix.lower() or ".wav"
-    if ext not in (".wav", ".mp3", ".flac", ".ogg", ".m4a", ".opus", ".wma"):
+    if ext not in (".wav", ".mp3", ".flac", ".ogg", ".m4a", ".opus", ".wma", ".webm", ".mp4"):
         return JSONResponse({"error": f"Unsupported format: {ext}"}, status_code=400)
 
     safe_name = f"import_{uuid.uuid4().hex[:12]}{ext}"

@@ -70,6 +70,7 @@ async function dawNewProject(name) {
 }
 
 async function dawLoadProject(id) {
+  if (typeof dawRecStopAll === "function") dawRecStopAll();
   const p = await fetch("/daw/projects/" + id).then(r => r.json());
   if (p.error) return false;
   // Explicit fields — don't spread p.data (it could carry an id/name and clobber identity)
