@@ -63,8 +63,11 @@
 </ul>
 
 <h3>MIDI tracks</h3>
-<p>The DAW has full MIDI tracks alongside audio tracks. Add one with <strong>+ Add MIDI Track</strong>, or create one by transcribing audio.</p>
+<p>The DAW has full MIDI tracks alongside audio tracks. Add one with <strong>+ Add MIDI Track</strong>, or create one by transcribing audio. USB MIDI devices use the browser's <strong>Web MIDI</strong> API:</p>
 <ul>
+  <li><strong>Plug in before you start the browser</strong> — Web MIDI only sees devices that were connected when the browser launched. After connecting new hardware, fully quit and reopen.</li>
+  <li><strong>Firefox (snap on Nyx) needs a one-time grant</strong> — the first MIDI request makes Firefox auto-offer a <em>site permission add-on</em> for this site. Install it, Allow MIDI access, then reload. If the <strong>MIDI in</strong> selector shows "MIDI:" plus a hint, follow it and reload.</li>
+  <li><strong>Outputs</strong> — hardware synths appear in the track's <strong>Output</strong> selector only after Web MIDI is working.</li>
   <li><strong>Audio → MIDI</strong> — a clip's <strong>🎹 Convert to MIDI…</strong> transcribes it to notes: <strong>Melody</strong> (monophonic pitch), <strong>Rhythm</strong> (percussive onsets), or <strong>Piano</strong> (polyphonic). The new MIDI track lines up under the source clip.</li>
   <li><strong>Internal synth</strong> — notes play through a built-in synth routed via the track's chain, so the <strong>mixer + FX apply</strong>. The track header has a <strong>waveform</strong> selector (sine / triangle / sawtooth / square).</li>
   <li><strong>External USB MIDI</strong> — the header's <strong>Output</strong> selector lists <em>Internal synth</em> plus any hardware synths connected over USB MIDI; pick one to drive your hardware instead. (WAV export captures the internal synth only — hardware-routed tracks export silent.)</li>

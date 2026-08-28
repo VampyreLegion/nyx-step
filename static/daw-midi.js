@@ -1,13 +1,22 @@
 // ── DAW MIDI: Web-MIDI access + audio→MIDI conversion ─────────────────────────
 let _dawMidiAccess = null;
+let _dawMidiErr = null;
 function _dawNoteFreq(p) { return 440 * Math.pow(2, (p - 69) / 12); }
 
 async function dawInitMidi() {
   if (_dawMidiAccess) return _dawMidiAccess;
-  if (!navigator.requestMIDIAccess) return null;
-  try { _dawMidiAccess = await navigator.requestMIDIAccess({ sysex: false }); }
-  catch (_) { _dawMidiAccess = null; }
+  if (!navigator.requestMIDIAccess) { _dawMidiErr = "browser has no Web MIDI support"; return null; }
+  try { _dawMidiAccess = await navigator.requestMIDIAccess({ sysex: false }); _dawMidiErr = null; }
+  catch (err) { _dawMidiAccess = null; _dawMidiErr = (err && err.message) || "denied"; }
   return _dawMidiAccess;
+}
+function dawMidiErrorHint() {
+  if (!_dawMidiErr) return "";
+  if (/Firefox/.test(navigator.userAgent) && /add-on|permission/i.test(_dawMidiErr))
+    return "Firefox needs a one-time permission: install the auto-offered 'site permission add-on', Allow MIDI, then reload this page";
+  if (/securityerror|permission/i.test(_dawMidiErr))
+    return "MIDI permission denied — allow Web MIDI for this site, then reload";
+  return "Web MIDI unavailable: " + _dawMidiErr;
 }
 function dawMidiOutputs() {
   if (!_dawMidiAccess) return [];

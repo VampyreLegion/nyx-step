@@ -99,7 +99,14 @@ async function dawRecPopulateMidiInputs() {
   const sel = document.getElementById("daw-midi-in-select");
   if (!sel) return;
   const acc = await dawInitMidi();
-  if (!acc) { sel.innerHTML = '<option value="auto">no MIDI</option>'; return; }
+  if (!acc) {
+    const hint = typeof dawMidiErrorHint === "function" ? dawMidiErrorHint() : "";
+    sel.innerHTML = "";
+    const o = document.createElement("option"); o.value = "auto";
+    o.textContent = hint ? "MIDI: " + hint : "no MIDI";
+    sel.appendChild(o);
+    return;
+  }
   const cur = sel.value;
   sel.innerHTML = "";
   const auto = document.createElement("option"); auto.value = "auto"; auto.textContent = "MIDI in: auto"; sel.appendChild(auto);
@@ -517,7 +524,12 @@ function _dawMonTick() {
 
 function _dawMidMonStatus() {
   const el = document.getElementById("daw-mon-midi-device");
-  if (el) el.textContent = _dawRecInput ? ("listening — " + (_dawRecInput.name || "MIDI input")) : "no MIDI input found";
+  if (!el) return;
+  if (_dawRecInput) el.textContent = "listening — " + (_dawRecInput.name || "MIDI input");
+  else {
+    const hint = typeof dawMidiErrorHint === "function" ? dawMidiErrorHint() : "";
+    el.textContent = hint ? "MIDI blocked: " + hint : "no MIDI input found";
+  }
 }
 
 function _dawMonSetMicDevice(txt) {
