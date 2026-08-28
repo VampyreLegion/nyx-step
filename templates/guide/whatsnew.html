@@ -1,14 +1,25 @@
 <html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.5.0</h2>
+
+<h3>🎙 Hum→MIDI is now record-then-convert</h3>
+<p>Live pitch detection was too jittery for real vocal takes — so Hum→MIDI is rebuilt as a two-step flow: <strong>record the hum first, convert it after.</strong></p>
+<ul>
+  <li><strong>🎙 Rec Hum</strong> — captures the mic into an audio take and lands it on an audio track via <code>daw_imports/</code> (so you see and hear the raw hum before converting)</li>
+  <li><strong>🎵 Hum→MIDI</strong> — runs offline pitch detection over the recorded take (no live jitter), snaps every pitch into the selected 🎚 key + 🎼 scale, and inserts the notes onto a MIDI track at the position you started recording</li>
+  <li><strong>Key + Scale forcing</strong> — pick a key (A, C#…B) and a scale (Major, Minor, Pentatonic, Blues, Chromatic…); every detected pitch snaps to the nearest note in that key/scale</li>
+  <li><strong>Readout</strong> — the transport stat shows capture duration, conversion progress, and the final note count</li>
+  <li>Re-record and re-convert as many times as you like — each take notes land at its own start position; edit the result in the piano roll afterwards</li>
+</ul>
+
+<hr style="border-color:#2d3041;margin:20px 0">
+
 <h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.4.0</h2>
 
 <h3>🎙 Mic on/off &amp; 🎵 Hum → MIDI</h3>
 <p>Hum (or sing) a musical bar into the mic and it lands on an armed MIDI track as notes — no keyboard needed.</p>
 <ul>
   <li><strong>🎙 Mic</strong> button — one-tap microphone on/off on the transport. Green when live; shared with recording and the <strong>📊 Monitor</strong>, so nothing fights over the mic.</li>
-  <li><strong>🎵 Hum→MIDI</strong> — live pitch detection converts your voice to MIDI notes in real time. Records to the armed MIDI track while <strong>● REC</strong> is on; otherwise it shows in the <strong>📊 Monitor</strong>.</li>
-  <li><strong>Key + Scale forcing</strong> — pick a key (A, C#…B) and a scale (Major, Minor, Pentatonic, Blues…); every detected pitch snaps to the nearest note in that key/scale so your take always stays in tune.</li>
-  <li><strong>Detected-note readout</strong> — the little <code>🎵 note · midi · Hz</code> readout next to the controls shows what pitch is being heard live.</li>
-  <li>Toggle Hum→MIDI off to record ordinary USB MIDI instead — the mic stays where you left it, so you can record audio tracks with or without the feature.</li>
+  <li><strong>Key + Scale forcing</strong> — pick a key (A, C#…B) and a scale (Major, Minor, Pentatonic, Blues…); every detected pitch snaps to the nearest note in that key/scale.</li>
 </ul>
 
 <hr style="border-color:#2d3041;margin:20px 0">
