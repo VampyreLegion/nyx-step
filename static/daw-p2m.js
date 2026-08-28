@@ -56,84 +56,150 @@ const _p2mYield = () =>
     ? new Promise((r) => requestAnimationFrame(() => r()))
     : Promise.resolve();
 
-// Analyse a mono Float32Array (already key/scale mapped) into note events.
+// Analyse a mono Float32Array into note events via YIN fundamental estimation.
 // events: [{ start, dur, pitch, vel }] — pitch is an integer midi note.
+// Range ~58 Hz..2.2 kHz (covers voiced hums incl. low male registers).
 async function dawP2MExtract(data, sr, onProg) {
   const n = data.length;
   if (n < 512) return [];
-  const win = Math.max(256, Math.min(2048, Math.floor(sr / 20)));
-  const hop = Math.max(32, Math.floor(sr * 0.012));
-  const minLag = Math.max(2, Math.floor(sr / 2100));            // up to ~2.1 kHz
-  const maxLag = Math.min(win - 2, Math.floor(sr / 105));       // down to ~105 Hz
+  const minLag = Math.max(2, Math.floor(sr / 2200));
+  const maxLag = Math.min(Math.floor(sr / 58), Math.floor(n / 2) - 2);
+  const win = (Math.max(2048, 3 * maxLag, Math.floor(sr * 0.05)) + 1) & ~1;
+  const hop = Math.max(128, Math.floor(sr * 0.016));
   const start = Math.floor((n - win) / hop) + 1;
   if (start <= 0) return [];
-  const eSthr = 4e-6 * win;
+  const eSthr = 2e-5 * win;
+  const pit = new Float32Array(start);                            // f0 Hz per window (0 = silent)
+  const rmsArr = new Float32Array(start);                         // RMS per window (for velocity)
+
+  for (let wi = 0; wi < start; wi++) {
+    if (wi % 30 === 0) { await _p2mYield(); if (onProg) onProg(wi / start); }
+    const s = wi * hop;
+    let eS = 0;
+    for (let i = 0; i < win; i++) eS += data[s + i] * data[s + i];
+    const rms = Math.sqrt(eS / win);
+    rmsArr[wi] = rms;
+    if (eS < eSthr || rms < 0.0035) continue;
+
+    // YIN: difference function d(tau) (DC-immune by construction).
+    const d = new Float64Array(maxLag + 2);
+    const dsumEnd = win - maxLag;
+    for (let tau = 1; tau <= maxLag; tau++) {
+      let acc = 0;
+      const upto = dsumEnd;
+      for (let i = 0; i < upto; i++) {
+        const dd = data[s + i] - data[s + i + tau];
+        acc += dd * dd;
+      }
+      d[tau] = acc;
+    }
+    // Cumulative-mean-normalized difference: first dip below threshold that is a
+    // LOCAL minimum (dip valley, not a crossing mid-descent) — rejects 2T/3T
+    // subharmonic locks. A candidate must also repeat at 2·lag (its double must
+    // be equally periodic), which only true periods satisfy — this rejects
+    // harmonic-partial lags (T/k) and false small-lag valleys at a stroke.
+    let cm = 0, lag = 0;
+    for (let tau = minLag; tau <= maxLag; tau++) {
+      cm += d[tau];
+      if (cm <= 0) continue;
+      const r = d[tau] * tau / cm;
+      if (r < 0.14) {
+        const rPrev = tau > minLag ? d[tau - 1] * (tau - 1) / (cm - d[tau]) : 1;
+        const rNext = tau < maxLag ? d[tau + 1] * (tau + 1) / (cm + d[tau + 1]) : 1;
+        if (rPrev >= r && r <= rNext) {
+          if (2 * tau <= maxLag) {                                // confirm at 2·lag
+            let cm2 = cm;
+            for (let z = tau + 1; z <= 2 * tau; z++) cm2 += d[z];
+            if (d[2 * tau] * 2 * tau / cm2 >= 0.14) continue;     // not a true period → keep looking
+          }
+          lag = tau; break;
+        }
+      }
+    }
+    if (!lag) {                                                   // cloudy frame: first valley
+      const tl = Math.max(minLag + 2, Math.floor(minLag * 1.6)); // (don't fish the HF edge)
+      for (let tau = tl; tau <= Math.floor(maxLag * 0.95); tau++) {
+        const r = d[tau] * tau / cm;
+        if (r < 0.35) {
+          const rPrev = tau > tl ? d[tau - 1] * (tau - 1) / (cm - d[tau]) : 1;
+          const rNext = tau < maxLag ? d[tau + 1] * (tau + 1) / (cm + d[tau + 1]) : 1;
+          if (rPrev >= r && r <= rNext) { lag = tau; break; }
+        }
+      }
+      if (!lag) continue;
+    }
+    // Parabolic interpolation for sub-sample frequency resolution.
+    const y0 = d[lag - 1], y1 = d[lag], y2 = d[lag + 1];
+    const den = y0 - 2 * y1 + y2;
+    if (Math.abs(den) > 1e-12) {
+      const off = 0.5 * (y0 - y2) / den;
+      lag += Math.max(-0.5, Math.min(0.5, off));
+    }
+    lag = Math.max(minLag, Math.min(maxLag, lag));
+    pit[wi] = sr / lag;
+  }
+
+  // Median filter (11) across pitch only, ignoring silence, to kill single-frame
+  // octave flips and vibrato jitter before quantization.
+  for (let wi = 0; wi < start; wi++) {
+    if (pit[wi] <= 0) continue;
+    let k = 0;
+    const vals = [];
+    for (let j = Math.max(0, wi - 5); j <= Math.min(start - 1, wi + 5); j++) {
+      if (pit[j] > 0) { vals[k++] = pit[j]; }
+    }
+    if (k >= 6) {
+      vals.sort((a, b) => a - b);
+      pit[wi] = vals[k >> 1];
+    }
+  }
+
+  // Second, wider median (~0.4 s) over voiced windows: collapses slow estimator
+  // drift (vibrato, chirp) to the note's time-averaged pitch. Silence stays 0
+  // so note boundaries depend on the real gaps, not on the median window.
+  const med2 = new Float32Array(start);
+  for (let wi = 0; wi < start; wi++) {
+    if (pit[wi] <= 0) continue;
+    let k = 0;
+    const vals = [];
+    const rw = Math.max(12, Math.floor(sr * 0.4 / hop / 2));
+    for (let j = Math.max(0, wi - rw); j <= Math.min(start - 1, wi + rw); j++) {
+      if (pit[j] > 0) { vals[k++] = pit[j]; }
+    }
+    if (k >= Math.max(2, Math.floor((2 * rw + 1) * 0.25))) {
+      vals.sort((a, b) => a - b);
+      med2[wi] = vals[k >> 1];
+    }
+  }
+  for (let wi = 0; wi < start; wi++) if (med2[wi] > 0) pit[wi] = med2[wi];
+
   const evs = [];
   let out = { pitch: null, raw: 0, t0: 0, vel: 0 };
   const flush = (endT) => {
     if (out.pitch === null) return;
     const dur = endT - out.t0;
-    if (dur >= 0.04) evs.push({ start: out.t0, dur, pitch: out.pitch, vel: out.vel });
+    if (dur >= 0.04) {
+      const rms = rmsArr[Math.max(0, Math.min(start - 1, Math.round(out.t0 * sr / hop)))];
+      out.vel = Math.max(40, Math.min(120, Math.round(40 + Math.min(1, rms) * 170)));
+      evs.push({ start: out.t0, dur, pitch: dawP2MMapNote(out.raw, _P2M.key, _P2M.scale), vel: out.vel });
+    }
     out.pitch = null;
   };
-  const corr = (k, s) => {
-    let c = 0;
-    for (let i = 0; i < win - k; i++) c += data[s + i] * data[s + i + k];
-    return c;
-  };
-
   for (let wi = 0; wi < start; wi++) {
-    if (wi % 40 === 0) { await _p2mYield(); if (onProg) onProg(wi / start); }
-    const s = wi * hop;
-    let eS = 0;
-    for (let i = 0; i < win; i++) eS += data[s + i] * data[s + i];
-    const rms = Math.sqrt(eS / win);
-    if (eS < eSthr || rms < 0.004) {
-      if (out.pitch !== null) flush(s / sr + 0.15);             // close on silence
+    const t = (wi * hop) / sr;
+    const f = pit[wi];
+    if (!(f > 0)) {
+      if (out.pitch !== null) flush(t + 0.15);                    // close on silence
       continue;
     }
-
-    let bestLag = -1, bestN = 0;
-    for (let k = minLag; k <= maxLag; k++) {
-      const nk = corr(k, s) / eS;
-      if (nk > bestN) { bestN = nk; bestLag = k; }
-    }
-    if (bestLag <= 0 || bestN < 0.82) { if (out.pitch !== null) flush(s / sr); continue; }
-
-    // Octave resolve: prefer the shortest period (highest f0) whose correlation
-    // is comparable, dropping 2T/3T locks (subharmonics) to the fundamental.
-    let lag = bestLag, lagN = bestN, changed = true;
-    while (changed) {
-      changed = false;
-      for (let d = 4; d >= 2; d--) {
-        const cand = Math.round(lag / d);
-        if (cand < minLag || cand > maxLag || cand >= lag) continue;
-        const nCand = corr(cand, s) / eS;
-        if (nCand >= 0.90 * lagN) { lag = cand; lagN = nCand; changed = true; }
-      }
-    }
-    // Parabolic interpolation for sub-sample frequency resolution.
-    const y0 = corr(lag - 1, s), y1 = corr(lag, s), y2 = corr(lag + 1, s);
-    const denom = 2 * (y0 - 2 * y1 + y2);
-    if (Math.abs(denom) > 1e-12) {
-      const d = (y0 - y2) / denom;
-      lag += Math.max(-0.5, Math.min(0.5, d));
-    }
-    if (lag <= 0) continue;
-
-    const f = sr / lag;
     const midiF = 69 + 12 * Math.log2(f / 440);
-    const snapped = dawP2MMapNote(midiF, _P2M.key, _P2M.scale);
-    const t = s / sr;
     if (out.pitch === null) {
-      out.pitch = snapped; out.raw = midiF; out.t0 = t;
-      out.vel = Math.max(40, Math.min(120, Math.round(40 + rms * 170)));
-    } else if (Math.abs(midiF - out.raw) < 0.45 && snapped === out.pitch) {
-      out.raw = out.raw * 0.5 + midiF * 0.5;                     // keep the lock armed
+      out.pitch = 1; out.raw = midiF; out.t0 = t;
+    } else if (Math.abs(midiF - out.raw) < 0.6) {
+      out.raw = out.raw * 0.5 + midiF * 0.5;                      // keep the lock armed
     } else {
       flush(t);
-      out.pitch = snapped; out.raw = midiF; out.t0 = t;
-      out.vel = Math.max(40, Math.min(120, Math.round(40 + rms * 170)));
+      out.pitch = 1; out.raw = midiF; out.t0 = t;
     }
   }
   flush(((start - 1) * hop + win) / sr);
