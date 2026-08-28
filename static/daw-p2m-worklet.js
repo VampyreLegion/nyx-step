@@ -70,13 +70,19 @@ class DAWP2MProcessor extends AudioWorkletProcessor {
       return true;
     }
 
-    // Octave preference: among lag, 2×lag, ½×lag pick the strongest correlation.
+    // Octave resolve: prefer the shortest period (highest f0) whose correlation is
+    // comparable to the argmax — tries /2, /3, /4 so both 2T-locks (subharmonic)
+    // and 3T-locks drop back to the fundamental (165/110 Hz instead of 330 Hz).
     let lag = bestLag, lagN = bestN;
-    const half = (bestLag % 2 === 0) ? bestLag / 2 : 0;
-    for (const L of [bestLag * 2, half]) {
-      if (L < this.minLag || L > this.maxLag) continue;
-      const nL = this._corrSum(L, s0) / eS;
-      if (nL > lagN) { lagN = nL; lag = L; }
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (let d = 4; d >= 2; d--) {
+        const cand = Math.round(lag / d);
+        if (cand < this.minLag || cand > this.maxLag || cand >= lag) continue;
+        const nCand = this._corrSum(cand, s0) / eS;
+        if (nCand >= 0.90 * lagN) { lag = cand; lagN = nCand; changed = true; }
+      }
     }
 
     // Parabolic interpolation of the lag for sub-sample frequency resolution.

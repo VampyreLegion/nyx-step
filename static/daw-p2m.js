@@ -42,7 +42,7 @@ function dawP2MMapNote(midi, key, scale) {
   }
   const up = (bestD - r + 12) % 12, down = (r - bestD + 12) % 12;
   const delta = up <= down ? up : -down;
-  return Math.max(0, Math.min(127, Math.round(midi) + delta));
+  return Math.max(0, Math.min(127, Math.round(midi) + Math.round(delta)));
 }
 
 function _p2mNoteName(p) {
@@ -105,9 +105,8 @@ async function _p2mBuild() {
     const ctx = (typeof _dawEnsureCtx === "function") ? _dawEnsureCtx() : null;
     if (!ctx || typeof _dawMicStream === "undefined" || !_dawMicStream || !_dawMicStream.active) return false;
     if (ctx.state === "suspended") { try { ctx.resume(); } catch (_) {} }
-    let wk = null;
-    try { wk = await ctx.audioWorklet.addModule("/static/daw-p2m-worklet.js?v=1"); } catch (_) {}
-    if (!wk) return false;
+    try { await ctx.audioWorklet.addModule("/static/daw-p2m-worklet.js?v=2"); }
+    catch (_) { return false; }
     const src = ctx.createMediaStreamSource(_dawMicStream);
     const node = new AudioWorkletNode(ctx, "daw-p2m-processor");
     node.port.onmessage = _p2mOnMsg;
