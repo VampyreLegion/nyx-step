@@ -331,10 +331,12 @@ async function dawP2MConvert() {
     if (!tgt) { _p2mShow("no MIDI track — add one first"); return; }
 
     tgt.notes = tgt.notes || [];
-    for (const e of events) tgt.notes.push({
-      start: Math.max(0, cap.anchor + e.start),
-      dur: e.dur, pitch: e.pitch, vel: e.vel,
-    });
+    for (const e of events) {
+      const q = (typeof dawQuantRange === "function")
+        ? dawQuantRange(cap.anchor + e.start, e.dur)
+        : { start: cap.anchor + e.start, dur: e.dur };
+      tgt.notes.push({ start: Math.max(0, q.start), dur: q.dur, pitch: e.pitch, vel: e.vel });
+    }
     if (typeof _dawAfterMutate === "function") _dawAfterMutate(); else renderTimeline();
     _p2mShow(`➜ ${events.length} notes`);
     _p2mStatus(`hum→midi: ${events.length} notes on “${tgt.name}” at ${_FMT(cap.anchor)}`);

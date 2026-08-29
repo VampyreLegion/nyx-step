@@ -59,6 +59,12 @@ function dawRecWireUi() {
   const midiSel = document.getElementById("daw-midi-in-select");
   const audioSel = document.getElementById("daw-audio-in-select");
   const clickCb = document.getElementById("daw-metronome");
+  const quantSel = document.getElementById("daw-quant-select");
+  if (quantSel) {
+    dawState.quant = dawState.quant || quantSel.value || "off";
+    quantSel.value = ["off", "4", "4t", "8", "8t", "16", "16t", "32"].includes(dawState.quant) ? dawState.quant : "off";
+    quantSel.addEventListener("change", () => { dawState.quant = quantSel.value; });
+  }
   if (recBtn) recBtn.addEventListener("click", () => dawToggleRecord());
   const monBtn = document.getElementById("daw-monitor-toggle");
   if (monBtn) monBtn.addEventListener("click", () => dawToggleMonitor());
@@ -208,6 +214,33 @@ function _dawRecTick() {
   _dawRecRaf = requestAnimationFrame(_dawRecTick);
 }
 
+// ── Input quantize (shared with Hum→MIDI conversion) ─────────────────────────
+// dawState.quant: "off" | "4" | "4t" | "8" | "8t" | "16" | "16t" | "32"
+function dawQuantGrid() {
+  const q = (typeof dawState !== "undefined" && dawState.quant) || "off";
+  if (!q || q === "off") return 0;
+  const beat = 60 / ((typeof dawState !== "undefined" && dawState.tempo) || 120);
+  const frac = { "4": 1, "4t": 2 / 3, "8": 0.5, "8t": 1 / 3, "16": 0.25, "16t": 1 / 6, "32": 0.125 }[q];
+  return beat * (frac || 0);
+}
+// Snap a note-on time to the nearest grid line (identity when quantize is off).
+function dawQuantStart(t) {
+  const g = dawQuantGrid();
+  if (!(g > 0)) return t;
+  const sn = Math.round(t / g) * g;
+  return sn < 0 ? 0 : sn;
+}
+// Snap [start, end) → start lands on a grid line, end extends to the next line
+// (notes never shrink, they lock on to the grid).
+function dawQuantRange(start, dur) {
+  const g = dawQuantGrid();
+  if (!(g > 0)) return { start, dur };
+  const s = dawQuantStart(start);
+  let e = Math.ceil((start + dur) / g) * g;
+  if (e <= s) e = s + g;
+  return { start: s, dur: Math.max(0.02, e - s) };
+}
+
 // ── MIDI-in → notes ────────────────────────────────────────────────────────────
 function _dawRecOnMidi(e) {
   const r = _dawRec;
@@ -230,7 +263,8 @@ function _dawRecOnMidi(e) {
         delete r.pending[tid][pitch];
         const track = dawState.tracks.find(x => x.id === tid);
         if (track) {
-          (track.notes = track.notes || []).push({ start: p.start, dur: Math.max(0.02, t - p.start), pitch, vel: p.vel });
+          const q = dawQuantRange(p.start, Math.max(0.02, t - p.start));
+          (track.notes = track.notes || []).push({ start: q.start, dur: q.dur, pitch, vel: p.vel });
         }
       }
       _dawMonitorOff(tid, pitch);
