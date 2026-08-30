@@ -387,6 +387,21 @@ function dawP2MPeek() {
   return { micOn: _P2M.micOn, cap: !!_P2M.cap, busy: _P2M.busy, key: _P2M.key, scale: _P2M.scale };
 }
 
+// Snap every MIDI note pitch on every track (that has notes) onto key+scale.
+// The key is interval-aware so C-Eb moves up a minor third while C-B snaps down.
+function dawP2MSnapAll() {
+  let done = 0;
+  for (const t of dawState.tracks) {
+    if (!(t.notes && t.notes.length)) continue;
+    for (const n of t.notes) {
+      const p = dawP2MMapNote(n.pitch, _P2M.key, _P2M.scale);
+      if (p !== n.pitch) { n.pitch = p; done++; }
+    }
+  }
+  if (typeof _dawAfterMutate === "function") _dawAfterMutate(); else renderTimeline();
+  return done;
+}
+
 function _p2mUi() {
   const mb = document.getElementById("daw-mic-btn");
   if (mb) {
@@ -449,6 +464,14 @@ if (typeof document !== "undefined") {
     if (cb) {
       cb.addEventListener("click", dawP2MConvert);
       cb.title = "Convert the recorded hum into MIDI notes (key/scale forced)";
+    }
+    const sn = document.getElementById("daw-p2m-snap");
+    if (sn) {
+      sn.addEventListener("click", () => {
+        const dn = dawP2MSnapAll();
+        _p2mStatus(`snapped ${dn} note${dn === 1 ? "" : "s"} → ${ks.options[ks.selectedIndex].text} ${ss.options[ss.selectedIndex].text}`);
+      });
+      sn.title = "Snap all MIDI note pitches onto the Key / Scale";
     }
     _p2mUi();
   });
