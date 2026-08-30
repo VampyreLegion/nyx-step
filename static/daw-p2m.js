@@ -173,6 +173,32 @@ async function dawP2MExtract(data, sr, onProg) {
   }
   for (let wi = 0; wi < start; wi++) if (med2[wi] > 0) pit[wi] = med2[wi];
 
+  // Spurious-high guard: τ-edge / harmonic-beat flashes (~1.4–2.2 kHz) on a
+  // voiced hum look like "sustained pitch" when they take over a whole note
+  // (FM-blurred harmonic combs do exactly that), so drop anything above a real
+  // hum's ceiling. Human hum fundamentals top out ~C6; E5 (660 Hz) still passes.
+  const HF = 1100;
+  for (let wi = 0; wi < start; wi++) if (pit[wi] > HF) pit[wi] = 0;
+
+  // Neighborhood octave-fold: if a voiced window sits ~ a whole octave (or 2)
+  // above/below its local neighbours, fold it back — harmonic overreads snap to
+  // the note's own octave instead of spawning octave-up ghost notes.
+  for (let wi = 0; wi < start; wi++) {
+    if (!(pit[wi] > 0)) continue;
+    let k = 0;
+    const vals = [];
+    for (let j = Math.max(0, wi - 10); j <= Math.min(start - 1, wi + 10); j++) {
+      if (j !== wi && pit[j] > 0) { vals[k++] = pit[j]; }
+    }
+    if (k >= 4) {
+      vals.sort((a, b) => a - b);
+      const med = vals[k >> 1];
+      const r = Math.log2(pit[wi] / med);
+      const kr = Math.round(r);
+      if (kr !== 0 && Math.abs(r - kr) < 0.12) pit[wi] = med;
+    }
+  }
+
   const evs = [];
   let out = { pitch: null, raw: 0, t0: 0, vel: 0 };
   const flush = (endT) => {
