@@ -1,4 +1,4 @@
-# Nyx-Step MusicWeb — Deployment Reference
+# Nyx-Step — Deployment Reference
 
 ## What You Need on the New Server
 
@@ -8,22 +8,22 @@ Three things must be present and running:
 |---------|-------------|---------|
 | **ComfyUI** | 8188 | Diffusion engine + ACE-Step nodes |
 | **Ollama** | 11434 | LLM for tag expansion, lyrics, artist lookup |
-| **MusicWeb** (this repo) | 8001 | Web UI + API |
+| **Nyx-Step** (this repo) | 8001 | Web UI + API |
 
 ---
 
 ## Directory Layout
 
-### 1 — MusicWeb (this repo: `github.com/VampyreLegion/musicweb`)
+### 1 — Nyx-Step (this repo: `github.com/VampyreLegion/nyx-step`)
 
 ```
-musicweb/
-├── musicweb.py               # FastAPI app entry point
+nyx-step/
+├── nyx_step.py               # FastAPI app entry point
 ├── config.py                 # Paths, URLs, limits — edit this first
 ├── requirements.txt          # Python deps
-├── musicweb.service          # systemd unit template
-├── history.jsonl             # Auto-created on first run
-├── presets/                  # .nyx preset files (user-created)
+├── nyx-step.service          # systemd unit template
+├── presets_builtin/          # Built-in .nyx presets (auto-synced on startup)
+├── presets/                  # .nyx preset files (user-created, runtime)
 │
 ├── core/
 │   ├── comfyui.py            # ComfyUI HTTP client + workflow builders
@@ -31,43 +31,18 @@ musicweb/
 │   ├── analyze.py            # BPM / key / chord / LUFS / whisper analysis
 │   ├── demucs.py             # Demucs stem separation wrapper
 │   ├── midi.py               # MIDI extraction (pyin + piano-transcription)
-│   ├── ollama.py             # Ollama streaming client
+│   ├── ollama.py             # Ollama streaming client + model auto-discovery
 │   ├── brave_search.py       # Brave Search API (artist lookup grounding)
 │   ├── prompt_builder.py     # Tag / caption assembly
-│   ├── prompt_linter.py      # Tag validation rules
+│   ├── prompt_linter.py      # Tag validation rules (offline)
+│   ├── minimax_music3.py     # MiniMax Music3 engine (local)
+│   ├── youtube.py            # YouTube integration
 │   └── rate_limit.py         # Per-user sliding window rate limiter
 │
-├── routes/
-│   ├── generate.py           # POST /generate  POST /events (SSE)
-│   ├── queue.py              # GET /queue
-│   ├── download.py           # GET /download/{path}  GET /guide/{id}  POST /download/zip
-│   ├── remix.py              # POST /remix  POST /cover
-│   ├── stems.py              # POST /stems/*  POST /stems/demucs/*
-│   ├── extract.py            # POST /extract  POST /multirepaint
-│   ├── lego.py               # POST /lego  POST /complete
-│   ├── radio.py              # POST /radio/start|stop  GET /radio/events|status
-│   ├── analyze.py            # POST /analyze  POST /transcribe
-│   ├── midi.py               # POST /midi/extract
-│   ├── lrc.py                # POST /lrc/generate  GET /lrc/download/{file}
-│   ├── quality.py            # GET /quality/{path}
-│   ├── history.py            # GET/DELETE /api/history
-│   ├── presets.py            # GET/POST/DELETE /presets
-│   ├── ollama_routes.py      # POST /ollama/*
-│   └── train.py              # POST /train/start|stop  GET /train/events
-│
-├── static/
-│   ├── style.css
-│   ├── wavesurfer.min.js     # Bundled — no CDN needed
-│   ├── state.js utils.js bindings.js tabs.js init.js app.js
-│   ├── genres.js chips.js tags.js presets.js jobs.js
-│   ├── easy.js quick.js lint.js voice.js
-│   ├── analyze.js stems.js cover.js lego.js extract.js
-│   ├── radio.js midi.js train.js history.js
-│   ├── dropzone.js           # Shared drag-and-drop utility
-│   └── images/               # Guide infographic PNGs
-│
-└── templates/
-    └── index.html            # Single-page app shell
+├── routes/                   # One file per feature tab
+├── static/                   # JS modules + WaveSurfer (no CDN)
+├── templates/                # index.html SPA shell (+ guide/)
+└── docs/                     # Planning/spec docs
 ```
 
 ### 2 — AceUser (lives inside ComfyUI repo at `ComfyUI/AceUser/`)
@@ -91,9 +66,9 @@ AceUser/
         └── vocals.json       # Vocal tag categories
 ```
 
-> MusicWeb's `config.py` points `_ACETALK` at this directory.
+> Nyx-Step's `config.py` points `_ACETALK` at this directory.
 > The `acetalk/` subtree and `AceTalkBridge/` are AceTalk desktop app code —
-> MusicWeb only uses the `data/` files and the workflow JSON templates.
+> Nyx-Step only uses the `data/` files and the workflow JSON templates.
 
 ### 3 — NyxNodes (ComfyUI custom node package)
 
@@ -151,39 +126,9 @@ curl http://localhost:8188/object_info/NyxAudioOverlay
 
 ---
 
-## MusicWeb Python Requirements
+## Python Requirements
 
-```
-# requirements.txt
-
-# Web framework
-fastapi
-uvicorn[standard]
-jinja2
-python-multipart
-requests
-httpx
-
-# Audio analysis
-librosa>=0.11.0
-soundfile>=0.13.0
-pyloudnorm>=0.2.0
-mutagen>=1.47.0
-
-# Speech-to-text (lyrics transcription + analyze)
-faster-whisper>=1.0.0
-
-# Stem separation
-demucs>=4.0.0
-
-# MIDI extraction
-pretty-midi>=0.2.10
-mido>=1.3.0
-# piano-transcription-inference   # optional — GPU required; polyphonic piano only
-
-# Dev / test
-pytest
-```
+> Source of truth: `requirements.txt`. Key packages: `fastapi`, `uvicorn[standard]`, `jinja2`, `python-multipart`, `requests`, `httpx`, `librosa`, `soundfile`, `pyloudnorm`, `mutagen`, `faster-whisper`, `demucs`, `pretty-midi`, `mido`, `pytest`.
 
 > **`piano-transcription-inference`** requires CUDA. Comment it out if no GPU.
 > **`faster-whisper`** downloads its own CUDA libraries; works CPU-only but is slow.
@@ -192,10 +137,12 @@ pytest
 
 ## Environment / Config
 
-### `.env` (place in musicweb root, gitignored)
+### `.env` (place in repo root, gitignored)
 
 ```bash
 BRAVE_API_KEY=your_brave_search_api_key   # Optional — artist lookup grounding
+RADIO_HOST=127.0.0.1                      # Optional — radio segment host bind
+RADIO_PORT=8001                           # Optional — radio segment port
 ```
 
 ### `config.py` — paths to update for new server
@@ -207,41 +154,43 @@ OLLAMA_URL   = "http://localhost:11434"   # Ollama API
 _ACETALK = pathlib.Path("/path/to/ComfyUI/AceUser")   # ← update
 _COMFYUI = pathlib.Path("/path/to/ComfyUI")           # ← update
 
-PRESETS_DIR  = pathlib.Path("/path/to/musicweb/presets")  # ← update
-HISTORY_LOG  = pathlib.Path("/path/to/musicweb/history.jsonl")  # ← update
+PRESETS_DIR  = pathlib.Path("/path/to/nyx-step/presets")  # ← update (defaults to <repo>/presets)
 ```
+
+`_ACETALK` and `_COMFYUI` are the only two paths that must be set per-site. `PRESETS_DIR`, `DB_PATH`, and the output/video dirs default to repo-relative locations and are only overridden if you need to relocate them.
 
 ---
 
 ## systemd Service
 
 ```ini
-# /etc/systemd/system/musicweb.service
+# /etc/systemd/system/nyx-step.service
 [Unit]
-Description=MusicWeb Nyx-Step Generator
+Description=Nyx-Step Generator
 After=network.target
 
 [Service]
 User=your_user
-WorkingDirectory=/path/to/musicweb
-ExecStart=/usr/bin/python3 -m uvicorn musicweb:app --host 0.0.0.0 --port 8001
+WorkingDirectory=/path/to/nyx-step
+ExecStart=/usr/bin/python3 -m uvicorn nyx_step:app --host 0.0.0.0 --port 8001
 Restart=on-failure
 RestartSec=5
+# Environment=PYTHONUNBUFFERED=1
 
 [Install]
 WantedBy=multi-user.target
 ```
 
 ```bash
-sudo systemctl enable musicweb
-sudo systemctl start musicweb
+sudo systemctl enable nyx-step
+sudo systemctl start nyx-step
 ```
 
 ---
 
 ## Ollama Models
 
-MusicWeb auto-discovers available models. You need at least one capable of JSON generation:
+Nyx-Step auto-discovers available models (via `/ollama/models`). You need at least one capable of JSON generation:
 
 ```bash
 ollama pull qwen2.5:7b      # Good balance — tag expansion + lyrics
@@ -262,9 +211,9 @@ ollama pull llama3.2:3b     # Lighter option
 ## Quick Install Checklist
 
 ```bash
-# 1. Clone MusicWeb
-git clone https://github.com/VampyreLegion/musicweb
-cd musicweb
+# 1. Clone Nyx-Step
+git clone https://github.com/VampyreLegion/nyx-step
+cd nyx-step
 pip install -r requirements.txt
 
 # 2. Clone / copy AceUser into your ComfyUI tree
@@ -273,13 +222,13 @@ pip install -r requirements.txt
 # 3. Copy NyxNodes into ComfyUI custom_nodes
 cp -r /path/to/NyxNodes /path/to/ComfyUI/custom_nodes/
 
-# 4. Edit config.py — update _ACETALK, _COMFYUI, PRESETS_DIR, HISTORY_LOG
+# 4. Edit config.py — update _ACETALK, _COMFYUI
 
 # 5. Create .env with BRAVE_API_KEY if desired
 
-# 6. Start ComfyUI (must be running before MusicWeb)
+# 6. Start ComfyUI (must be running before Nyx-Step)
 # 7. Start Ollama and pull a model
 
-# 8. Start MusicWeb
-python3 -m uvicorn musicweb:app --host 0.0.0.0 --port 8001
+# 8. Start Nyx-Step
+python3 -m uvicorn nyx_step:app --host 0.0.0.0 --port 8001
 ```

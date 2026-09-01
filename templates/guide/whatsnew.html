@@ -1,4 +1,33 @@
 <html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.5.4 / v4.5.3</h2>
+
+<h3>🎹 Hum→MIDI refinements</h3>
+<ul>
+  <li><strong>♮ Snap button</strong> (v4.5.4) — on the transport; snaps every MIDI note's pitch on all tracks onto the selected 🎚 Key / 🎼 Scale. Works after Hum→MIDI or on any recorded notes, so you can lock an entire arrangement into one key/scale after the fact.</li>
+  <li><strong>Spurious high-note kill</strong> (v4.5.3) — pitch detection now applies an absolute 1100&nbsp;Hz ceiling (real hum fundamentals cap around C6) plus a neighborhood octave-fold, so harmonic flashes snap back to the correct note instead of becoming ghost notes.</li>
+</ul>
+
+<hr style="border-color:#2d3041;margin:20px 0">
+
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.5.2</h2>
+
+<h3>🎹 Input Quantizer</h3>
+<ul>
+  <li><strong>Quantizer dropdown</strong> — Off / 1/4 / 1/8 / 1/16 / 1/32 + triplets. Snaps live MIDI-in recording and Hum→MIDI output to the tempo grid, so notes lock onto grid lines as they land.</li>
+</ul>
+
+<hr style="border-color:#2d3041;margin:20px 0">
+
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.5.1</h2>
+
+<h3>🎹 YIN f0 Tracking for Hum→MIDI</h3>
+<ul>
+  <li><strong>Wider range</strong> — 58&nbsp;Hz–2.2&nbsp;kHz fundamental detection (local-min + 2×-confirmation dip pick).</li>
+  <li><strong>Dual median smoothing</strong> — cleaner pitch tracks with drift-tolerant note lock, so vibrato and slurs produce stable notes.</li>
+</ul>
+
+<hr style="border-color:#2d3041;margin:20px 0">
+
 <h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.5.0</h2>
 
 <h3>🎙 Hum→MIDI is now record-then-convert</h3>
