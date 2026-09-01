@@ -23,6 +23,11 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
         iframe.src = src;
       }
     }
+    if (btn.dataset.tab === "integrations") {
+      if (typeof initEmbeds === "function") initEmbeds();
+      if (typeof refreshEmbedOnOpen === "function") refreshEmbedOnOpen("integrations");
+      if (typeof updateIntegrationsTelemetry === "function") updateIntegrationsTelemetry();
+    }
   });
 });
 

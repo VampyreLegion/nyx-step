@@ -1,0 +1,70 @@
+  <div class="tab-panel" id="tab-groovelab">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="font-size:14px;font-weight:600;color:var(--accent)"> acid Groove Lab</span>
+      <span class="hint">TB-303 acid basslines + TR-808/909 drums — create grooves, then send them to the DAW</span>
+    </div>
+
+    <!-- TB-303 Iframe -->
+    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;background:#000">
+      <iframe
+        id="groovelab-iframe"
+        style="width:100%;height:700px;border:none;display:block"
+        allow="autoplay; microphone"
+        title="TB-303 Groove Lab"
+      ></iframe>
+      <script>
+        (function() {
+          var h = window.location.hostname;
+          var url = (h && h !== 'localhost' && h !== '127.0.0.1' && h !== '0.0.0.0')
+            ? 'https://acid.' + h.split('.').slice(-2).join('.')
+            : 'http://localhost:7870';
+          document.getElementById('groovelab-iframe').src = url;
+        })();
+      </script>
+    </div>
+
+    <!-- Controls -->
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+      <span style="font-size:12px;font-weight:600;color:var(--accent)">Send to DAW</span>
+      <span class="hint">Record a groove in the TB-303 above, export it, then upload it here to add to your DAW library.</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+      <label style="font-size:12px;font-weight:600;color:var(--text)">Groove Audio File</label>
+      <input type="file" id="groovelab-file" accept="audio/*" style="flex:1;min-width:200px;font-size:12px">
+      <input type="text" id="groovelab-name" placeholder="e.g. Acid 303 Jam" style="flex:1;min-width:150px;font-size:12px">
+      <button id="groovelab-send" style="white-space:nowrap"> acid Send to DAW</button>
+      <span id="groovelab-status" class="hint"></span>
+    </div>
+
+    <!-- 16-Step Drum Synthesizer -->
+    <div style="margin-top:12px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+        <span style="font-size:14px;font-weight:700;color:var(--accent)">DRUM MACHINE</span>
+        <span class="hint">16-step TR-808 / TR-909 style synth — click steps to build a pattern</span>
+        <span style="margin-left:auto;display:flex;gap:12px;align-items:center;font-size:11px">
+          <label style="color:var(--text)"><input type="radio" name="grd-engine" id="grd-808" checked> TR-808</label>
+          <label style="color:var(--text)"><input type="radio" name="grd-engine" id="grd-909"> TR-909</label>
+        </span>
+      </div>
+
+      <div id="grd-step-grid" style="min-width:0"></div>
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px">
+        <button id="grd-play" style="white-space:nowrap">▶ Play</button>
+        <button id="grd-clear" style="white-space:nowrap">Clear</button>
+        <label style="font-size:12px;color:var(--text)">BPM
+          <input type="number" id="grd-bpm" value="120" min="40" max="300" style="width:64px;font-size:12px">
+        </label>
+        <label style="font-size:12px;color:var(--text)">Swing
+          <input type="number" id="grd-swing" value="0" min="0" max="0.5" step="0.05" style="width:64px;font-size:12px">
+        </label>
+        <button id="grd-bounce" style="white-space:nowrap">⇓ Bounce to DAW (WAV)</button>
+        <span id="grd-status" class="hint"></span>
+      </div>
+      <div id="grd-midi-status" style="font-size:10px;color:var(--muted);margin-top:6px"></div>
+    </div>
+    <div style="margin-top:8px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+      <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:4px">Quick Groove → Song</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">Select a groove clip above, then click to auto-generate a full song matching its tempo and key.</div>
+      <span id="gts-status" class="hint"></span>
+    </div>

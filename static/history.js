@@ -222,3 +222,7 @@ document.getElementById("btn-history-insights")?.addEventListener("click", async
         d.weakest.map(row).join("") + `</table>` : "");
   } catch (e) { panel.textContent = "Insights failed: " + e.message; }
 });
+
+// When a generation finishes, pull the newest entries so the History tab is
+// current instead of showing a stale cached list.
+mwBus.on("job:done", () => { if (_historyRecords.length) loadHistory(); });

@@ -24,3 +24,26 @@ fetch("/queue").then(r => r.json()).then(data => {
   document.getElementById("queue-badge").textContent =
     `Queue: ${c.running} running, ${c.pending} pending`;
 });
+
+// ── Live dock telemetry (header badge) ──────────────────────────────────────
+// Polls /api/comfy/status so the queue badge + ComfyUI status stay current even
+// without generation events. Reflects the same data the Integrations tab shows.
+let _dockStatusInterval = null;
+
+function updateDockStatus() {
+  if (_dockStatusInterval) clearTimeout(_dockStatusInterval);
+  fetch("/api/comfy/status")
+    .then(r => (r.ok ? r.json() : null))
+    .then(d => {
+      if (!d) throw new Error("bad response");
+      const on = d.comfyui_online ? "●" : "○";
+      const el = document.getElementById("comfy-status");
+      if (el) el.textContent = "ComfyUI: " + on + (on === "●" ? " online" : " offline");
+      const q = d.queue || {};
+      const badge = document.getElementById("queue-badge");
+      if (badge) badge.textContent = `Queue: ${q.running_count || 0} running, ${q.pending_count || 0} pending`;
+    })
+    .catch(() => {})
+    .finally(() => { _dockStatusInterval = setTimeout(updateDockStatus, 10000); });
+}
+updateDockStatus();
