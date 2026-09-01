@@ -57,3 +57,37 @@ def test_ollama_models_returns_list():
         resp = client.get("/ollama/models")
         assert resp.status_code == 200
         assert "gemma4:latest" in resp.json()["models"]
+
+
+def test_comfy_status_structure():
+    resp = client.get("/api/comfy/status")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "comfyui_online" in data
+    assert "gpu" in data
+    assert "cpu" in data
+    assert "devices" in data
+    assert "queue" in data
+    assert {"running_count", "pending_count"} <= set(data["queue"])
+
+
+def test_comfy_status_graceful_when_offline():
+    from unittest.mock import patch
+    with patch("routes.comfy_telemetry._system_stats", return_value={}), \
+         patch("routes.comfy_telemetry._nvidia_stats", return_value={}), \
+         patch("routes.comfy_telemetry._comfy_queue", return_value={"queue_running": [], "queue_pending": []}):
+        resp = client.get("/api/comfy/status")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["comfyui_online"] is False
+        assert data["devices"] == []
+
+
+def test_comfy_queue_structure():
+    resp = client.get("/api/comfy/queue")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "running" in data
+    assert "pending" in data
+    assert "running_count" in data
+    assert "pending_count" in data

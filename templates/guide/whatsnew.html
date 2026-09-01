@@ -1,4 +1,27 @@
 <html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.6.0</h2>
+
+<h3>🥁 16-Step Drum Machine (Groove Lab)</h3>
+<p>Groove Lab now ships its own in-browser drum synthesizer — no external app needed. Build patterns and bounce them straight to a DAW clip.</p>
+<ul>
+  <li><strong>TR-808 / TR-909 sound engines</strong> — Web Audio synthesis for Kick, Snare, Clap, Closed/Open Hi-Hats, Toms, Crash, and Ride. Click the engine switch to switch between 808 and 909 voicings.</li>
+  <li><strong>16-step grid</strong> — click cells to build a pattern; rows are colour-grouped (kick/snare/clap, hats, toms, crash/ride). Step 4s are accented for easy downbeat orientation.</li>
+  <li><strong>Audition</strong> — click any row label to preview that drum sound solo.</li>
+  <li><strong>BPM + swing</strong> — tempo from 40–300 BPM and swing (0–50%) on the odd steps.</li>
+  <li><strong>Web MIDI pads</strong> — plug in a MIDI controller; standard drum-map notes (36 kick, 38 snare, 39 clap, 42/46 hats, 48/50 toms, 49 crash, 51 ride) trigger their drum live.</li>
+  <li><strong>⇓ Bounce to DAW (WAV)</strong> — renders the 16-step pattern (4 bars, 44.1&nbsp;kHz stereo) offline to a clean WAV and uploads it straight into the DAW Clip Library as a draggable clip.</li>
+</ul>
+
+<h3>💾 ComfyUI Hardware Telemetry</h3>
+<p>Two new read-only endpoints report live host GPU/CPU health straight from ComfyUI's daemon and the host:</p>
+<ul>
+  <li><code>GET /api/comfy/status</code> — <strong>GPU</strong> util %, temperature °C, power draw (W) via <code>nvidia-smi</code>; <strong>CPU</strong> load average; <strong>RAM</strong> total/free; per-device <strong>VRAM</strong> total/free (and torch VRAM) from ComfyUI <code>/system_stats</code>; plus running/pending queue counts and the ComfyUI version.</li>
+  <li><code>GET /api/comfy/queue</code> — the raw ComfyUI generation queue (running + pending prompt IDs and counts).</li>
+  <li>Graceful degradation — if ComfyUI or GPU tools are unavailable, the endpoint still returns a well-formed response (<code>comfyui_online: false</code>) rather than erroring.</li>
+</ul>
+
+<hr style="border-color:#2d3041;margin:20px 0">
+
 <h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.5.4 / v4.5.3</h2>
 
 <h3>🎹 Hum→MIDI refinements</h3>

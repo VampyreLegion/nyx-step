@@ -58,7 +58,7 @@ def get_user_email(request: Request) -> str:
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "4.5.4"}
+    return {"status": "ok", "version": "4.6.0"}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -106,6 +106,7 @@ from routes.batch import router as batch_router
 from routes.voice_prompt import router as voice_prompt_router
 from routes.groove_to_song import router as groove_to_song_router
 from routes.smart_fill import router as smart_fill_router
+from routes.comfy_telemetry import router as comfy_telemetry_router
 
 app.include_router(gen_router)
 app.include_router(queue_router)
@@ -144,6 +145,7 @@ app.include_router(batch_router)
 app.include_router(voice_prompt_router)
 app.include_router(groove_to_song_router)
 app.include_router(smart_fill_router)
+app.include_router(comfy_telemetry_router)
 
 import json as _json
 from fastapi.responses import JSONResponse

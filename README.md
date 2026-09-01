@@ -22,7 +22,8 @@ Nyx-Step is a single-page app that wraps ACE-Step's diffusion model with a full 
 | **Train** | LoRA training UI with real-time loss chart |
 | **History** | Browse, replay, and restore past generations |
 | **DAW** | Multi-track timeline arranger — clip placement, trim, loop, mix; byte-range streaming; waveform editor; MIDI tracks/piano roll; Hum→MIDI; FX session |
-| **GrooveLab** | Drum/Bass pattern tab — upload bounces to the DAW clip library |
+| **GrooveLab** | Built-in 16-step TR-808/TR-909 style drum machine (Web Audio synth, Web MIDI pads, BPM/swing) — bounce a pattern straight to a DAW clip; plus upload imported grooves to the DAW clip library |
+| **Comfy Status** | Live ComfyUI hardware telemetry — GPU util/temp/power, VRAM, RAM, CPU load, and the ComfyUI queue |
 | **MiniMax** | MiniMax Music3 engine selector (local song generation with vocals) |
 | **Video** | Text-to-video / image-to-video via ComfyUI (Wan2.1) |
 | **Library / Favorites** | Generated-clip library, favorites, collections |
@@ -30,7 +31,7 @@ Nyx-Step is a single-page app that wraps ACE-Step's diffusion model with a full 
 
 Additional features: LRC synchronized lyrics, per-file quality scores (0–10), LoRA browser, Ollama tag/lyrics assistant (model auto-discovery, prompt expansion, artist lookup), Brave Search artist lookup, prompt linter, offline genre database, `.nyx` preset manager. All generated audio files carry ID3 tags (BPM, key, genre, title, artist) written at creation time.
 
-> Note: GrooveLab surfaces its sequencer/drum front-end as an embedded iframe (`templates/tb303.html`) pointing at a separately-hosted app (`acid.<host>` / `localhost:7870`); that app's `/assets/*` bundle is not vendored in this repo — this repo's GrooveLab tab handles uploading/saving bounces to the DAW clip library.
+> Note: GrooveLab also surfaces an external TB-303 sequencer as an embedded iframe (`templates/tb303.html`) pointing at a separately-hosted app (`acid.<host>` / `localhost:7870`); that app's `/assets/*` bundle is not vendored in this repo. The 16-step drum machine described above is fully in-repo (`static/groovedrum.js`).
 
 ---
 
@@ -187,4 +188,6 @@ Key endpoints (non-exhaustive — see Swagger for the full list):
 | `GET`/`POST` | `/daw/projects` | DAW project CRUD |
 | `GET` | `/daw/library` / `/library/audio/{path}` | Clip library + byte-range streaming |
 | `POST` | `/groovelab/upload` | Upload a groove bounce to the library |
+| `GET` | `/api/comfy/status` | Live ComfyUI telemetry — GPU util/temp/power, VRAM, RAM, CPU load ✓ |
+| `GET` | `/api/comfy/queue` | ComfyUI running/pending prompt queue ✓ |
 | GET/POST/DELETE | `/presets` | `.nyx` preset manager |

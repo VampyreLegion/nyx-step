@@ -1864,7 +1864,7 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 4.5.4 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; August 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 4.6.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; September 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
       </div>
 
@@ -2443,6 +2443,34 @@
       <button id="groovelab-send" style="white-space:nowrap"> acid Send to DAW</button>
       <span id="groovelab-status" style="font-size:11px;color:var(--muted)"></span>
     </div>
+
+    <!-- 16-Step Drum Synthesizer -->
+    <div style="margin-top:12px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+        <span style="font-size:14px;font-weight:700;color:var(--accent)">DRUM MACHINE</span>
+        <span style="font-size:11px;color:var(--muted)">16-step TR-808 / TR-909 style synth — click steps to build a pattern</span>
+        <span style="margin-left:auto;display:flex;gap:12px;align-items:center;font-size:11px">
+          <label style="color:var(--text)"><input type="radio" name="grd-engine" id="grd-808" checked> TR-808</label>
+          <label style="color:var(--text)"><input type="radio" name="grd-engine" id="grd-909"> TR-909</label>
+        </span>
+      </div>
+
+      <div id="grd-step-grid" style="min-width:0"></div>
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px">
+        <button id="grd-play" style="white-space:nowrap">▶ Play</button>
+        <button id="grd-clear" style="white-space:nowrap">Clear</button>
+        <label style="font-size:12px;color:var(--text)">BPM
+          <input type="number" id="grd-bpm" value="120" min="40" max="300" style="width:64px;font-size:12px">
+        </label>
+        <label style="font-size:12px;color:var(--text)">Swing
+          <input type="number" id="grd-swing" value="0" min="0" max="0.5" step="0.05" style="width:64px;font-size:12px">
+        </label>
+        <button id="grd-bounce" style="white-space:nowrap">⇓ Bounce to DAW (WAV)</button>
+        <span id="grd-status" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div id="grd-midi-status" style="font-size:10px;color:var(--muted);margin-top:6px"></div>
+    </div>
     <div style="margin-top:8px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
       <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:4px">Quick Groove → Song</div>
       <div style="font-size:10px;color:var(--muted);margin-bottom:6px">Select a groove clip above, then click to auto-generate a full song matching its tempo and key.</div>
@@ -2783,6 +2811,7 @@
 <script src="/static/daw-session.js?v=1"></script>
 <script src="/static/daw.js?v=9"></script>
 <script src="/static/groovelab.js?v=1"></script>
+<script src="/static/groovedrum.js?v=1"></script>
 <script src="/static/arrangement.js?v=1"></script>
 <script src="/static/layers.js?v=1"></script>
 <script src="/static/call-response.js?v=1"></script>
