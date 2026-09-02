@@ -13,7 +13,6 @@ from core.comfyui import ComfyUIClient
 from core.executor import get_audio_pool, stream_upload
 from core.minimax_music3 import build_minimax_workflow
 from nyx_step import get_user_email, tracker
-from routes._helpers import submit_and_register
 
 router = APIRouter(prefix="/api/jam")
 
@@ -100,18 +99,27 @@ async def generate_backing(req: JamGenerateRequest, request: Request):
     if "error" in result:
         return JSONResponse({"error": result["error"]}, status_code=400)
 
+    send_result = _comfy.send_workflow(result["workflow"])
+    if "error" in send_result:
+        return JSONResponse(
+            {"error": "ComfyUI unreachable: " + send_result["error"]},
+            status_code=502,
+        )
+
+    prompt_id = send_result.get("prompt_id", "")
     safe_params = {
         k: v for k, v in state.items()
         if k not in ("lyrics", "negative_tags")
     }
-    return submit_and_register(
-        _comfy, user_email, result["workflow"], req.song_name,
+    tracker.register(
+        prompt_id, user_email, req.song_name,
         seed=result.get("seed", 0),
         caption=caption,
         lyrics=lyrics,
         params=safe_params,
-        upstream_error_status=502,
     )
+    q = tracker.get_queue_counts()
+    return {"prompt_id": prompt_id, "queue_position": q["pending"]}
 
 
 # ── MusicGen-melody local generation ────────────────────────────────────────

@@ -68,12 +68,84 @@ async def index(request: Request):
     return resp
 
 
-# Register routers — auto-discovered from the routes/ package so new feature
-# modules are picked up without editing this file.
-from routes import discover_routers
+# Register routers
+from routes.generate import router as gen_router
+from routes.queue import router as queue_router
+from routes.download import router as dl_router
+from routes.stems import router as stems_router
+from routes.ollama_routes import router as ollama_router
+from routes.presets import router as presets_router
+from routes.remix import router as remix_router
+from routes.history import router as history_router
+from routes.library import router as library_router
+from routes.jam import router as jam_router
+from routes.analyze import router as analyze_router
+from routes.train import router as train_router
+from routes.midi import router as midi_router
+from routes.lego import router as lego_router
+from routes.extract import router as extract_router
+from routes.radio import router as radio_router
+from routes.lrc import router as lrc_router
+from routes.quality import router as quality_router
+from routes.video import router as video_router
+from routes.daw import router as daw_router
+from routes.youtube import router as youtube_router
+from routes.groovelab import router as groovelab_router
+from routes.tag_library import router as tag_library_router
+from routes.templates_route import router as templates_router
+from routes.favorites import router as favorites_router
+from routes.versions import router as versions_router
+from routes.mood_arc import router as mood_arc_router
+from routes.auto_genre import router as auto_genre_router
+from routes.collections import router as collections_router
+from routes.arrangement import router as arrangement_router
+from routes.layers import router as layers_router
+from routes.call_response import router as call_response_router
+from routes.quick_remix import router as quick_remix_router
+from routes.batch import router as batch_router
+from routes.voice_prompt import router as voice_prompt_router
+from routes.groove_to_song import router as groove_to_song_router
+from routes.smart_fill import router as smart_fill_router
+from routes.comfy_telemetry import router as comfy_telemetry_router
 
-for _router in discover_routers():
-    app.include_router(_router)
+app.include_router(gen_router)
+app.include_router(queue_router)
+app.include_router(stems_router)
+app.include_router(ollama_router)
+app.include_router(dl_router)
+app.include_router(presets_router)
+app.include_router(remix_router)
+app.include_router(history_router)
+app.include_router(library_router)
+app.include_router(jam_router)
+app.include_router(analyze_router)
+app.include_router(train_router)
+app.include_router(midi_router)
+app.include_router(lego_router)
+app.include_router(extract_router)
+app.include_router(radio_router)
+app.include_router(lrc_router)
+app.include_router(quality_router)
+app.include_router(video_router)
+app.include_router(daw_router)
+app.include_router(youtube_router)
+app.include_router(groovelab_router)
+app.include_router(tag_library_router)
+app.include_router(templates_router)
+app.include_router(favorites_router)
+app.include_router(versions_router)
+app.include_router(mood_arc_router)
+app.include_router(auto_genre_router)
+app.include_router(collections_router)
+app.include_router(arrangement_router)
+app.include_router(layers_router)
+app.include_router(call_response_router)
+app.include_router(quick_remix_router)
+app.include_router(batch_router)
+app.include_router(voice_prompt_router)
+app.include_router(groove_to_song_router)
+app.include_router(smart_fill_router)
+app.include_router(comfy_telemetry_router)
 
 import json as _json
 from fastapi.responses import JSONResponse

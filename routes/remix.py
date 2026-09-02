@@ -10,8 +10,7 @@ from pydantic import BaseModel, Field
 import config
 from core.comfyui import ComfyUIClient
 from core.rate_limit import check as rate_check
-from nyx_step import get_user_email
-from routes._helpers import submit_and_register
+from nyx_step import tracker, get_user_email
 
 router = APIRouter()
 _client = ComfyUIClient()
@@ -83,10 +82,16 @@ async def remix(req: RemixRequest, request: Request):
     if "error" in result:
         return JSONResponse({"error": result["error"]}, status_code=400)
 
-    return submit_and_register(
-        _client, user_email, result["workflow"], req.song_name,
-        seed=result.get("seed", 0), caption=caption, lyrics=lyrics,
-    )
+    send_result = _client.send_workflow(result["workflow"])
+    if "error" in send_result:
+        return JSONResponse({"error": "ComfyUI unreachable: " + send_result["error"]}, status_code=400)
+
+    prompt_id = send_result.get("prompt_id", "")
+    tracker.register(prompt_id, user_email, req.song_name, seed=result.get("seed", 0),
+                     caption=caption, lyrics=lyrics)
+
+    q = tracker.get_queue_counts()
+    return {"prompt_id": prompt_id, "queue_position": q["pending"]}
 
 
 @router.post("/cover")
@@ -145,7 +150,12 @@ async def cover(
     if "error" in result:
         return JSONResponse({"error": result["error"]}, status_code=400)
 
-    return submit_and_register(
-        _client, user_email, result["workflow"], song_name,
-        seed=result.get("seed", 0), caption=tags.strip(), lyrics=lyrics,
-    )
+    send_result = _client.send_workflow(result["workflow"])
+    if "error" in send_result:
+        return JSONResponse({"error": "ComfyUI unreachable: " + send_result["error"]}, status_code=400)
+
+    prompt_id = send_result.get("prompt_id", "")
+    tracker.register(prompt_id, user_email, song_name, seed=result.get("seed", 0),
+                     caption=tags.strip(), lyrics=lyrics)
+    q = tracker.get_queue_counts()
+    return {"prompt_id": prompt_id, "queue_position": q["pending"]}

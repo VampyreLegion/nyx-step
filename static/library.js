@@ -82,7 +82,3 @@ function playLibraryFile(name, row) {
 document.getElementById("library-search")?.addEventListener("input", () => _renderLibrary());
 
 document.getElementById("btn-library-refresh")?.addEventListener("click", () => loadLibrary(true));
-
-// A finished job produces a new file — invalicate the cached library so the
-// next visit to the tab fetches fresh data. Avoids a full page reload.
-mwBus.on("job:done", () => { _libraryLoaded = false; });
