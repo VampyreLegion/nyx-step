@@ -13,7 +13,8 @@ import config
 from core.comfyui import ComfyUIClient
 from core.demucs import run_demucs
 from core.executor import get_audio_pool, stream_upload
-from nyx_step import tracker, get_user_email
+from nyx_step import get_user_email
+from routes._helpers import submit_and_register
 
 router = APIRouter(prefix="/stems")
 _client = ComfyUIClient()
@@ -49,13 +50,12 @@ async def stems_extract(
         if isinstance(node, dict) and node.get("class_type") == "LoadAudio":
             node.setdefault("inputs", {})["audio"] = filename
 
-    send_result = _client.send_workflow(workflow)
-    if "error" in send_result:
-        return JSONResponse({"error": send_result["error"]}, status_code=502)
-
-    prompt_id = send_result.get("prompt_id", "")
-    tracker.register(prompt_id, user_email, song_name, seed=result.get("seed", 0))
-    return {"prompt_id": prompt_id}
+    return submit_and_register(
+        _client, user_email, workflow, song_name,
+        seed=result.get("seed", 0),
+        upstream_error_status=502,
+        include_queue_position=False,
+    )
 
 
 @router.get("/audio-files")

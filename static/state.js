@@ -19,3 +19,25 @@ const mwState = {
   negative_tags: "",
   engine: "ace-step",
 };
+
+// ── Tiny event bus ────────────────────────────────────────────────────────────
+// Lets independent feature modules react to shared data changes (library
+// refresh, job completion, settings loaded) without poking each other's DOM.
+const mwBus = {
+  _handlers: {},
+  on(event, handler) {
+    (this._handlers[event] ||= []).push(handler);
+    return () => this.off(event, handler);
+  },
+  off(event, handler) {
+    const list = this._handlers[event];
+    if (!list) return;
+    const i = list.indexOf(handler);
+    if (i >= 0) list.splice(i, 1);
+  },
+  emit(event, payload) {
+    (this._handlers[event] || []).slice().forEach(h => {
+      try { h(payload); } catch (e) { console.error("mwBus handler error:", e); }
+    });
+  },
+};

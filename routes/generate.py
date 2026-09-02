@@ -13,6 +13,7 @@ from core.comfyui import ComfyUIClient
 from core.minimax_music3 import build_minimax_workflow
 from core.rate_limit import check as rate_check
 from nyx_step import tracker, get_user_email
+from routes._helpers import submit_and_register
 
 router = APIRouter()
 _client = ComfyUIClient()
@@ -140,17 +141,12 @@ async def generate(req: GenerateRequest, request: Request):
     if "error" in result:
         return JSONResponse({"error": result["error"]}, status_code=400)
 
-    send_result = _client.send_workflow(result["workflow"])
-    if "error" in send_result:
-        return JSONResponse({"error": "ComfyUI unreachable: " + send_result["error"]}, status_code=400)
-
-    prompt_id = send_result.get("prompt_id", "")
     safe_params = {k: v for k, v in state.items() if k not in ("lyrics", "tags")}
-    tracker.register(prompt_id, user_email, req.song_name, seed=result.get("seed", 0),
-                     caption=caption, lyrics=lyrics, params=safe_params)
-
-    q = tracker.get_queue_counts()
-    return {"prompt_id": prompt_id, "queue_position": q["pending"]}
+    return submit_and_register(
+        _client, user_email, result["workflow"], req.song_name,
+        seed=result.get("seed", 0), caption=caption, lyrics=lyrics,
+        params=safe_params,
+    )
 
 
 @router.get("/events")

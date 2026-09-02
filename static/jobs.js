@@ -109,6 +109,7 @@ function connectSSE() {
     addJobCard(data.prompt_id, data.song_name || "Song", "done", data.files);
     if (data.files && data.files.length) mwState.lastAudioFile = data.files[0];
     if (data.prompt_id === _activeGenPromptId) setGenProgress("done", "✓ Done — audio ready");
+    mwBus.emit("job:done", data);
     _sseRetryMs = 1000;
   });
   es.addEventListener("job_running", e => {

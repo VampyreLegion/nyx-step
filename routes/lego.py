@@ -8,7 +8,8 @@ from fastapi.responses import JSONResponse
 
 import config
 from core.comfyui import ComfyUIClient
-from nyx_step import tracker, get_user_email
+from nyx_step import get_user_email
+from routes._helpers import submit_and_register
 
 router = APIRouter()
 _client = ComfyUIClient()
@@ -62,15 +63,13 @@ async def lego_generate(
     if "error" in result:
         return JSONResponse({"error": result["error"]}, status_code=400)
 
-    send_result = _client.send_workflow(result["workflow"])
-    if "error" in send_result:
-        return JSONResponse({"error": send_result["error"]}, status_code=502)
-
-    prompt_id = send_result.get("prompt_id", "")
-    tracker.register(prompt_id, user_email, song_name, caption=tags, seed=result.get("seed", 0),
-                     params={"bpm": bpm, "key": key, "scale": scale, "steps": steps,
-                             "cfg_scale": cfg, "duration": duration})
-    return {"prompt_id": prompt_id}
+    return submit_and_register(
+        _client, user_email, result["workflow"], song_name,
+        seed=result.get("seed", 0), caption=tags,
+        upstream_error_status=502,
+        params={"bpm": bpm, "key": key, "scale": scale, "steps": steps,
+                "cfg_scale": cfg, "duration": duration},
+    )
 
 
 @router.post("/complete")
@@ -121,12 +120,10 @@ async def complete_generate(
     if "error" in result:
         return JSONResponse({"error": result["error"]}, status_code=400)
 
-    send_result = _client.send_workflow(result["workflow"])
-    if "error" in send_result:
-        return JSONResponse({"error": send_result["error"]}, status_code=502)
-
-    prompt_id = send_result.get("prompt_id", "")
-    tracker.register(prompt_id, user_email, song_name, caption=tags, seed=result.get("seed", 0),
-                     params={"bpm": bpm, "key": key, "scale": scale, "steps": steps,
-                             "cfg_scale": cfg, "duration": duration})
-    return {"prompt_id": prompt_id}
+    return submit_and_register(
+        _client, user_email, result["workflow"], song_name,
+        seed=result.get("seed", 0), caption=tags,
+        upstream_error_status=502,
+        params={"bpm": bpm, "key": key, "scale": scale, "steps": steps,
+                "cfg_scale": cfg, "duration": duration},
+    )

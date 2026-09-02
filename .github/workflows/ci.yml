@@ -16,11 +16,25 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - name: Install dependencies (demucs excluded — torch is too heavy for CI and is only shelled out at runtime)
         run: |
           sudo apt-get update && sudo apt-get install -y libsndfile1 ffmpeg
           grep -v "^demucs" requirements.txt > /tmp/ci-requirements.txt
           pip install -r /tmp/ci-requirements.txt
+          pip install ruff
+
+      - name: Lint — ruff (Python correctness: E9/F63/F7/F82)
+        run: ruff check .
+
+      - name: Lint — node --check (JS syntax in static/)
+        run: |
+          for f in static/*.js static/vendor/*.js; do
+            node --check "$f"
+          done
 
       - name: Run tests
         run: python -m pytest tests/ -q
