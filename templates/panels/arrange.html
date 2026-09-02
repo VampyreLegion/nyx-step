@@ -1,0 +1,142 @@
+  <div class="tab-panel" id="tab-arrange">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <span style="font-size:14px;font-weight:600;color:var(--accent)"> Arrange</span>
+      <span class="hint">Multi-section arrangements, layers, call-and-response, dynamics, transitions</span>
+    </div>
+
+    <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="secondary small arr-subtab active" onclick="showArrSubtab('arr-sections')">Sections</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-layers')">Layers</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-callresp')">Call &amp; Response</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-dynamics')">Dynamics</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-transitions')">Transitions</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-harmonies')">Harmonies</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-batch')">Batch</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-voice')">Voice Input</button>
+    </div>
+
+    <!-- Sections -->
+    <div class="arr-subpanel active" id="arr-sections" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <input id="arr-name" value="My Arrangement" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:600">
+        <button onclick="generateArrangement()" class="primary small">Generate All</button>
+        <span id="arr-status" class="hint"></span>
+      </div>
+      <div id="arrangement-timeline"></div>
+      <script>document.addEventListener('DOMContentLoaded', renderArrangement);</script>
+    </div>
+
+    <!-- Layers -->
+    <div class="arr-subpanel" id="arr-layers" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <button onclick="addLayer()" class="secondary small">+ Add Layer</button>
+        <button onclick="generateLayers()" class="primary small">Generate All Layers</button>
+        <span id="layers-status" class="hint"></span>
+      </div>
+      <div id="layers-panel"></div>
+    </div>
+
+    <!-- Call & Response -->
+    <div class="arr-subpanel" id="arr-callresp" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px">Call (first phrase)</div>
+          <textarea id="cr-call" rows="4" placeholder="Describe the call/melody..." style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;resize:vertical"></textarea>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:4px">Response (answer phrase)</div>
+          <textarea id="cr-response" rows="4" placeholder="Describe the response/answer..." style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;resize:vertical"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <label class="hint">Pattern:</label>
+        <select id="cr-interleave" style="font-size:11px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+          <option value="1:1">1:1 (equal)</option>
+          <option value="2:1">2:1 (call heavy)</option>
+          <option value="1:2">1:2 (response heavy)</option>
+          <option value="3:1">3:1</option>
+        </select>
+        <button onclick="generateCallResponse()" class="primary small">Generate Both</button>
+        <span id="cr-status" class="hint"></span>
+      </div>
+    </div>
+
+    <!-- Dynamics -->
+    <div class="arr-subpanel" id="arr-dynamics" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:11px;font-weight:700;color:var(--accent)">Intensity Curve</span>
+        <select onchange="loadDynPreset(this.value)" style="font-size:11px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+          <option value="">Presets...</option>
+          <option value="Build & Drop">Build & Drop</option>
+          <option value="Constant High">Constant High</option>
+          <option value="Wave">Wave</option>
+          <option value="Crescendo">Crescendo</option>
+          <option value="Decrescendo">Decrescendo</option>
+        </select>
+        <span style="font-size:10px;color:var(--muted)">Click canvas to add points</span>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden">
+        <canvas id="dyn-canvas" style="width:100%;height:140px;cursor:crosshair"></canvas>
+      </div>
+      <script>document.addEventListener('DOMContentLoaded', () => { renderDynamics(); initDynCanvas(); });</script>
+    </div>
+
+    <!-- Transitions -->
+    <div class="arr-subpanel" id="arr-transitions" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <label class="hint">Bar:</label>
+        <input id="trans-bar" type="number" value="8" min="1" max="512" style="width:60px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px">
+        <label class="hint">BPM:</label>
+        <input id="trans-bpm" type="number" value="120" min="40" max="300" style="width:60px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px">
+        <label class="hint">Key:</label>
+        <input id="trans-key" placeholder="e.g. Am" style="width:50px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px">
+        <select id="trans-type" style="font-size:11px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+          <option value="sudden">Sudden</option>
+          <option value="crossfade">Crossfade</option>
+          <option value="ramp">Ramp</option>
+        </select>
+        <button onclick="addTransition()" class="secondary small">+ Add</button>
+      </div>
+      <div id="trans-list"></div>
+    </div>
+
+    <!-- Harmonies -->
+    <div class="arr-subpanel" id="arr-harmonies" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:8px">Chord Progression Presets</div>
+      <div id="harmonies-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px"></div>
+      <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const el = document.getElementById('harmonies-grid');
+        if (!el || typeof CHORD_PROGRESSIONS === 'undefined') return;
+        el.innerHTML = Object.entries(CHORD_PROGRESSIONS).map(([name, tags]) =>
+          '<button onclick="injectChordTags(\'' + name.replace(/'/g, "\\'") + '\')" style="text-align:left;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;transition:border-color .15s" onmouseenter="this.style.borderColor=\'var(--accent)\'" onmouseleave="this.style.borderColor=\'var(--border)\'">' + name + '</button>'
+        ).join('');
+      });
+      </script>
+    </div>
+
+    <!-- Batch -->
+    <div class="arr-subpanel" id="arr-batch" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:700;color:var(--accent)">Batch Generation</span>
+        <label class="hint">Variants:</label>
+        <select id="batch-count" style="font-size:11px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+          <option value="2">2</option>
+          <option value="4" selected>4</option>
+          <option value="6">6</option>
+          <option value="8">8</option>
+        </select>
+        <button onclick="batchGenerate()" class="primary small">Generate Batch</button>
+        <span id="batch-status" class="hint"></span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">Generates multiple variants with different seeds from the current caption/tags for comparison.</div>
+    </div>
+
+    <!-- Voice Input -->
+    <div class="arr-subpanel" id="arr-voice" style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:none">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="voice-btn" onclick="if(_voiceMediaRecorder?.state==='recording'){stopVoiceRecording()}else{startVoiceRecording()}" class="secondary small">🎙 Record Voice Description</button>
+        <span id="voice-status" class="hint">Click to describe your song idea by voice</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">Speak a description like "upbeat acid house, 130 BPM, squelchy 303". The AI transcribes and converts to ACE style tags.</div>
+    </div>

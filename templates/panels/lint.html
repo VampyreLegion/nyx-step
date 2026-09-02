@@ -1,0 +1,28 @@
+  <div class="tab-panel" id="tab-lint">
+    <div class="panel-toolbar">
+      <button class="secondary small" onclick="openGuideSection('ch5')" title="Open Hidden Syntax guide">📖 Guide</button>
+    </div>
+    <div class="inner-tabs">
+      <button class="inner-tab-btn active" data-inner="lint-state">Current State</button>
+      <button class="inner-tab-btn" data-inner="lint-paste">Paste</button>
+    </div>
+    <div class="inner-panel active" id="lint-state">
+      <div class="preview-box" id="lint-state-preview" style="margin-bottom:10px">(build prompt first)</div>
+      <button id="btn-lint-state">Lint Current State</button>
+    </div>
+    <div class="inner-panel" id="lint-paste">
+      <div class="field-group">
+        <label>Tags</label>
+        <input type="text" id="lint-tags" placeholder="ambient, slow, guitar, melodic">
+      </div>
+      <div class="field-group">
+        <label>Lyrics</label>
+        <textarea id="lint-lyrics" style="min-height:80px" placeholder="[Verse]&#10;..."></textarea>
+      </div>
+      <button id="btn-lint-paste">Lint</button>
+    </div>
+    <div id="lint-results" style="margin-top:14px"></div>
+    <div id="lint-fix-wrap" style="display:none;margin-top:10px">
+      <button class="success small" id="btn-lint-fix">🔧 Fix It</button>
+      <span style="font-size:11px;color:var(--muted);margin-left:8px">Auto-applies safe fixes to tags and lyrics</span>
+    </div>

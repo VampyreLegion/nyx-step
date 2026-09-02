@@ -1,0 +1,38 @@
+<!-- Preset modal -->
+<div id="preset-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;width:360px;max-height:80vh;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="color:var(--accent);font-weight:600;font-size:14px">📂 Saved Presets</span>
+      <button class="secondary small" id="btn-preset-modal-close">✕</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="preset-name-input" placeholder="Preset name…" style="flex:1;font-size:12px">
+      <button class="small" id="btn-preset-save-named">💾 Save</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="secondary small" id="btn-preset-export-current" title="Download the current state as a .nyx file" style="font-size:11px">⬇ Export .nyx</button>
+      <label class="secondary small" style="cursor:pointer;font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;display:inline-block" title="Import a .nyx preset file from disk">
+        ⬆ Import .nyx
+        <input type="file" id="preset-import-file" accept=".nyx,.json" style="display:none">
+      </label>
+    </div>
+    <div id="preset-list" style="overflow-y:auto;flex:1;border:1px solid var(--border);border-radius:6px;min-height:120px;padding:4px"></div>
+    <div id="preset-modal-status" style="font-size:11px;color:var(--muted);min-height:16px"></div>
+  </div>
+</div>
+
+<!-- Tag Library modal -->
+<div id="tag-library-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;width:420px;max-height:80vh;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="color:var(--accent);font-weight:600;font-size:14px">📚 Tag Library</span>
+      <button class="secondary small" id="btn-tag-library-close">✕</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="tag-library-name-input" placeholder="Name this combo… e.g. Dark Psy Night" style="flex:1;font-size:12px">
+      <button class="small" id="btn-tag-library-save" title="Save the current Tags field as a reusable combo">💾 Save current tags</button>
+    </div>
+    <div id="tag-library-list" style="overflow-y:auto;flex:1;border:1px solid var(--border);border-radius:6px;min-height:120px;padding:4px"></div>
+    <div id="tag-library-status" style="font-size:11px;color:var(--muted);min-height:16px"></div>
+  </div>
+</div>

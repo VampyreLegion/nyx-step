@@ -1,0 +1,83 @@
+<!--
+  Script load order matters — earlier files define globals later files rely on.
+  Groups:
+    1. CORE   — shared state, utils, bindings, tabs
+    2. FEAT   — per-feature logic for generation/analysis tabs
+    3. DAW    — multi-track arranger (has its own load-order chain)
+    4. ARRANGE— arrangement builder helpers
+    5. INIT   — bootstrap must run last
+-->
+<!-- ============ 1. CORE ============ -->
+<script src="/static/wavesurfer.min.js"></script>
+<script src="/static/state.js?v=13"></script>
+<script src="/static/utils.js?v=5"></script>
+<script src="/static/bindings.js?v=13"></script>
+<script src="/static/genres.js?v=2"></script>
+<script src="/static/chips.js?v=1"></script>
+<script src="/static/tags.js?v=1"></script>
+<script src="/static/presets.js?v=6"></script>
+<script src="/static/compare.js?v=1"></script>
+<script src="/static/jobs.js?v=18"></script>
+<script src="/static/tabs.js?v=4"></script>
+<script src="/static/dropzone.js?v=1"></script>
+<script src="/static/song-templates.js?v=1"></script>
+<script src="/static/tag-library.js?v=1"></script>
+<script src="/static/favorites.js?v=1"></script>
+
+<!-- ============ 2. FEATURES ============ -->
+<script src="/static/easy.js?v=3"></script>
+<script src="/static/analyze.js?v=5"></script>
+<script src="/static/voice.js?v=1"></script>
+<script src="/static/quick.js?v=3"></script>
+<script src="/static/lint.js?v=2"></script>
+<script src="/static/stems.js?v=2"></script>
+<script src="/static/cover.js?v=1"></script>
+<script src="/static/ytcover.js?v=2"></script>
+<script src="/static/lego.js?v=1"></script>
+<script src="/static/extract.js?v=1"></script>
+<script src="/static/radio.js?v=7"></script>
+<script src="/static/train.js?v=2"></script>
+<script src="/static/midi.js?v=1"></script>
+<script src="/static/history.js?v=6"></script>
+<script src="/static/library.js?v=2"></script>
+<script src="/static/jam.js?v=1"></script>
+<script src="/static/video.js?v=2"></script>
+<script src="/static/batch.js?v=1"></script>
+<script src="/static/voice-prompt.js?v=1"></script>
+<script src="/static/quick-remix.js?v=1"></script>
+<script src="/static/auto-genre.js?v=1"></script>
+<script src="/static/groove-to-song.js?v=1"></script>
+
+<!-- ============ 3. DAW ============ -->
+<script src="/static/daw-project.js?v=11"></script>
+<script src="/static/vendor/soundtouch.js"></script>
+<script src="/static/daw-engine.js?v=11"></script>
+<script src="/static/daw-midi.js?v=2"></script>
+<script src="/static/daw-record.js?v=4"></script>
+<script src="/static/daw-p2m.js?v=3"></script>
+<script src="/static/daw-pianoroll.js?v=1"></script>
+<script src="/static/daw-stretch.js?v=1"></script>
+<script src="/static/daw-library.js?v=2"></script>
+<script src="/static/daw-timeline.js?v=10"></script>
+<script src="/static/daw-mixer.js?v=3"></script>
+<script src="/static/daw-waveedit.js?v=5"></script>
+<script src="/static/daw-export.js?v=4"></script>
+<script src="/static/daw-ai.js?v=4"></script>
+<script src="/static/daw-session.js?v=1"></script>
+<script src="/static/daw.js?v=9"></script>
+
+<!-- ============ 4. ARRANGE / GROOVE ============ -->
+<script src="/static/groovelab.js?v=1"></script>
+<script src="/static/groovedrum.js?v=1"></script>
+<script src="/static/arrangement.js?v=1"></script>
+<script src="/static/layers.js?v=1"></script>
+<script src="/static/call-response.js?v=1"></script>
+<script src="/static/dynamics.js?v=1"></script>
+<script src="/static/transitions.js?v=1"></script>
+<script src="/static/harmonies.js?v=1"></script>
+<script src="/static/smart-fill.js?v=1"></script>
+
+<!-- ============ 5. INIT (bootstrap) ============ -->
+<script src="/static/init.js?v=4"></script>
+</body>
+</html>

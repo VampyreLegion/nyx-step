@@ -1,0 +1,37 @@
+  <div class="tab-panel" id="tab-sampler">
+    <div class="panel-toolbar">
+      <button class="secondary small" onclick="openGuideSection('sampler')" title="Open Sampler &amp; Scheduler guide">📖 Guide</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 14px">Controls how Nyx-Step's diffusion process moves from noise to music. Different combinations produce different sonic character even with identical prompts.</p>
+    <div style="padding:10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px">Sampler &amp; Scheduler</div>
+      <div class="row" style="gap:12px">
+        <div class="field-group">
+          <label style="font-size:12px" title="Diffusion sampler. er_sde is the Nyx-Step sweet spot — smooth, musical, low artifacts. Euler/Euler Ancestral are standard KSampler options.">Sampler ⓘ</label>
+          <select id="param-sampler" title="er_sde recommended for Nyx-Step">
+            <option value="er_sde">er_sde (recommended)</option>
+            <option value="euler">Euler</option>
+            <option value="euler_ancestral">Euler Ancestral</option>
+            <option value="dpm_2">DPM 2</option>
+            <option value="dpm_2_ancestral">DPM 2 Ancestral</option>
+            <option value="dpmpp_2m">DPM++ 2M</option>
+            <option value="dpmpp_sde">DPM++ SDE</option>
+            <option value="lcm">LCM</option>
+            <option value="heun">Heun</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label style="font-size:12px" title="Noise schedule. linear_quadratic is the Nyx-Step sweet spot — better pitch stability and tonal clarity. Karras is also popular for quality.">Scheduler ⓘ</label>
+          <select id="param-scheduler" title="linear_quadratic recommended for Nyx-Step">
+            <option value="linear_quadratic">Linear Quadratic (recommended)</option>
+            <option value="linear">Linear</option>
+            <option value="karras">Karras</option>
+            <option value="exponential">Exponential</option>
+            <option value="sgm_uniform">SGM Uniform</option>
+            <option value="simple">Simple</option>
+            <option value="ddim_uniform">DDIM Uniform</option>
+            <option value="beta">Beta</option>
+          </select>
+        </div>
+      </div>
+    </div>
