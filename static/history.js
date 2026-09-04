@@ -146,38 +146,75 @@ function _renderHistory(query) {
 
 function _loadHistoryRecord(r) {
   const p = r.params || {};
-  if (r.caption) document.getElementById("overview-tags").value = r.caption;
-  if (r.caption) {
-    // Try to sync tags back — just update mwState.genre etc loosely
-    document.getElementById("overview-tags").value = r.caption;
-  }
-  if (r.lyrics !== undefined) {
-    mwState.lyrics = r.lyrics;
-    document.getElementById("overview-lyrics").value = r.lyrics;
-    document.getElementById("lyrics-editor").value = r.lyrics;
-  }
-  if (p.bpm)         { mwState.bpm = p.bpm;               document.getElementById("style-bpm").value = p.bpm; }
-  if (p.key)         { mwState.key = p.key;               document.getElementById("style-key").value = p.key; }
-  if (p.scale)       { mwState.scale = p.scale;           document.getElementById("style-scale").value = p.scale; }
-  if (p.mode !== undefined) { mwState.mode = p.mode;      document.getElementById("style-mode").value = p.mode; }
-  if (p.time_sig)    { mwState.time_sig = p.time_sig;     document.getElementById("style-timesig").value = p.time_sig; }
-  if (p.steps)       { mwState.steps = p.steps;           document.getElementById("param-steps").value = p.steps; }
-  if (p.cfg_scale)   { mwState.cfg_scale = p.cfg_scale;   document.getElementById("param-cfg").value = p.cfg_scale; }
-  if (p.duration)    { mwState.duration = p.duration;     document.getElementById("param-duration").value = p.duration; }
-  if (p.temperature) { mwState.temperature = p.temperature; document.getElementById("param-temp").value = p.temperature; }
-  if (p.top_p !== undefined) { mwState.top_p = p.top_p;  document.getElementById("param-topp").value = p.top_p; }
-  if (p.top_k !== undefined) { mwState.top_k = p.top_k;  document.getElementById("param-topk").value = p.top_k; }
-  if (p.min_p !== undefined) { mwState.min_p = p.min_p;  document.getElementById("param-minp").value = p.min_p; }
+
+  // Restore the full generation state so the Generate/Style/Instruments/Vocals
+  // tabs reflect the selected track. Mirrors _applyPreset in presets.js.
+  const _m = (k, v) => { if (v !== undefined && v !== null) mwState[k] = v; };
+  _m("genre",       p.genre);
+  _m("bpm",         p.bpm);
+  _m("key",         p.key);
+  _m("scale",       p.scale);
+  _m("mode",        p.mode);
+  _m("time_sig",    p.time_sig);
+  _m("chords",      p.chords);
+  _m("notes",       p.notes);
+  _m("instruments", p.instruments ? [...p.instruments] : undefined);
+  _m("vocal_tags",  p.vocal_tags  ? [...p.vocal_tags]  : undefined);
+  _m("steps",       p.steps);
+  _m("cfg_scale",   p.cfg_scale);
+  _m("duration",    p.duration);
+  _m("temperature", p.temperature);
+  _m("top_p",       p.top_p);
+  _m("top_k",       p.top_k);
+  _m("min_p",       p.min_p);
+  _m("negative_tags", p.negative_tags);
+
   if (r.seed) {
-    mwState.seed = r.seed; mwState.lock_seed = true;
-    document.getElementById("param-seed").value = r.seed;
-    document.getElementById("param-lock-seed").checked = true;
+    _m("seed", r.seed);
+    mwState.lock_seed = true;
+  } else if (p.seed) {
+    _m("seed", p.seed);
+    _m("lock_seed", p.lock_seed ?? false);
   }
-  if (p.song_name)   document.getElementById("song-name").value = p.song_name;
+  if (r.lyrics !== undefined) _m("lyrics", r.lyrics);
+
+  const _set = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) el.value = v; };
+  _set("style-bpm",     mwState.bpm);
+  _set("style-key",     mwState.key);
+  _set("style-scale",   mwState.scale);
+  _set("style-mode",    mwState.mode);
+  _set("style-timesig", mwState.time_sig);
+  _set("style-chords",  mwState.chords);
+  _set("style-notes",   mwState.notes);
+  _set("param-steps",    mwState.steps);
+  _set("param-cfg",      mwState.cfg_scale);
+  _set("param-duration", mwState.duration);
+  _set("param-temp",     mwState.temperature);
+  _set("param-topp",     mwState.top_p);
+  _set("param-topk",     mwState.top_k);
+  _set("param-minp",     mwState.min_p);
+  _set("param-seed",     mwState.seed);
+  _set("param-negative-tags", mwState.negative_tags);
+  const lockEl = document.getElementById("param-lock-seed");
+  if (lockEl) lockEl.checked = mwState.lock_seed;
+
+  _set("song-name",       p.song_name || r.song_name);
+  _set("overview-tags",   r.caption ?? "");
+  _set("overview-lyrics", mwState.lyrics);
+  _set("lyrics-editor",   mwState.lyrics);
+
+  if (typeof _syncInstrumentChips === "function") _syncInstrumentChips();
+  const instrDisplay = document.getElementById("instrument-selected");
+  if (instrDisplay) instrDisplay.value = mwState.instruments.join(", ");
+  if (typeof _syncVocalChips === "function") _syncVocalChips();
+  const vocalDisplay = document.getElementById("vocal-selected");
+  if (vocalDisplay) vocalDisplay.value = mwState.vocal_tags.join(", ");
+
   updateTagTokenCount();
   updatePayloadPreview();
   // Switch to overview tab so user sees what was loaded
-  document.querySelector('[data-tab="overview"]').click();
+  const overviewBtn = document.querySelector('[data-tab="overview"]');
+  if (overviewBtn) overviewBtn.click();
 }
 
 document.getElementById("history-search").addEventListener("input", e => {
