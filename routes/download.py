@@ -80,10 +80,26 @@ async def meta(filename: str, request: Request):
 
 
 def safe_output_path(filename: str) -> Path | None:
-    """Resolve filename inside COMFYUI_OUTPUT_DIR, rejecting traversal outside it."""
+    """Resolve filename inside the ComfyUI output dir, rejecting traversal outside it.
+
+    Most workflows write to config.COMFYUI_OUTPUT_DIR (output/audio/) and are
+    stored by bare filename. Some (ACE-Step lego/complete) write to
+    output/<subdir>/<file>; fall back to searching the output root's immediate
+    subfolders so those download too.
+    """
     base = config.COMFYUI_OUTPUT_DIR.resolve()
-    resolved = (base / filename).resolve()
-    return resolved if resolved.is_relative_to(base) else None
+    direct = (base / filename).resolve()
+    if direct.is_relative_to(base) and direct.is_file():
+        return direct
+    root = base.parent.resolve()
+    name = Path(filename).name
+    for sub in root.iterdir():
+        if not sub.is_dir():
+            continue
+        cand = (sub / name).resolve()
+        if cand.is_relative_to(root) and cand.is_file():
+            return cand
+    return None
 
 
 # Backwards-compatible alias (existing internal callers)
