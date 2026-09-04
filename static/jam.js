@@ -262,6 +262,77 @@ function _jamCopyLyricsToMinimax() {
   showToast("Lyrics copied to MiniMax", "success");
 }
 
+// ── ACE-Step Complete — keep the uploaded instrumental, add vocals ───────────
+function _jamCompleteCaption() {
+  // Derive a caption from the Jam's analysis + any text in the MiniMax caption
+  // or the AI lyrics block value.
+  const mmCaption = document.getElementById("jam-mm-caption").value.trim();
+  const aiCaption  = document.getElementById("jam-complete-caption").value.trim();
+  const base = aiCaption || mmCaption;
+  if (base) return base;
+  const a = _jamState.analysis || {};
+  const parts = [];
+  if (a.bpm) parts.push(a.bpm + " BPM");
+  if (a.key) parts.push(a.key + (a.scale ? " " + a.scale : ""));
+  if (a.chords) parts.push(a.chords);
+  if (a.duration) parts.push(a.duration + "s");
+  return parts.join(", ");
+}
+
+async function jamComplete() {
+  const status = document.getElementById("jam-complete-status");
+  const btn = document.getElementById("jam-complete-btn");
+  if (!_jamState.uploaded || !_jamState.filename) {
+    status.textContent = "Upload a jam file first (step 1).";
+    status.style.color = "var(--error)";
+    return;
+  }
+  const lyrics = (document.getElementById("jam-lyrics-preview").value || document.getElementById("jam-mm-lyrics").value || "").trim();
+  if (!lyrics) {
+    status.textContent = "Use the AI step to write lyrics first, then click Complete.";
+    status.style.color = "var(--error)";
+    return;
+  }
+  const body = {
+    jam_filename: _jamState.filename,
+    caption: _jamCompleteCaption(),
+    lyrics,
+    song_name: document.getElementById("jam-song-name").value.trim() || "Jam Song",
+    denoise: parseFloat(document.getElementById("jam-complete-denoise").value) || 0.8,
+    steps: parseInt(document.getElementById("jam-complete-steps").value) || 20,
+    cfg: parseFloat(document.getElementById("jam-complete-cfg").value) || 2.0,
+    duration: parseFloat(document.getElementById("jam-complete-duration").value) || 30,
+    seed: parseInt(document.getElementById("jam-complete-seed").value) || 0,
+    bpm: parseInt(document.getElementById("jam-bpm").value) || 120,
+    key: document.getElementById("jam-key").value || "C",
+    scale: document.getElementById("jam-scale").value || "Major",
+  };
+  btn.disabled = true; btn.textContent = "Submitting…";
+  status.textContent = "Submitting ACE-Step Complete (keeps your instrumental)…";
+  status.style.color = "var(--muted)";
+  try {
+    const r = await fetch("/api/jam/complete", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body),
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      status.textContent = "Error: " + (data.error || "unknown");
+      status.style.color = "var(--error)";
+      return;
+    }
+    status.textContent = "Queued — job " + (data.prompt_id || "").substring(0, 8) + " (position " + data.queue_position + "). Check History to download the vocal version.";
+    status.style.color = "var(--accent2)";
+    showToast("Vocal version queued!", "success");
+  } catch (e) {
+    status.textContent = "Error: " + e.message;
+    status.style.color = "var(--error)";
+  } finally {
+    btn.disabled = false; btn.textContent = "🎼 Generate Song (Vocals on My Instrumental)";
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   _checkMusicGenStatus();
   document.getElementById("jam-file-input")?.addEventListener("change", jamUpload);
@@ -277,6 +348,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const st = document.getElementById("jam-lyrics-status");
     if (st) st.textContent = "Cleared. Add a theme or click a Write Lyrics button.";
   });
+  document.getElementById("jam-complete-btn")?.addEventListener("click", jamComplete);
   const aiBtn = document.getElementById("jam-lyrics-auto-btn");
   const thBtn = document.getElementById("jam-lyrics-theme-btn");
   if (aiBtn) aiBtn.dataset.idle = aiBtn.textContent;
