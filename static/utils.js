@@ -76,7 +76,7 @@ function esc(s) {
 const _debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
 function statusLabel(s) {
-  return {queued: "⏳ Queued", running: "⚙ Running…", done: "✅ Done", error: "❌ Error"}[s] || s;
+  return {queued: "⏳ Queued", running: "⚙ Running…", mixing: "🎙 Mixing vocals…", done: "✅ Done", error: "❌ Error"}[s] || s;
 }
 
 function buildCaption() {

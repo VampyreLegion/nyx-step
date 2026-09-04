@@ -179,3 +179,60 @@ def test_infer_tags_handles_garbage():
     with patch("core.ollama._post_with_retry", return_value=fake):
         result = infer_tags({"bpm": 110})
     assert "error" in result
+
+
+# ── Vocal-mixdown post-processing routing ────────────────────────────────────
+
+def test_needs_vocalize_flag():
+    from core.job_tracker import JobTracker, JobInfo
+    plain = JobInfo(prompt_id="a", user_email="u@x", song_name="S", params={"engine": "ace_step_complete"})
+    vocal = JobInfo(prompt_id="b", user_email="u@x", song_name="S", params={"engine": "jam_vocals"})
+    done_vocal = JobInfo(prompt_id="c", user_email="u@x", song_name="S",
+                         params={"engine": "jam_vocals", "vocalized": True})
+    assert JobTracker._needs_vocalize(vocal) is True
+    assert JobTracker._needs_vocalize(plain) is False
+    assert JobTracker._needs_vocalize(done_vocal) is False
+
+
+def test_start_vocalize_marks_param_and_drops_from_active():
+    from core.job_tracker import JobTracker
+    from datetime import datetime
+    tracker = JobTracker.__new__(JobTracker)
+    tracker.register("vpid", "u@x", "Song", params={"engine": "jam_vocals", "jam_filename": "tmp.mp3"})
+    tracker._start_vocalize("vpid", ["lego_00009.mp3"])
+    job = tracker.get("vpid")
+    assert job.status == "mixing"
+    assert job.params.get("vocalized") is True
+    assert job.output_files == ["lego_00009.mp3"]
+    active = [j.prompt_id for j in tracker.get_all_jobs() if j.status in ("queued", "running")]
+    assert "vpid" not in active
+
+
+def test_postprocess_vocalize_missing_jam():
+    from core import vocalmix
+    try:
+        vocalmix.postprocess_vocalize_job(
+            params={"jam_filename": "nope-nowhere.mp3"},
+            output_files=["lego_00009.mp3"],
+        )
+        assert False, "expected FileNotFoundError"
+    except FileNotFoundError as exc:
+        assert "nope-nowhere.mp3" in str(exc)
+
+
+def test_postprocess_vocalize_no_output():
+    from core import vocalmix
+    # The jam must exist for the empty-output check to be reached.
+    jam = vocalmix.JAM_DIR / "exists_tmp.mp3"
+    jam.parent.mkdir(parents=True, exist_ok=True)
+    jam.write_bytes(b"fake")
+    try:
+        try:
+            vocalmix.postprocess_vocalize_job(
+                params={"jam_filename": jam.name}, output_files=[]
+            )
+            assert False, "expected ValueError"
+        except ValueError as exc:
+            assert "No lego output files" in str(exc)
+    finally:
+        jam.unlink(missing_ok=True)

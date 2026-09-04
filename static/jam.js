@@ -262,7 +262,7 @@ function _jamCopyLyricsToMinimax() {
   showToast("Lyrics copied to MiniMax", "success");
 }
 
-// ── ACE-Step Complete — keep the uploaded instrumental, add vocals ───────────
+// ── Add Lyrics — vocals mixed over the SAME instrumental ─────────────────────
 function _jamCompleteCaption() {
   // Derive a caption from the Jam's analysis + any text in the MiniMax caption
   // or the AI lyrics block value.
@@ -289,7 +289,7 @@ async function jamComplete() {
   }
   const lyrics = (document.getElementById("jam-lyrics-preview").value || document.getElementById("jam-mm-lyrics").value || "").trim();
   if (!lyrics) {
-    status.textContent = "Use the AI step to write lyrics first, then click Complete.";
+    status.textContent = "Use the AI step to write lyrics first, then click Add Lyrics.";
     status.style.color = "var(--error)";
     return;
   }
@@ -298,7 +298,7 @@ async function jamComplete() {
     caption: _jamCompleteCaption(),
     lyrics,
     song_name: document.getElementById("jam-song-name").value.trim() || "Jam Song",
-    denoise: parseFloat(document.getElementById("jam-complete-denoise").value) || 0.8,
+    denoise: parseFloat(document.getElementById("jam-complete-denoise").value) || 0.75,
     steps: parseInt(document.getElementById("jam-complete-steps").value) || 20,
     cfg: parseFloat(document.getElementById("jam-complete-cfg").value) || 2.0,
     duration: parseFloat(document.getElementById("jam-complete-duration").value) || 30,
@@ -308,10 +308,10 @@ async function jamComplete() {
     scale: document.getElementById("jam-scale").value || "Major",
   };
   btn.disabled = true; btn.textContent = "Submitting…";
-  status.textContent = "Submitting ACE-Step Complete (keeps your instrumental)…";
+  status.textContent = "Submitting — vocals will be mixed onto your ORIGINAL track…";
   status.style.color = "var(--muted)";
   try {
-    const r = await fetch("/api/jam/complete", {
+    const r = await fetch("/api/jam/vocalize", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(body),
@@ -322,14 +322,14 @@ async function jamComplete() {
       status.style.color = "var(--error)";
       return;
     }
-    status.textContent = "Queued — job " + (data.prompt_id || "").substring(0, 8) + " (position " + data.queue_position + "). Check History to download the vocal version.";
+    status.textContent = "Vocals queued — your song stays as-is; AI vocals are generated (~1–2 min), then mixed over your instrumental. Check History to download.";
     status.style.color = "var(--accent2)";
-    showToast("Vocal version queued!", "success");
+    showToast("Lyrics queued onto your song", "success");
   } catch (e) {
     status.textContent = "Error: " + e.message;
     status.style.color = "var(--error)";
   } finally {
-    btn.disabled = false; btn.textContent = "🎼 Generate Song (Vocals on My Instrumental)";
+    btn.disabled = false; btn.textContent = "🎙️ Add Lyrics to My Song";
   }
 }
 

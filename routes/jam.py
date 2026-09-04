@@ -186,6 +186,84 @@ async def jam_complete(req: JamCompleteRequest, request: Request):
     )
 
 
+# ── Vocals-only mixdown — keep the original jam, add lyrics on top ──────────
+
+class JamVocalizeRequest(BaseModel):
+    jam_filename: str
+    caption: str = "instrumental backing"
+    lyrics: str = ""
+    song_name: str = "Jam Song"
+    denoise: float = Field(default=0.8, ge=0.1, le=0.95)
+    steps: int = Field(default=20, ge=1, le=150)
+    cfg: float = Field(default=2.0, ge=0.1, le=20.0)
+    duration: float = Field(default=30.0, ge=5.0, le=120.0)
+    seed: int = Field(default=0, ge=0, le=4294967295)
+    bpm: int = Field(default=120, ge=40, le=300)
+    key: str = "C"
+    scale: str = "Major"
+    audio_format: str = "mp3"
+    audio_quality: str = "V0"
+    dit_model: str = "sft"
+    sampler_name: str = "er_sde"
+    scheduler: str = "linear_quadratic"
+    temperature: float = Field(default=0.85, ge=0.0, le=2.0)
+    top_p: float = Field(default=0.9, ge=0.0, le=1.0)
+    top_k: int = Field(default=0, ge=0, le=1000)
+    min_p: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+@router.post("/vocalize")
+async def jam_vocalize(req: JamVocalizeRequest, request: Request):
+    """Add AI lyrics on top of the SAME instrumental.
+
+    Queues an ACE-Step lego job conditioned on the jam (harvests the sung
+    vocals), then post-processes: Demucs-isolates the vocal stem and ffmpeg
+    mixes it over the ORIGINAL uploaded instrumental — the song itself is not
+    regenerated or replaced.
+    """
+    user_email = get_user_email(request)
+
+    jam_path = JAM_DIR / req.jam_filename
+    if not jam_path.exists():
+        return JSONResponse(
+            {"error": "Jam file not found on server — please upload it again (step 1)"},
+            status_code=404,
+        )
+
+    caption = req.caption.strip() or "instrumental backing"
+    lyrics = req.lyrics.strip()
+    if not lyrics:
+        return JSONResponse(
+            {"error": "No lyrics to sing — generate them with the AI step first."},
+            status_code=400,
+        )
+
+    input_name = _comfy.copy_to_input(jam_path)
+    state = {
+        "bpm": req.bpm, "key": req.key, "scale": req.scale,
+        "steps": req.steps, "cfg_scale": req.cfg, "duration": float(req.duration),
+        "seed": req.seed, "lock_seed": req.seed != 0,
+        "audio_format": req.audio_format, "audio_quality": req.audio_quality,
+        "dit_model": req.dit_model, "sampler_name": req.sampler_name,
+        "scheduler": req.scheduler, "temperature": req.temperature,
+        "top_p": req.top_p, "top_k": req.top_k, "min_p": req.min_p,
+        "generate_audio_codes": True,
+    }
+    result = _comfy.build_lego_workflow(input_name, caption, lyrics, state, req.denoise)
+    if "error" in result:
+        return JSONResponse({"error": result["error"]}, status_code=400)
+
+    return submit_and_register(
+        _comfy, user_email, result["workflow"], req.song_name,
+        seed=result.get("seed", 0), caption=caption, lyrics=lyrics,
+        upstream_error_status=502,
+        params={"bpm": req.bpm, "key": req.key, "scale": req.scale,
+                "steps": req.steps, "cfg_scale": req.cfg, "duration": req.duration,
+                "denoise": req.denoise, "jam_filename": req.jam_filename,
+                "engine": "jam_vocals"},
+    )
+
+
 # ── MusicGen-melody local generation ────────────────────────────────────────
 
 class MusicGenRequest(BaseModel):

@@ -8,6 +8,7 @@ import config
 import core.db as db
 from core.comfyui import ComfyUIClient
 from core.tagger import tag_file
+from core import vocalmix
 
 _JOB_TTL_DAYS = 7
 _PURGE_INTERVAL = 6 * 3600  # purge every 6 hours
@@ -32,7 +33,7 @@ class JobInfo:
 
 def _tag_output_files(job: JobInfo) -> None:
     """Tag generated audio files in-place with job metadata."""
-    output_dir = config.COMFYUI_OUTPUT_DIR / "audio"
+    output_dir = config.COMFYUI_OUTPUT_DIR
     meta = {
         "song_name": job.song_name,
         "caption": job.caption,
@@ -180,6 +181,9 @@ class JobTracker:
                     if not files:
                         files = self._client.find_cached_output_files(history, pid)
                     if files:
+                        if self._needs_vocalize(job):
+                            self._start_vocalize(pid, files)
+                            continue
                         self.update(pid, status="done", output_files=files)
                         completed = self.get(pid)
                         if completed:
@@ -192,3 +196,39 @@ class JobTracker:
                     age_min = (time.time() - submitted) / 60
                     if age_min > 30:
                         self.update(pid, status="error", error_msg="Stale — removed from ComfyUI with no output")
+
+    # ── Vocal mixdown post-processing ──────────────────────────────────────
+    @staticmethod
+    def _needs_vocalize(job: JobInfo) -> bool:
+        return ((job.params or {}).get("engine") == "jam_vocals"
+                and not (job.params or {}).get("vocalized"))
+
+    def _start_vocalize(self, pid: str, files: list[str]):
+        """Mark job as running the mixdown and kick it off on a background thread."""
+        job = self.get(pid)
+        if not job:
+            return
+        params = dict(job.params or {})
+        params["vocalized"] = True
+        self.update(pid, status="mixing", params=params,
+                    output_files=files, error_msg="Mixing vocals onto your instrumental…")
+        threading.Thread(target=self._run_vocalize, args=(pid, files), daemon=True).start()
+
+    def _run_vocalize(self, pid: str, files: list[str]):
+        job = self.get(pid)
+        if not job:
+            return
+        try:
+            final = vocalmix.postprocess_vocalize_job(
+                params=job.params or {},
+                output_files=files,
+                song_name=job.song_name,
+            )
+            self.update(pid, status="done", output_files=[final], error_msg="")
+            completed = self.get(pid)
+            if completed:
+                self._write_history(completed)
+                _tag_output_files(completed)
+        except Exception as exc:
+            logger.warning("Vocal mixdown failed for %s: %s", pid, exc)
+            self.update(pid, status="error", error_msg=f"Vocal mixdown failed: {exc}")
