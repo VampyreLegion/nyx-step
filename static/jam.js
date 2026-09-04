@@ -24,6 +24,9 @@ async function jamUpload() {
     document.getElementById("jam-scale").value = a.scale || "Major";
     document.getElementById("jam-duration").value = a.duration || 30;
     document.getElementById("jam-analysis").style.display = "";
+    document.getElementById("jam-lyrics-block").style.display = "";
+    _jamBuildCaption();
+    _jamPopulateLyricsModelPicker();
     status.textContent = "Analyzed — BPM " + (a.bpm || "?") + ", Key " + (a.key || "?") + " " + (a.scale || "") + ", " + (a.duration || "?") + "s";
     if (a.chords) status.textContent += " | Chords: " + a.chords;
     showToast("Jam analyzed: " + file.name, "success");
@@ -134,10 +137,148 @@ function _checkMusicGenStatus() {
   });
 }
 
+// ── AI Add Lyrics to your instrumental ───────────────────────────────────────
+function _jamBuildCaption() {
+  // Build a MiniMax caption from the detected analysis so a generated song
+  // matches the uploaded jam's feel (BPM/key/scale/chords).
+  const a = _jamState.analysis || {};
+  const parts = [];
+  if (a.bpm) parts.push(a.bpm + " BPM");
+  if (a.key) parts.push(a.key + (a.scale ? " " + a.scale : ""));
+  if (a.chords) parts.push(a.chords);
+  if (a.duration) parts.push(a.duration + "s");
+  const genre = (a.genre || _jamState.genre || "").trim();
+  if (genre) parts.unshift(genre);
+  const caption = parts.join(", ");
+  const el = document.getElementById("jam-mm-caption");
+  if (el && caption) {
+    // keep any existing user text; only prefill when the box is empty
+    if (!el.value.trim()) el.value = caption + ". ";
+  }
+}
+
+async function _jamPopulateLyricsModelPicker() {
+  const select = document.getElementById("jam-lyrics-model");
+  if (!select) return;
+  try {
+    const data = await fetch("/ollama/models").then(r => r.json());
+    const models = Array.isArray(data) ? data
+      : data.models ? data.models : (data.data || []);
+    const names = models
+      .map(m => (typeof m === "string" ? m : (m.name || m.model)))
+      .filter(Boolean);
+    if (names.length) {
+      const current = select.value;
+      select.innerHTML = names
+        .map(n => `<option value="${n.replace(/"/g, "&quot;")}">${n}</option>`)
+        .join("");
+      if ([...select.options].some(o => o.value === current)) select.value = current;
+    }
+  } catch (e) { /* model list unavailable — keep default */ }
+}
+
+let _jamLyricsStream = null;
+
+function _jamLyricsSetBusy(busy, btn) {
+  const en = !busy;
+  ["jam-lyrics-auto-btn", "jam-lyrics-theme-btn"].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.disabled = !en;
+  });
+  if (btn) btn.textContent = busy ? "Writing lyrics…" : btn.dataset.idle;
+}
+
+function _jamStartLyrics(useTheme) {
+  const status = document.getElementById("jam-lyrics-status");
+  const preview = document.getElementById("jam-lyrics-preview");
+  if (!_jamState.uploaded) { showToast("Upload a jam file first", "error"); return; }
+  if (!preview) return;
+
+  if (_jamLyricsStream) { _jamLyricsStream.close(); _jamLyricsStream = null; }
+
+  const a = _jamState.analysis || {};
+  const themeInput = document.getElementById("jam-lyrics-theme");
+  const theme = (themeInput.value || "").trim();
+  if (useTheme && !theme) { showToast("Enter a topic/theme, or use 'Automatic'", "error"); return; }
+
+  const genre = (a.genre || _jamState.genre || "").trim();
+  const isMinor = (a.scale === "Minor") || (a.scale && a.scale.toLowerCase() === "minor");
+  const keyLabel = isMinor ? ((a.key || "C") + " minor") : (a.key || "C");
+  const params = new URLSearchParams({
+    topic: theme || "",
+    genre: genre || "instrumental",
+    key: keyLabel,
+    mood: "matches the instrumental jam",
+    structure: "Verse-Chorus-Verse-Chorus-Bridge-Outro",
+    subject: theme || "the music's mood",
+    model: document.getElementById("jam-lyrics-model").value || "gemma4:latest",
+    lyric_style: "evocative, natural, singable",
+    vocal_style: (a.vocal_language && a.vocal_language !== "en") ? "" : "clear lead vocal",
+    instrumental: "false",
+  });
+  const enhancement = [];
+  if (a.chords) enhancement.push("follows the chord progression " + a.chords);
+  if (a.bpm) enhancement.push(a.bpm + " BPM groove");
+  if (enhancement.length) params.set("enhancement_tags", enhancement.join("; "));
+
+  preview.value = "";
+  const autoBtn = document.getElementById("jam-lyrics-auto-btn");
+  const themeBtn = document.getElementById("jam-lyrics-theme-btn");
+  const active = useTheme ? themeBtn : autoBtn;
+  _jamLyricsSetBusy(true, active);
+  status.textContent = useTheme
+    ? ("✍️ Writing lyrics about \"" + theme + "\" … (streaming)")
+    : "✍️ Writing lyrics automatically from your jam's feel … (streaming)";
+
+  const es = new EventSource("/ollama/stream?" + params.toString());
+  _jamLyricsStream = es;
+  es.addEventListener("token", e => {
+    let data; try { data = JSON.parse(e.data); } catch { return; }
+    preview.value += data.token || "";
+    preview.scrollTop = preview.scrollHeight;
+  });
+  es.addEventListener("done", () => {
+    es.close(); _jamLyricsStream = null;
+    _jamLyricsSetBusy(false, active);
+    status.textContent = "Done — " + preview.value.trim().split(/\n+/).length + " lines. Review below, then Copy to MiniMax.";
+    showToast("Lyrics written!", "success");
+  });
+  es.onerror = () => {
+    es.close(); _jamLyricsStream = null;
+    _jamLyricsSetBusy(false, active);
+    status.textContent = "Stream interrupted — the preview may be partial.";
+  };
+}
+
+function _jamCopyLyricsToMinimax() {
+  const preview = document.getElementById("jam-lyrics-preview");
+  const mm = document.getElementById("jam-mm-lyrics");
+  const status = document.getElementById("jam-lyrics-status");
+  if (!preview || !mm) return;
+  const text = preview.value.trim();
+  if (!text) { showToast("No lyrics to copy yet", "error"); return; }
+  mm.value = text;
+  status.textContent = "Copied to MiniMax lyrics — you can edit, then click Generate Song.";
+  showToast("Lyrics copied to MiniMax", "success");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   _checkMusicGenStatus();
   document.getElementById("jam-file-input")?.addEventListener("change", jamUpload);
   document.getElementById("jam-generate-btn")?.addEventListener("click", jamGenerateBacking);
   document.getElementById("jam-mg-btn")?.addEventListener("click", jamMusicGen);
   document.getElementById("jam-mm-btn")?.addEventListener("click", jamMiniMax);
+  document.getElementById("jam-lyrics-auto-btn")?.addEventListener("click", () => _jamStartLyrics(false));
+  document.getElementById("jam-lyrics-theme-btn")?.addEventListener("click", () => _jamStartLyrics(true));
+  document.getElementById("jam-lyrics-copy-btn")?.addEventListener("click", _jamCopyLyricsToMinimax);
+  document.getElementById("jam-lyrics-clear-btn")?.addEventListener("click", () => {
+    const el = document.getElementById("jam-lyrics-preview");
+    if (el) el.value = "";
+    const st = document.getElementById("jam-lyrics-status");
+    if (st) st.textContent = "Cleared. Add a theme or click a Write Lyrics button.";
+  });
+  const aiBtn = document.getElementById("jam-lyrics-auto-btn");
+  const thBtn = document.getElementById("jam-lyrics-theme-btn");
+  if (aiBtn) aiBtn.dataset.idle = aiBtn.textContent;
+  if (thBtn) thBtn.dataset.idle = thBtn.textContent;
 });

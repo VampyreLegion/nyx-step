@@ -1606,10 +1606,35 @@
       <div id="jam-mg-status" style="color:var(--muted);font-size:11px">Requires musicgen.service running on Nyx (GB10 GPU)</div>
     </div>
 
+    <!-- AI Add Lyrics -->
+    <div id="jam-lyrics-block" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px">
+      <div style="flex-direction:column;display:flex;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+          <span style="font-weight:600;color:var(--text);font-size:13px">✍️ 3. AI — Add Lyrics to your instrumental</span>
+          <span id="jam-lyrics-status" style="color:var(--muted);font-size:11px">Listens to your jam (BPM / key / chords), then writes lyrics.</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;margin-bottom:8px">
+          <label style="flex:1;min-width:240px">Topic / Theme <span style="color:var(--muted);font-size:10px">(optional — leave blank for fully automatic)</span>
+            <input type="text" id="jam-lyrics-theme" placeholder="e.g. a long road trip home, chasing a dream, summer rain" style="width:100%;font-size:12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px">
+          </label>
+          <label>Model <select id="jam-lyrics-model" style="font-size:12px"><option value="gemma4:latest">gemma4:latest</option></select></label>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <button id="jam-lyrics-auto-btn" style="background:var(--accent,#7c65d9);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:12px;cursor:pointer;font-weight:600">✨ Write Lyrics (Automatic)</button>
+          <button id="jam-lyrics-theme-btn" style="background:var(--accent2,#00d4b6);color:#000;border:none;border-radius:6px;padding:7px 16px;font-size:12px;cursor:pointer;font-weight:600">📝 Write Lyrics (Use Theme)</button>
+          <button id="jam-lyrics-copy-btn" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer" title="Copy generated lyrics into the MiniMax song below">Copy to MiniMax</button>
+          <button id="jam-lyrics-clear-btn" style="background:transparent;color:var(--muted);border:none;border-radius:6px;padding:7px 10px;font-size:11px;cursor:pointer">Clear</button>
+        </div>
+        <label style="margin-top:8px;color:var(--muted);font-size:10px">AI preview — streaming lyrics appear here; review/edit then Copy to MiniMax
+          <textarea id="jam-lyrics-preview" rows="9" placeholder="Paste a theme (or leave blank) and click a Write Lyrics button…" style="width:100%;font-size:12px;resize:vertical;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px;margin-top:4px"></textarea>
+        </label>
+      </div>
+    </div>
+
     <!-- MiniMax Music3 -->
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span style="font-weight:600;color:var(--text);font-size:13px">3c. MiniMax Music3 — Full song with vocals (up to 5 min)</span>
+        <span style="font-weight:600;color:var(--text);font-size:13px">4. MiniMax Music3 — Full song with vocals (up to 5 min)</span>
         <span style="font-size:11px;color:var(--accent,#7c65d9)">LOCAL</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
@@ -2787,7 +2812,7 @@
 <script src="/static/midi.js?v=1"></script>
 <script src="/static/history.js?v=7"></script>
 <script src="/static/library.js?v=2"></script>
-<script src="/static/jam.js?v=1"></script>
+<script src="/static/jam.js?v=2"></script>
 <script src="/static/favorites.js?v=1"></script>
 <script src="/static/tag-library.js?v=1"></script>
 <script src="/static/song-templates.js?v=1"></script>
