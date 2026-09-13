@@ -1717,6 +1717,7 @@
       <button class="inner-tab-btn" data-guide="scale">Scales &amp; Modes</button>
       <button class="inner-tab-btn" data-guide="midi">MIDI</button>
       <button class="inner-tab-btn" data-guide="analyze">Analyze</button>
+      <button class="inner-tab-btn" data-guide="jam">🎸 Finish My Jam</button>
       <button class="inner-tab-btn" data-guide="sampler">Sampler</button>
       <button class="inner-tab-btn" data-guide="lm">LM Stage</button>
       <button class="inner-tab-btn" data-guide="presets">Presets</button>
@@ -1940,6 +1941,21 @@
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
         <div style="color:var(--muted);font-size:13px">Version 4.6.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; September 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v4.6.0 — Finish My Jam Vocals &amp; Mixdown (v5)</h3>
+        <ul>
+          <li><strong>🎙️ Add Lyrics to My Song now sings</strong> — generates a reference-free ACE-Step song with vocals (the old lego cover path fed your instrumental through <code>ReferenceTimbreAudio</code>, which dropped the LLM audio codes so it could never sing over a backing), then extracts the vocal stem with <strong>Demucs</strong> and mixes it onto your <strong>ORIGINAL upload</strong> — your instrumental is never regenerated or replaced. Output: <code>jam_vocals_&lt;name&gt;…</code> in History.</li>
+          <li><strong>Analysis hardened</strong> — multi-window key consensus with confidence (A minor 62% instead of a mis-detected F# major), librosa onset BPM (95 instead of double-time 188), chords constrained to the detected key's diatonic set, and true full-file duration.</li>
+          <li><strong>Voice style picker</strong> — 10 voice styles (lead, soul, raspy rock, breathy indie, pop, rap, falsetto, opera…) injected into the generation caption; defaults to Auto.</li>
+          <li><strong>Vocal level</strong> — ±12 dB gain on the vocal stem before the mix.</li>
+          <li><strong>Duck the song under vocals</strong> — sidechain compression pulls the jam back whenever the singer is present (ffmpeg <code>sidechaincompress</code>).</li>
+          <li><strong>Takes / A-B</strong> — queue 1–3 takes as separate jobs (seed + i), downloaded side-by-side from History as <code>…_takeN_…</code>.</li>
+          <li><strong>In-key lock</strong> — pitch-shifts the harvested vocal stem into your jam's key before mixing (verified +3 st ≈ 330→394 Hz); auto-skips when detection confidence is below 0.5.</li>
+          <li><strong>Melody-follow (research)</strong> — optional 2nd pass: pass 1's mixed track is fed back to ACE-Step in cover mode, so pass 2 mirrors the melody, then its vocals are mixed onto your original jam as "<code>&lt;song&gt; (melody-follow)</code>". Queued automatically after pass 1; guarded to a single take.</li>
+        </ul>
+        <p style="color:var(--muted);font-size:11px">New guide section: Guide → 🎸 Finish My Jam covers the full workflow and every v5 mixdown control.</p>
       </div>
 
       <div class="about-section">

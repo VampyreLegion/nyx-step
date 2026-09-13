@@ -1,0 +1,50 @@
+<html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">🎸 Finish My Jam</h2>
+<p>Turns a rough recording — guitar scratch, synth sketch, a hummed beatbox — into a finished song. Everything runs on Nyx's GB10 GPU (ComfyUI → ACE-Step / MiniMax, plus local MusicGen).</p>
+
+<h3>1 · Upload &amp; Analyze</h3>
+<p>Drop in an MP3/WAV/FLAC/OGG/M4A. The server measures the real track and reports:</p>
+<ul>
+  <li><strong>Key</strong> — multi-window consensus (CQT + STFT chroma) with confidence %, e.g. <em>A Minor (62%)</em>.</li>
+  <li><strong>BPM</strong> — librosa onset tempo (an energy-based method used to lock onto double-time; 188 was mis-detected for a true 95).</li>
+  <li><strong>Chords</strong> — constrained to the detected key's diatonic set, e.g. <em>Am - C - F - G - Em - Dm</em>.</li>
+  <li><strong>Duration</strong> — the true full length (previously clamped at 120 s).</li>
+  <li>All fields are editable before generating.</li>
+</ul>
+
+<h3>2 · Backing tracks</h3>
+<ul>
+  <li><strong>3a · ACE-Step instrumental</strong> — full arrangement generated from your jam's BPM/key/scale + custom tags.</li>
+  <li><strong>3b · MusicGen Melody</strong> — local <code>facebook/musicgen-melody</code> (<code>musicgen.service</code>, port 8180) that follows your recording's melodic contour. Green/red badge shows service health.</li>
+  <li><strong>3c · MiniMax Music3</strong> — full song with vocals + lyrics, up to 5 min.</li>
+</ul>
+
+<h3>3 · AI Lyrics</h3>
+<p>Two buttons in the Jam tab:<strong>Automatic</strong> writes lyrics from your jam's feel (key/BPM/chords injected into the prompt); with a <strong>theme</strong> it writes about that topic. Streaming preview lands in the text area — review and tweak before singing.</p>
+
+<h3>4 · 🎙️ Add Lyrics to My Song (vocals)</h3>
+<p>The original jam is never regenerated. The lyric-singing job works in two stages:</p>
+<ol>
+  <li><strong>Generate</strong> — ACE-Step sings the lyrics <em>without</em> an audio reference (a reference would put the model into cover mode and nuke the audio-code path, so it could never sing).</li>
+  <li><strong>Extract + mix</strong> — Demucs pulls the vocal stem out of that generation, then ffmpeg layers it <em>onto your exact upload</em>. Output lives in History as <code>jam_vocals_&lt;name&gt;…</code>.</li>
+</ol>
+
+<h4>Mixdown controls (v5)</h4>
+<table>
+  <tr><th>Control</th><th>What it does</th></tr>
+  <tr><td><strong>Voice</strong></td><td>Style injected into the generation caption (female/male lead, soul, raspy rock, breathy indie, pop, rap, falsetto, opera…). Defaults to Auto.</td></tr>
+  <tr><td><strong>Vocal level</strong></td><td>±12 dB gain on the vocal stem right before the mix.</td></tr>
+  <tr><td><strong>Duck</strong></td><td>Sidechain-compresses the jam under the vocals, so the song pulls back while they sing (ffmpeg <code>sidechaincompress</code>).</td></tr>
+  <tr><td><strong>Takes</strong></td><td>Queues 1–3 separate jobs (seed + i). Compare in History and keep your favorite — files are named <code>…_takeN_…</code>. A/B them.</td></tr>
+  <tr><td><strong>In-key lock</strong></td><td>Detects the vocal's key; if it differs from your jam's, pitch-shifts the stem (semitones) so the tonic matches before mixing. Skipped when detection confidence is low.</td></tr>
+  <tr><td><strong>Melody-follow</strong></td><td>Research toggle, single take only. After pass 1 lands, its mixed track is fed back to ACE-Step in <em>cover mode</em> as the reference, so pass 2 mirrors the melody; those vocals are then mixed onto your original jam as "<code>&lt;song&gt; (melody-follow)</code>". Queued automatically — about twice the wait.</td></tr>
+</table>
+
+<h3>5 · Tips</h3>
+<ul>
+  <li>Multiple takes land as separate History cards — pick your favorite by ear there.</li>
+  <li>The mix preserves your instrumental bit-for-bit as the timing base — the song never changes length or tempo.</li>
+  <li>Melody-follow + in-key lock work together: pass 2's vocals are pitch-locked to your jam's key too.</li>
+  <li>If a pass errors, the follow-up is skipped automatically (nothing half-finishes).</li>
+</ul>
+</body></html>

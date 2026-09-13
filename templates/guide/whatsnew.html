@@ -1,4 +1,29 @@
 <html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.6.0 — Finish My Jam Vocals</h2>
+
+<h3>🎙️ Add Lyrics to My Song — vocals on your original jam</h3>
+<p>The Finish My Jam tab now sings. The AI-written lyrics are sung by ACE-Step in <em>reference-free</em> mode (a lego cover path that fed your instrumental through <code>ReferenceTimbreAudio</code> dropped the LLM audio codes, so it could never produce a singer), then the vocal stem is pulled with <strong>Demucs</strong> and layered onto your exact upload by ffmpeg. Your instrumental is never regenerated — length and tempo stay bit-for-bit.</p>
+<ul>
+  <li><strong>Voice style picker</strong> — female/male lead, soul, raspy rock, breathy indie, clean pop, rap, falsetto, soprano… injected into the caption; defaults to Auto.</li>
+  <li><strong>Vocal level</strong> — ±12 dB post-gain on the vocal before the mix.</li>
+  <li><strong>Duck the song under vocals</strong> — sidechain compression (<code>sidechaincompress</code>) lowers the jam while the singer is present.</li>
+  <li><strong>Takes / A-B</strong> — queue 1–3 takes as separate jobs (seed + i), named <code>…_takeN_…</code>; compare and keep your favorite from History.</li>
+  <li><strong>In-key lock</strong> — detects the singer's key and pitch-shifts the stem into your jam's key (<code>asetrate</code>/<code>aresample</code>/<code>atempo</code> chain) when they clash; skipped if detection is too uncertain.</li>
+  <li><strong>Melody-follow (research)</strong> — single take only. Pass 1's mixed vocal track is fed back to ACE-Step in cover mode so pass 2 mirrors the melody; those vocals are then mixed onto your original jam as "<code>&lt;song&gt; (melody-follow)</code>". Auto-chained when pass 1 lands.</li>
+</ul>
+
+<h3>🔬 Analysis hardened</h3>
+<ul>
+  <li><strong>Key</strong> — multi-window consensus (CQT + STFT chroma, auto-tuning off) with a confidence %, e.g. <em>A minor (62%)</em> instead of a mis-detected F# major.</li>
+  <li><strong>BPM</strong> — librosa onset tempo; the old energy-peak method locked onto double-time (188) when the true tempo was 95.</li>
+  <li><strong>Chords</strong> — limited to chords diatonic to the detected key (Am - C - F - G - Em - Dm), so the model gets a coherent map.</li>
+  <li><strong>Duration</strong> — true full-file length, no more 120 s clamp.</li>
+</ul>
+
+<p style="color:#8a8f9e">Full walkthrough now lives in Guide → 🎸 Finish My Jam.</p>
+
+<hr style="border-color:#2d3041;margin:20px 0">
+
 <h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.6.0</h2>
 
 <h3>🥁 16-Step Drum Machine (Groove Lab)</h3>
