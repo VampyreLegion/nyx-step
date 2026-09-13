@@ -27,7 +27,7 @@ async function jamUpload() {
     document.getElementById("jam-lyrics-block").style.display = "";
     _jamBuildCaption();
     _jamPopulateLyricsModelPicker();
-    status.textContent = "Analyzed — BPM " + (a.bpm || "?") + ", Key " + (a.key || "?") + " " + (a.scale || "") + ", " + (a.duration || "?") + "s";
+    status.textContent = "Analyzed — BPM " + (a.bpm || "?") + ", Key " + (a.key || "?") + " " + (a.scale || "") + " (" + Math.round((a.key_confidence || 0) * 100) + "% conf), " + (a.duration || "?") + "s";
     if (a.chords) status.textContent += " | Chords: " + a.chords;
     showToast("Jam analyzed: " + file.name, "success");
   } catch (err) { status.textContent = "Upload failed: " + err.message; }

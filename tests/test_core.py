@@ -271,3 +271,68 @@ def test_build_lyric_song_workflow_is_reference_free():
     assert "lead vocals singing the lyrics" in enc["inputs"]["tags"]
     ks = next(v for v in wf.values() if isinstance(v, dict) and v.get("class_type") == "KSampler")
     assert ks["inputs"]["denoise"] == 1.0
+
+# ── audio analyzer (key / bpm / chords) ──────────────────────────────────────
+
+from core.analyze import estimate_bpm, estimate_key, estimate_chords
+
+_SR = 44100
+# Notes as MIDI for an A-minor diatonic progression (Am, F, C, G)
+_CHORD_NOTES = {
+    "Am": (57, 60, 64),
+    "F": (53, 57, 60),
+    "C": (48, 52, 55),
+    "G": (55, 59, 62),
+}
+
+def _synth_chord_progression(bpm=95.0, bars=6, sr=_SR):
+    """Synthesize a 4/4 chord-jam in A minor with downbeat clicks for tempo."""
+    import math
+    import numpy as np
+    bar = 4 * 60.0 / bpm
+    seq = ["Am", "F", "C", "G"]
+    total = bar * bars
+    n = int(total * sr)
+    sig = np.zeros(n)
+    t = np.arange(n) / sr
+    click_t = np.arange(0.0, total, 60.0 / bpm)
+    for ct in click_t:
+        idx = int(ct * sr)
+        dur = int(0.06 * sr)
+        if idx + dur < n:
+            env = np.exp(-np.arange(dur) / (0.012 * sr))
+            sig[idx:idx + dur] += env * 0.8
+    for b in range(bars):
+        chord = seq[b % len(seq)]
+        s = int(b * bar * sr)
+        e = int((b + 1) * bar * sr)
+        seg_t = t[s:e]
+        for midi in _CHORD_NOTES[chord]:
+            f = 440.0 * 2 ** ((midi - 69) / 12)
+            sig[s:e] += 0.12 * np.sin(2 * math.pi * f * seg_t)
+    return sig, sr
+
+def test_key_detection_aminor():
+    mono, sr = _synth_chord_progression()
+    key, scale, conf = estimate_key(mono, sr)
+    assert key == "A"
+    assert scale == "Minor"
+    assert conf > 0.5
+
+def test_key_scale_title_case_matches_frontend_options():
+    mono, sr = _synth_chord_progression()
+    _, scale, _ = estimate_key(mono, sr)
+    assert scale in ("Major", "Minor")
+
+def test_bpm_detection_prefers_librosa_not_doubletime():
+    # A 95 BPM jam (energy method previously locked onto 188)
+    mono, sr = _synth_chord_progression(bpm=95.0)
+    bpm = estimate_bpm(mono, sr)
+    assert abs(bpm - 95.0) / 95.0 < 0.15
+
+def test_chords_diatonic_to_aminor():
+    mono, sr = _synth_chord_progression()
+    chords = estimate_chords(mono, sr, key="A", scale="Minor")
+    allowed = {"Am", "C", "Dm", "Em", "F", "G", "G7"}
+    for name in chords.split(" - "):
+        assert name in allowed, f"non-diatonic chord leaked: {name}"
