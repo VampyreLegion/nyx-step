@@ -1677,9 +1677,30 @@
         <label>Duration <input type="number" id="jam-complete-duration" value="30" min="5" max="120" step="0.5" style="width:65px;font-size:12px">s</label>
         <label>Seed <input type="number" id="jam-complete-seed" value="0" min="0" max="4294967295" style="width:85px;font-size:12px"></label>
       </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:12px;margin-bottom:8px">
+        <label>Voice
+          <select id="jam-vocal-style" style="font-size:12px">
+            <option value="">Auto (from upload)</option>
+            <option>female lead vocal</option>
+            <option>male lead vocal</option>
+            <option>female soul vocal</option>
+            <option>male raspy rock vocal</option>
+            <option>breathy indie female vocal</option>
+            <option>clean pop vocal</option>
+            <option>rap flow, male vocals</option>
+            <option>female rap vocal</option>
+            <option>soft male falsetto vocal</option>
+            <option>opera soprano vocals</option>
+          </select>
+        </label>
+        <label>Takes <select id="jam-takes" style="font-size:12px"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
+        <label>Vocal level <input type="number" id="jam-vocal-gain" value="0" min="-12" max="12" step="0.5" style="width:55px;font-size:12px"> dB</label>
+        <label><input type="checkbox" id="jam-duck" style="vertical-align:middle"> duck song under vocals</label>
+        <label><input type="checkbox" id="jam-pitch-lock" style="vertical-align:middle"> in-key lock</label>
+      </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <button id="jam-complete-btn" style="background:var(--accent2,#00d4b6);color:#000;border:none;border-radius:6px;padding:7px 18px;font-size:12px;cursor:pointer;font-weight:600">🎙️ Add Lyrics to My Song</button>
-        <span style="color:var(--muted);font-size:11px">Uses the lyrics from step 3. Generates vocals, then mixes them onto your exact instrumental (about a few minutes).</span>
+        <span style="color:var(--muted);font-size:11px">Uses the lyrics from step 3. Generates vocals, then mixes them onto your exact instrumental (about a few minutes per take). Multiple takes are queued separately — pick your favorite from History.</span>
       </div>
       <div id="jam-complete-status" style="color:var(--muted);font-size:11px;margin-top:6px"></div>
     </div>

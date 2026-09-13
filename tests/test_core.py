@@ -336,3 +336,71 @@ def test_chords_diatonic_to_aminor():
     allowed = {"Am", "C", "Dm", "Em", "F", "G", "G7"}
     for name in chords.split(" - "):
         assert name in allowed, f"non-diatonic chord leaked: {name}"
+
+# ── vocal mixdown (gain / duck / takes / pitch lock) ─────────────────────────
+
+import numpy as _np
+import soundfile as _sf
+
+def _tiny_audio(seconds=3.0, sr=48000, freq=330.0) -> tuple:
+    t = _np.arange(int(seconds * sr)) / sr
+    return (0.3 * _np.sin(2 * _np.pi * freq * t)).astype(_np.float32), sr
+
+def test_vocalmix_take_naming():
+    from core import vocalmix
+    jam, sr = _tiny_audio()
+    voc, _ = _tiny_audio(freq=440.0)
+    import tempfile, os
+    d = tempfile.mkdtemp()
+    jp, vp = os.path.join(d, "jam.wav"), os.path.join(d, "voc.wav")
+    _sf.write(jp, jam, sr)
+    _sf.write(vp, voc, sr)
+    out = vocalmix.mix_vocals_over_instrumental(
+        pathlib.Path(jp), pathlib.Path(vp), "My Jam", vocal_gain_db=2.0,
+        duck_jam=False, take_index=1, takes=2,
+    )
+    assert "_take2_" in out
+    assert "My_Jam" in out
+
+def test_vocalmix_duck_runs():
+    from core import vocalmix
+    jam, sr = _tiny_audio()
+    voc, _ = _tiny_audio(freq=440.0)
+    import tempfile, os
+    d = tempfile.mkdtemp()
+    jp, vp = os.path.join(d, "jam.wav"), os.path.join(d, "voc.wav")
+    _sf.write(jp, jam, sr)
+    _sf.write(vp, voc, sr)
+    out = vocalmix.mix_vocals_over_instrumental(
+        pathlib.Path(jp), pathlib.Path(vp), "My Jam", duck_jam=True, takes=1,
+    )
+    assert out.startswith("jam_vocals_My_Jam_")
+
+def test_pitch_shift_moves_fundamental():
+    import librosa
+    from core import vocalmix
+    voc, sr = _tiny_audio(freq=330.0)
+    import tempfile, os
+    d = tempfile.mkdtemp()
+    vp = os.path.join(d, "voc.wav")
+    _sf.write(vp, voc, sr)
+    shifted = vocalmix._pitch_shift(pathlib.Path(vp), 3, pathlib.Path(d))
+    y, _ = _sf.read(str(shifted), dtype="float32")
+    f0, _ = librosa.piptrack(y=y, sr=sr)
+    mean_f = float(f0[f0 > 0].mean())
+    assert abs(mean_f - 330.0 * 2 ** (3 / 12)) < 8.0
+
+def test_vocal_key_offset_matching_keys_is_zero():
+    from core import vocalmix
+    # A-major triad sine -> should detect A, so no shift when jam is A.
+    sr = 48000
+    t = _np.arange(int(3 * sr)) / sr
+    mono = _np.zeros_like(t, dtype=_np.float32)
+    for midi in (57, 61, 64):  # A, C#, E
+        f = 440.0 * 2 ** ((midi - 69) / 12)
+        mono += 0.1 * _np.sin(2 * _np.pi * f * t).astype(_np.float32)
+    import tempfile, os
+    d = tempfile.mkdtemp()
+    vp = os.path.join(d, "voc.wav")
+    _sf.write(vp, mono, sr)
+    assert vocalmix._vocal_key_offset(pathlib.Path(vp), "A", "Minor") == 0

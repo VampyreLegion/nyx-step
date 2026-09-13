@@ -134,7 +134,7 @@ def _measure_jam_duration(jam_path: Path) -> float:
         return 0.0
 
 
-def _build_lyric_song_workflow(req, caption: str, lyrics: str, jam_path: Path) -> dict:
+def _build_lyric_song_workflow(req, caption: str, lyrics: str, jam_path: Path, seed: int | None = None) -> dict:
     """Build a reference-free ACE-Step workflow that actually sings the lyrics.
 
     The previous lego path attached the jam via ReferenceTimbreAudio, which puts
@@ -147,11 +147,15 @@ def _build_lyric_song_workflow(req, caption: str, lyrics: str, jam_path: Path) -
     duration = _measure_jam_duration(jam_path) or user_duration or 30.0
     if not any(word in caption.lower() for word in ("vocal", "voice", "sing")):
         caption = f"{caption}, {_VOCAL_DESCRIPTOR}"
+    style = getattr(req, "vocal_style", "") or ""
+    if style.strip() and not any(word in style.lower() for word in caption.lower().split()):
+        caption = f"{caption}, {style.strip()}"
 
+    gen_seed = int(seed if seed is not None else getattr(req, "seed", 0) or 0)
     state = {
         "bpm": req.bpm, "key": req.key, "scale": req.scale,
         "steps": req.steps, "cfg_scale": req.cfg, "duration": duration,
-        "seed": req.seed, "lock_seed": req.seed != 0,
+        "seed": gen_seed, "lock_seed": gen_seed != 0,
         "audio_format": req.audio_format, "audio_quality": req.audio_quality,
         "dit_model": req.dit_model, "sampler_name": req.sampler_name,
         "scheduler": req.scheduler, "temperature": req.temperature,
@@ -239,6 +243,11 @@ class JamVocalizeRequest(BaseModel):
     bpm: int = Field(default=120, ge=40, le=300)
     key: str = "C"
     scale: str = "Major"
+    vocal_style: str = ""
+    vocal_gain_db: float = Field(default=0.0, ge=-12.0, le=12.0)
+    duck_jam: bool = False
+    takes: int = Field(default=1, ge=1, le=3)
+    pitch_lock: bool = False
     audio_format: str = "mp3"
     audio_quality: str = "V0"
     dit_model: str = "sft"
@@ -277,19 +286,37 @@ async def jam_vocalize(req: JamVocalizeRequest, request: Request):
             status_code=400,
         )
 
-    result = _build_lyric_song_workflow(req, caption, lyrics, jam_path)
-    if "error" in result:
-        return JSONResponse({"error": result["error"]}, status_code=400)
+    submitted = []
+    for i in range(req.takes):
+        take_seed = (int(req.seed) + i) % 4294967296
+        result = _build_lyric_song_workflow(req, caption, lyrics, jam_path, seed=take_seed)
+        if "error" in result:
+            return JSONResponse({"error": result["error"]}, status_code=400)
+        params = {
+            "bpm": req.bpm, "key": req.key, "scale": req.scale,
+            "steps": req.steps, "cfg_scale": req.cfg, "duration": req.duration,
+            "denoise": req.denoise, "jam_filename": req.jam_filename,
+            "engine": "jam_vocals", "seed": take_seed,
+            "take_index": i, "takes": req.takes,
+            "vocal_gain_db": req.vocal_gain_db, "duck_jam": req.duck_jam,
+            "pitch_lock": req.pitch_lock,
+        }
+        out = submit_and_register(
+            _comfy, user_email, result["workflow"], req.song_name,
+            seed=take_seed, caption=caption, lyrics=lyrics,
+            upstream_error_status=502,
+            params=params,
+        )
+        if isinstance(out, JSONResponse):
+            return out
+        submitted.append(out)
 
-    return submit_and_register(
-        _comfy, user_email, result["workflow"], req.song_name,
-        seed=result.get("seed", 0), caption=caption, lyrics=lyrics,
-        upstream_error_status=502,
-        params={"bpm": req.bpm, "key": req.key, "scale": req.scale,
-                "steps": req.steps, "cfg_scale": req.cfg, "duration": req.duration,
-                "denoise": req.denoise, "jam_filename": req.jam_filename,
-                "engine": "jam_vocals"},
-    )
+    queue_position = tracker.get_queue_counts()["pending"]
+    resp: dict = {"prompt_ids": [s.get("prompt_id", "") for s in submitted], "count": req.takes}
+    if submitted:
+        resp["prompt_id"] = submitted[0].get("prompt_id", "")
+    resp["queue_position"] = queue_position
+    return resp
 
 
 # ── MusicGen-melody local generation ────────────────────────────────────────

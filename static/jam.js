@@ -306,9 +306,15 @@ async function jamComplete() {
     bpm: parseInt(document.getElementById("jam-bpm").value) || 120,
     key: document.getElementById("jam-key").value || "C",
     scale: document.getElementById("jam-scale").value || "Major",
+    vocal_style: document.getElementById("jam-vocal-style").value || "",
+    takes: parseInt(document.getElementById("jam-takes").value) || 1,
+    vocal_gain_db: parseFloat(document.getElementById("jam-vocal-gain").value) || 0,
+    duck_jam: !!document.getElementById("jam-duck").checked,
+    pitch_lock: !!document.getElementById("jam-pitch-lock").checked,
   };
   btn.disabled = true; btn.textContent = "Submitting…";
-  status.textContent = "Submitting — vocals will be mixed onto your ORIGINAL track…";
+  const takes = body.takes;
+  status.textContent = "Submitting — " + takes + (takes > 1 ? " takes will be queued" : " take queued") + ", mixed onto your ORIGINAL track…";
   status.style.color = "var(--muted)";
   try {
     const r = await fetch("/api/jam/vocalize", {
@@ -322,7 +328,7 @@ async function jamComplete() {
       status.style.color = "var(--error)";
       return;
     }
-    status.textContent = "Vocals queued — your song stays as-is; AI vocals are generated (~1–2 min), then mixed over your instrumental. Check History to download.";
+    status.textContent = "Vocals queued — your song stays as-is; AI vocals are generated, then " + takes + (takes > 1 ? " mixes land in History — A/B them and keep your favorite." : " mixed over your instrumental. Check History to download.");
     status.style.color = "var(--accent2)";
     showToast("Lyrics queued onto your song", "success");
   } catch (e) {
