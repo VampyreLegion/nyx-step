@@ -196,10 +196,11 @@ def test_needs_vocalize_flag():
 
 def test_start_vocalize_marks_param_and_drops_from_active():
     from core.job_tracker import JobTracker
-    from datetime import datetime
+    from unittest.mock import patch
     tracker = JobTracker.__new__(JobTracker)
     tracker.register("vpid", "u@x", "Song", params={"engine": "jam_vocals", "jam_filename": "tmp.mp3"})
-    tracker._start_vocalize("vpid", ["lego_00009.mp3"])
+    with patch.object(tracker, "_run_vocalize"):
+        tracker._start_vocalize("vpid", ["lego_00009.mp3"])
     job = tracker.get("vpid")
     assert job.status == "mixing"
     assert job.params.get("vocalized") is True
@@ -404,3 +405,17 @@ def test_vocal_key_offset_matching_keys_is_zero():
     vp = os.path.join(d, "voc.wav")
     _sf.write(vp, mono, sr)
     assert vocalmix._vocal_key_offset(pathlib.Path(vp), "A", "Minor") == 0
+
+def test_vocalize_params_carry_mixing_and_melody_flags():
+    from routes.jam import _vocalize_params
+    from types import SimpleNamespace
+    req = SimpleNamespace(
+        bpm=95, key="A", scale="Minor", steps=20, cfg=2.0, duration=30.0,
+        denoise=0.8, jam_filename="jam.mp3", takes=2, seed=11,
+        vocal_gain_db=3.0, duck_jam=True, pitch_lock=True, melody_follow=True,
+    )
+    p = _vocalize_params(req, 12, 1, "jam.mp3")
+    assert p["engine"] == "jam_vocals"
+    assert p["take_index"] == 1 and p["takes"] == 2
+    assert p["vocal_gain_db"] == 3.0 and p["duck_jam"] and p["pitch_lock"]
+    assert p["melody_follow"] and p["melody_follow_stage"] == 1

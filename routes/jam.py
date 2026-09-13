@@ -1,5 +1,7 @@
 from __future__ import annotations
 import asyncio
+import threading
+import time
 from contextlib import suppress
 from pathlib import Path
 
@@ -165,6 +167,80 @@ def _build_lyric_song_workflow(req, caption: str, lyrics: str, jam_path: Path, s
     return _comfy.build_workflow(caption, lyrics, state)
 
 
+def _vocalize_params(req, take_seed: int, take_index: int, jam_filename: str) -> dict:
+    """Params recorded against each vocalize job for the postprocess mixdown."""
+    return {
+        "bpm": req.bpm, "key": req.key, "scale": req.scale,
+        "steps": req.steps, "cfg_scale": req.cfg, "duration": req.duration,
+        "denoise": req.denoise, "jam_filename": jam_filename,
+        "engine": "jam_vocals", "seed": take_seed,
+        "take_index": take_index, "takes": req.takes,
+        "vocal_gain_db": req.vocal_gain_db, "duck_jam": req.duck_jam,
+        "pitch_lock": req.pitch_lock,
+        "melody_follow": getattr(req, "melody_follow", False),
+        "melody_follow_stage": 1,
+    }
+
+
+def _launch_melody_follow(req, pass1_pid: str, user_email: str, caption: str, lyrics: str, jam_path: Path):
+    """Chain a second pass: once pass 1 lands its mixed vocal track, feed that
+    track back to ACE-Step in cover mode so pass 2 mirrors the melody, then
+    mix pass 2's vocals over the ORIGINAL jam. Runs on a daemon thread.
+    """
+    if getattr(req, "takes", 1) > 1:
+        return
+
+    def run():
+        deadline = time.time() + 15 * 60
+        final = None
+        while time.time() < deadline:
+            job = tracker.get(pass1_pid)
+            if job is None:
+                break
+            if job.status == "done" and job.output_files:
+                final = job.output_files[0]
+                break
+            if job.status == "error":
+                break
+            time.sleep(3)
+        if not final:
+            return
+        try:
+            ref_path = config.COMFYUI_OUTPUT_DIR / str(final)
+            if not ref_path.is_file():
+                return
+            input_name = _comfy.copy_to_input(ref_path)
+            user_duration = float(req.duration or 0) if req.duration else 0.0
+            duration = _measure_jam_duration(jam_path) or user_duration or 30.0
+            cover_seed = (int(req.seed) + 7) % 4294967296
+            cover_state = {
+                "bpm": req.bpm, "key": req.key, "scale": req.scale,
+                "steps": req.steps, "cfg_scale": req.cfg, "duration": duration,
+                "seed": cover_seed, "lock_seed": True,
+                "audio_format": req.audio_format, "audio_quality": req.audio_quality,
+                "dit_model": req.dit_model, "sampler_name": req.sampler_name,
+                "scheduler": req.scheduler, "temperature": req.temperature,
+                "top_p": req.top_p, "top_k": req.top_k, "min_p": req.min_p,
+                "generate_audio_codes": True, "denoise": 1.0,
+            }
+            result = _comfy.build_lego_workflow(input_name, caption, lyrics, cover_state, getattr(req, "denoise", 0.8))
+            if "error" in result:
+                return
+            params = dict(_vocalize_params(req, cover_seed, 0, req.jam_filename))
+            params["melody_follow_stage"] = 2
+            params["takes"] = 1
+            submit_and_register(
+                _comfy, user_email, result["workflow"],
+                f"{req.song_name} (melody-follow)",
+                seed=cover_seed, caption=caption, lyrics=lyrics,
+                upstream_error_status=502, params=params,
+            )
+        except Exception:
+            pass
+
+    threading.Thread(target=run, daemon=True).start()
+
+
 class JamCompleteRequest(BaseModel):
     jam_filename: str
     caption: str = "instrumental backing"
@@ -248,6 +324,7 @@ class JamVocalizeRequest(BaseModel):
     duck_jam: bool = False
     takes: int = Field(default=1, ge=1, le=3)
     pitch_lock: bool = False
+    melody_follow: bool = False
     audio_format: str = "mp3"
     audio_quality: str = "V0"
     dit_model: str = "sft"
@@ -286,21 +363,20 @@ async def jam_vocalize(req: JamVocalizeRequest, request: Request):
             status_code=400,
         )
 
+    if getattr(req, "melody_follow", False) and req.takes > 1:
+        return JSONResponse(
+            {"error": "Melody-follow queues a single second pass — use 1 take, or pick A/B takes without it."},
+            status_code=400,
+        )
+
     submitted = []
+    pass1_pid = ""
     for i in range(req.takes):
         take_seed = (int(req.seed) + i) % 4294967296
         result = _build_lyric_song_workflow(req, caption, lyrics, jam_path, seed=take_seed)
         if "error" in result:
             return JSONResponse({"error": result["error"]}, status_code=400)
-        params = {
-            "bpm": req.bpm, "key": req.key, "scale": req.scale,
-            "steps": req.steps, "cfg_scale": req.cfg, "duration": req.duration,
-            "denoise": req.denoise, "jam_filename": req.jam_filename,
-            "engine": "jam_vocals", "seed": take_seed,
-            "take_index": i, "takes": req.takes,
-            "vocal_gain_db": req.vocal_gain_db, "duck_jam": req.duck_jam,
-            "pitch_lock": req.pitch_lock,
-        }
+        params = _vocalize_params(req, take_seed, i, req.jam_filename)
         out = submit_and_register(
             _comfy, user_email, result["workflow"], req.song_name,
             seed=take_seed, caption=caption, lyrics=lyrics,
@@ -310,6 +386,11 @@ async def jam_vocalize(req: JamVocalizeRequest, request: Request):
         if isinstance(out, JSONResponse):
             return out
         submitted.append(out)
+        if i == 0:
+            pass1_pid = out.get("prompt_id", "")
+
+    if getattr(req, "melody_follow", False) and pass1_pid:
+        _launch_melody_follow(req, pass1_pid, user_email, caption, lyrics, jam_path)
 
     queue_position = tracker.get_queue_counts()["pending"]
     resp: dict = {"prompt_ids": [s.get("prompt_id", "") for s in submitted], "count": req.takes}

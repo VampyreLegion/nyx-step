@@ -293,6 +293,9 @@ async function jamComplete() {
     status.style.color = "var(--error)";
     return;
   }
+  const takesEl = document.getElementById("jam-takes");
+  const takes = parseInt(takesEl.value) || 1;
+  const melodyFollow = document.getElementById("jam-melody-follow").checked && takes === 1;
   const body = {
     jam_filename: _jamState.filename,
     caption: _jamCompleteCaption(),
@@ -307,14 +310,16 @@ async function jamComplete() {
     key: document.getElementById("jam-key").value || "C",
     scale: document.getElementById("jam-scale").value || "Major",
     vocal_style: document.getElementById("jam-vocal-style").value || "",
-    takes: parseInt(document.getElementById("jam-takes").value) || 1,
+    takes,
     vocal_gain_db: parseFloat(document.getElementById("jam-vocal-gain").value) || 0,
     duck_jam: !!document.getElementById("jam-duck").checked,
     pitch_lock: !!document.getElementById("jam-pitch-lock").checked,
+    melody_follow: melodyFollow,
   };
   btn.disabled = true; btn.textContent = "Submitting…";
-  const takes = body.takes;
-  status.textContent = "Submitting — " + takes + (takes > 1 ? " takes will be queued" : " take queued") + ", mixed onto your ORIGINAL track…";
+  status.textContent = melodyFollow
+    ? "Submitting — vocals generate, mix onto your ORIGINAL track, then a 2nd melody-follow pass mirrors it automatically…"
+    : "Submitting — " + takes + (takes > 1 ? " takes will be queued" : " take queued") + ", mixed onto your ORIGINAL track…";
   status.style.color = "var(--muted)";
   try {
     const r = await fetch("/api/jam/vocalize", {
@@ -355,6 +360,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (st) st.textContent = "Cleared. Add a theme or click a Write Lyrics button.";
   });
   document.getElementById("jam-complete-btn")?.addEventListener("click", jamComplete);
+  const takesSel = document.getElementById("jam-takes");
+  const melodyChk = document.getElementById("jam-melody-follow");
+  const syncMelodyLock = () => {
+    if (!takesSel || !melodyChk) return;
+    const canFollow = parseInt(takesSel.value) === 1;
+    melodyChk.disabled = !canFollow;
+    if (!canFollow) melodyChk.checked = false;
+  };
+  takesSel?.addEventListener("change", syncMelodyLock);
+  syncMelodyLock();
   const aiBtn = document.getElementById("jam-lyrics-auto-btn");
   const thBtn = document.getElementById("jam-lyrics-theme-btn");
   if (aiBtn) aiBtn.dataset.idle = aiBtn.textContent;
