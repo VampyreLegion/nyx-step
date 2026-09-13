@@ -236,3 +236,38 @@ def test_postprocess_vocalize_no_output():
             assert "No lego output files" in str(exc)
     finally:
         jam.unlink(missing_ok=True)
+
+
+@nyx_only
+def test_build_lyric_song_workflow_is_reference_free():
+    """Jam vocals must not use ReferenceTimbreAudio — cover mode drops the LLM
+    audio codes and returns instrumental (no singer). The workflow must carry
+    the lyrics through the audio-codes path instead."""
+    import types
+    from pathlib import Path
+    from routes.jam import _build_lyric_song_workflow
+
+    req = types.SimpleNamespace(
+        duration=30.0, bpm=120, key="F#", scale="Major", steps=20, cfg=2.0,
+        seed=0, audio_format="mp3", audio_quality="V0", dit_model="sft",
+        sampler_name="er_sde", scheduler="linear_quadratic",
+        temperature=0.85, top_p=0.9, top_k=0, min_p=0.0,
+    )
+    result = _build_lyric_song_workflow(
+        req, "188 BPM, F# major, Am - C - F", "[Verse]\nhello", Path("/nonexistent_jam.mp3")
+    )
+    assert "error" not in result
+    wf = result["workflow"]
+    assert not any(
+        isinstance(v, dict) and v.get("class_type") == "ReferenceTimbreAudio"
+        for v in wf.values()
+    )
+    enc = next(
+        v for v in wf.values()
+        if isinstance(v, dict) and v.get("class_type") == "TextEncodeAceStepAudio1.5"
+    )
+    assert enc["inputs"]["lyrics"] == "[Verse]\nhello"
+    assert enc["inputs"]["generate_audio_codes"] is True
+    assert "lead vocals singing the lyrics" in enc["inputs"]["tags"]
+    ks = next(v for v in wf.values() if isinstance(v, dict) and v.get("class_type") == "KSampler")
+    assert ks["inputs"]["denoise"] == 1.0

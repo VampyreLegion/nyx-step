@@ -116,6 +116,51 @@ async def generate_backing(req: JamGenerateRequest, request: Request):
 
 # ── ACE-Step Complete — keep the instrumental, add vocals ────────────────────
 
+_VOCAL_DESCRIPTOR = "clear lead vocals singing the lyrics"
+
+
+def _measure_jam_duration(jam_path: Path) -> float:
+    """Return the jam's length in seconds (0.0 when it cannot be read)."""
+    import json as _json
+    import subprocess
+
+    try:
+        probe = subprocess.run(
+            ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", str(jam_path)],
+            capture_output=True, text=True, timeout=10,
+        )
+        return float(_json.loads(probe.stdout)["format"]["duration"])
+    except Exception:
+        return 0.0
+
+
+def _build_lyric_song_workflow(req, caption: str, lyrics: str, jam_path: Path) -> dict:
+    """Build a reference-free ACE-Step workflow that actually sings the lyrics.
+
+    The previous lego path attached the jam via ReferenceTimbreAudio, which puts
+    the model into cover mode — it re-tokenizes the reference and drops the LLM
+    audio codes, so an instrumental reference comes back instrumental (a washed
+    pad, no singer). Generating without a reference keeps the audio-codes path
+    so the LM sings the supplied lyrics; vocals are harvested downstream.
+    """
+    user_duration = float(req.duration or 0) if req.duration else 0.0
+    duration = _measure_jam_duration(jam_path) or user_duration or 30.0
+    if not any(word in caption.lower() for word in ("vocal", "voice", "sing")):
+        caption = f"{caption}, {_VOCAL_DESCRIPTOR}"
+
+    state = {
+        "bpm": req.bpm, "key": req.key, "scale": req.scale,
+        "steps": req.steps, "cfg_scale": req.cfg, "duration": duration,
+        "seed": req.seed, "lock_seed": req.seed != 0,
+        "audio_format": req.audio_format, "audio_quality": req.audio_quality,
+        "dit_model": req.dit_model, "sampler_name": req.sampler_name,
+        "scheduler": req.scheduler, "temperature": req.temperature,
+        "top_p": req.top_p, "top_k": req.top_k, "min_p": req.min_p,
+        "generate_audio_codes": True, "denoise": 1.0, "batch_size": 1,
+    }
+    return _comfy.build_workflow(caption, lyrics, state)
+
+
 class JamCompleteRequest(BaseModel):
     jam_filename: str
     caption: str = "instrumental backing"
@@ -142,8 +187,12 @@ class JamCompleteRequest(BaseModel):
 
 @router.post("/complete")
 async def jam_complete(req: JamCompleteRequest, request: Request):
-    """ACE-Step reference-conditioned generation: keep the jam as the audio
-    base, a add the provided lyrics (vocals) on top."""
+    """ACE-Step song generation from the jam's feel + the provided lyrics.
+
+    Generation is reference-free (the lego cover path drops the audio codes and
+    cannot sing over an instrumental), so the result is a full song with vocals
+    in the jam's detected key/BPM/chords.
+    """
     user_email = get_user_email(request)
 
     jam_path = JAM_DIR / req.jam_filename
@@ -161,18 +210,7 @@ async def jam_complete(req: JamCompleteRequest, request: Request):
             status_code=400,
         )
 
-    input_name = _comfy.copy_to_input(jam_path)
-    state = {
-        "bpm": req.bpm, "key": req.key, "scale": req.scale,
-        "steps": req.steps, "cfg_scale": req.cfg, "duration": float(req.duration),
-        "seed": req.seed, "lock_seed": req.seed != 0,
-        "audio_format": req.audio_format, "audio_quality": req.audio_quality,
-        "dit_model": req.dit_model, "sampler_name": req.sampler_name,
-        "scheduler": req.scheduler, "temperature": req.temperature,
-        "top_p": req.top_p, "top_k": req.top_k, "min_p": req.min_p,
-        "generate_audio_codes": True,
-    }
-    result = _comfy.build_lego_workflow(input_name, caption, lyrics, state, req.denoise)
+    result = _build_lyric_song_workflow(req, caption, lyrics, jam_path)
     if "error" in result:
         return JSONResponse({"error": result["error"]}, status_code=400)
 
@@ -216,10 +254,11 @@ class JamVocalizeRequest(BaseModel):
 async def jam_vocalize(req: JamVocalizeRequest, request: Request):
     """Add AI lyrics on top of the SAME instrumental.
 
-    Queues an ACE-Step lego job conditioned on the jam (harvests the sung
-    vocals), then post-processes: Demucs-isolates the vocal stem and ffmpeg
-    mixes it over the ORIGINAL uploaded instrumental — the song itself is not
-    regenerated or replaced.
+    Queues a reference-free ACE-Step job conditioned on the jam's feel (so the
+    LM actually sings the lyrics — the reference/lego path drops the audio codes
+    and cannot produce a vocal over an instrumental), then post-processes:
+    Demucs-isolates the vocal stem and ffmpeg mixes it over the ORIGINAL
+    uploaded instrumental — the song itself is not regenerated or replaced.
     """
     user_email = get_user_email(request)
 
@@ -238,18 +277,7 @@ async def jam_vocalize(req: JamVocalizeRequest, request: Request):
             status_code=400,
         )
 
-    input_name = _comfy.copy_to_input(jam_path)
-    state = {
-        "bpm": req.bpm, "key": req.key, "scale": req.scale,
-        "steps": req.steps, "cfg_scale": req.cfg, "duration": float(req.duration),
-        "seed": req.seed, "lock_seed": req.seed != 0,
-        "audio_format": req.audio_format, "audio_quality": req.audio_quality,
-        "dit_model": req.dit_model, "sampler_name": req.sampler_name,
-        "scheduler": req.scheduler, "temperature": req.temperature,
-        "top_p": req.top_p, "top_k": req.top_k, "min_p": req.min_p,
-        "generate_audio_codes": True,
-    }
-    result = _comfy.build_lego_workflow(input_name, caption, lyrics, state, req.denoise)
+    result = _build_lyric_song_workflow(req, caption, lyrics, jam_path)
     if "error" in result:
         return JSONResponse({"error": result["error"]}, status_code=400)
 

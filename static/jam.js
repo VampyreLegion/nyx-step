@@ -301,7 +301,7 @@ async function jamComplete() {
     denoise: parseFloat(document.getElementById("jam-complete-denoise").value) || 0.75,
     steps: parseInt(document.getElementById("jam-complete-steps").value) || 20,
     cfg: parseFloat(document.getElementById("jam-complete-cfg").value) || 2.0,
-    duration: parseFloat(document.getElementById("jam-complete-duration").value) || 30,
+    duration: parseFloat(document.getElementById("jam-complete-duration").value) || _jamState.analysis.duration || 30,
     seed: parseInt(document.getElementById("jam-complete-seed").value) || 0,
     bpm: parseInt(document.getElementById("jam-bpm").value) || 120,
     key: document.getElementById("jam-key").value || "C",
