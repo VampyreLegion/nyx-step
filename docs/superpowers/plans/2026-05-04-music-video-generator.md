@@ -1982,3 +1982,21 @@ Navigate to `https://music-ai.nyxstudios.net`, load or generate a song, open the
 - `ollama_generate()` function name is verified against live `core/ollama.py` in Task 6 Step 1.
 - Frame count alignment `(n-1) % 4 == 0` is enforced in `beat_analyser._wan_align()` and tested in `test_beat_analyser_frame_count_aligned`.
 - The `nyx-step` service name for systemctl may differ — check with `systemctl list-units | grep nyx` if restart fails.
+
+## Follow-up: diffusion model selection + zoom rate (2026-06-19)
+
+Shipped in `349013c` (origin + backup `master`) to address "covers look too Asian-inspired" and "uploaded image doesn't get used":
+
+- **Selectable diffusion model.** The YouTube/AI-cover tab now has a model dropdown (`routes/youtube_upload.py` + `youtube_upload_router` form field `model`, threaded through `_build_job_payload` → `core/youtube_uploader.py`). Valid checkpoints come from `MODEL_PRESETS`, verified byte-exact against **both** disk names and ComfyUI's live `CheckpointLoaderSimple` object_info:
+  1. `majicmixRealistic_v7.safetensors` — photoreal, but reads Asian-influenced (old default; still the flash-drive-era blow-up default)
+  2. **`sd_xl_base_1.0.safetensors` — NEW DEFAULT** (least-Asian, neutral photoreal)
+  3. `ponyDiffusionV6XL_v6.safetensors` — quantized pony/art range, higher variance
+- The chosen preset is passed as `ckpt_name` to `CheckpointLoaderSimple`; custom node `mym9_set_cover_payload` / fallbacks never downgrade a selected model back to the photoreal checkpoint.
+- **Zoom rate (Ken Burns).** `zoom_rate` (HTML range in the same tab, default 0.5, higher = faster drift) is threaded into the ffmpeg `zoompan` filter via core file `core/youtube_uploader.py`:
+  ```python
+  zoom_expr = f"1+{zoom_rate}*on"
+  "zoompan=z='{zoom_expr}':x='iw/2-(iw/zoom)/2':y='ih/2-(ih/zoom)/2':"
+  ```
+  Bug fixed from `349013c` parent: the old literal `z='zoom_expr'` (variable *name*, not value) made `zoompan` evaluate to a non-number and the visual stream collapsed — song played with no visuals. Now the interpolated expression drives the scale; `d={int(dur*30)}:fps=30:s=1920x1080`.
+
+- **Uploaded-image cover path** (`ai_cover=false` in the same form): your uploaded PNG is saved to the media mount, checked with `user_owns_file`, and used directly as the still — the ComfyUI model dropdown is bypassed entirely. Both paths now produce visible, zooming Ken Burns output.
