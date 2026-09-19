@@ -349,6 +349,7 @@
     const form = new FormData();
     form.append("filename", fname);
     form.append("title", $("youtube-title")?.value || "");
+    form.append("description", $("youtube-description")?.value || "");
     form.append("karaoke", $("youtube-karaoke")?.checked ? "true" : "false");
     form.append("ai_cover", $("youtube-ai-cover")?.checked ? "true" : "false");
     if (_coverFile) form.append("image", _coverFile);

@@ -177,6 +177,7 @@ async def youtube_prepare(
     request: Request,
     filename: str = Form(...),
     title: str = Form(""),
+    description: str = Form(""),
     karaoke: str = Form("true"),
     ai_cover: str = Form("true"),
     image: UploadFile | None = File(None),
@@ -196,7 +197,7 @@ async def youtube_prepare(
         return err
 
     payload = _build_job_payload(
-        filename, audio_path, image_path, title, "", "private", karaoke, "true", ai_cover
+        filename, audio_path, image_path, title, description, "private", karaoke, "true", ai_cover
     )
     outdir = Path(tempfile.mkdtemp(prefix="youtube_manual_"))
     out_path = outdir / f"{_safe_stem(payload['song_name'])}.mp4"
