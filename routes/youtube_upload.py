@@ -125,7 +125,7 @@ def _build_job_payload(
         "image_path": image_path,
         "song_name": job.get("song_name") or params.get("song_name") or title or audio_path.stem,
         "caption": job.get("caption", ""),
-        "lyrics": job.get("lyrics", ""),
+        "lyrics": job.get("lyrics", "") or description or job.get("caption", ""),
         "bpm": params.get("bpm", 120),
         "key": params.get("key", ""),
         "scale": params.get("scale", ""),

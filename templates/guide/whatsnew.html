@@ -1,4 +1,15 @@
 <html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
+
+<div style="border:1px solid #2d3041;border-radius:8px;padding:14px;margin-bottom:18px;background:#101218">
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:12px">🐛 v4.7.1 — Album Cover Details Now Drive the AI Art</h2>
+<p>Every cover used to come out looking like the same stock subject — the generator was only fed the song's genre tags (<em>synthwave / rock / hip-hop…</em>), so ComfyUI kept reaching for a generic <em>car</em> no matter what your song was about. No more.</p>
+<ul>
+  <li><strong>🎨 What you type is what it paints</strong> — the <strong>Album cover details</strong> text on the <strong>YouTube</strong> tab now becomes the art prompt sent to ComfyUI (via <code>core/youtube_uploader.py → generate_cover_comfyui</code>). Write neon rain, a midnight highway, a lonely astronaut — that's what the cover becomes.</li>
+  <li><strong>✏️ Renamed for intent</strong> — the old <em>"Video details"</em> box was doing double duty (YouTube description AND art hint), which is why it kept guessing. It's now the dedicated <strong>Album cover details</strong> window, and that text is folded straight into the cover workflow JSON sent to ComfyUI.</li>
+  <li><strong>🧠 Lyrics-aware fallback</strong> — if you leave the box empty, the generator falls back to your saved song lyrics, then genre + BPM/key tags — never a stock "car".</li>
+</ul>
+</div>
+
 <h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.7.0 — YouTube Upload</h2>
 <p>Directly from the redesigned <strong>YouTube</strong> tab (moved to the main tabs for prominence), a freshly-minded song is rendered at native HD into a video — arranged over ComfyUI AI cover art — and uploaded straight to a connected channel, captions included.</p>
 <ul>

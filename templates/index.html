@@ -1951,11 +1951,16 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 4.7.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; September 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 4.7.1 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; September 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
       </div>
 
       <div class="about-section">
+        <h3>v4.7.1 — Album Cover Details Drive the Art</h3>
+        <ul>
+          <li><strong>🎨 The windows you already type in now steer the art</strong> — the YouTube tab's <em>"Video details"</em> window (renamed to <strong>Album cover details</strong> because that's what it was always feeding) now flows <em>its text</em> straight into the ComfyUI cover prompt. Describe neon rain, a midnight highway, a stadium crowd — that's what the album cover becomes, instead of the generator defaulting to a generic <em>car</em>.</li>
+          <li><strong>✏️ No more "it always picks cars"</strong> — the cover producer was only ever looking at your genre tags (<code>core/youtube_uploader.py</code>). Your Album cover details text now fills the lyrics slot of the SDXL cover job, so ComfyUI renders <em>your words</em>, not its favourite stock subject.</li>
+        </ul>
         <h3>v4.7.0 — YouTube Upload &amp; Lyric Videos</h3>
         <ul>
           <li><strong>📤 YouTube tab (promoted to the main tabs)</strong> — publish a finished song straight to YouTube: ComfyUI runs the album cover, ffmpeg assembles the Ken Burns + karaoke-burn mixdown at native HD, and the MP4 uploads to a connected channel via OAuth.</li>
@@ -2861,6 +2866,17 @@
       </div>
 
       <div id="artwork-lyrics-panel">
+        <div class="field-group" style="margin-bottom:12px">
+          <label>Song <span style="font-size:11px;color:var(--muted)">(pulls saved lyrics + genre/mood hints from a generated song)</span></label>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <select id="artwork-song-select" style="flex:1;min-width:220px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">
+              <option value="">Loading your songs…</option>
+            </select>
+            <label style="font-size:12px;color:var(--text);white-space:nowrap" title="Automatically start generating the cover right after you pick a song">
+              <input type="checkbox" id="artwork-auto-gen" checked> ⚡ Auto-generate cover
+            </label>
+          </div>
+        </div>
         <div class="field-group">
           <label>Lyrics <span style="font-size:11px;color:var(--muted)">(visual concepts extracted from sung lines)</span></label>
           <textarea id="artwork-lyrics" rows="8" placeholder="Paste lyrics here — [Verse], [Chorus] sections will be ignored, only sung text used" style="width:100%;resize:vertical;font-size:12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px"></textarea>
@@ -3018,9 +3034,9 @@
       </div>
 
       <div style="border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:14px;margin-bottom:12px">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Video details</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Album cover details</div>
         <input type="text" id="youtube-title" placeholder="Title (defaults to song name)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);margin-bottom:8px;font-size:13px">
-        <textarea id="youtube-description" rows="3" placeholder="Description (defaults to tags + BPM/key)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);resize:vertical;font-size:13px"></textarea>
+        <textarea id="youtube-description" rows="3" placeholder="Description — the lyrics in this box drive the AI cover art prompt (defaults to tags + BPM/key)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);resize:vertical;font-size:13px"></textarea>
       </div>
 
       <div style="border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:14px;margin-bottom:12px">

@@ -5,7 +5,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 import config
@@ -14,6 +14,16 @@ from core.executor import get_audio_pool
 from nyx_step import get_user_email
 
 router = APIRouter(prefix="/api/artwork", tags=["artwork"])
+
+# ── In-memory artwork job registry ─────────────────────────────────────────────
+# Artwork generation is async: /generate returns immediately with a prompt_id and
+# a background task polls ComfyUI. Returning instantly keeps the HTTP request well
+# under reverse-proxy timeouts (Cloudflare Edge ≈ 100 s) — the previous sync
+# version held the connection for several minutes and the proxy replied with an
+# HTML timeout page, which broke resp.json() on the frontend.
+_ARTWORK_RESULTS: dict[str, dict] = {}
+_ARTWORK_POLL_SECONDS = 0.5
+_ARTWORK_TIMEOUT_STEPS = 600  # up to 300 s — SDXL Base can take 2–4 min
 
 
 class ArtworkRequest(BaseModel):
@@ -51,16 +61,70 @@ def _build_artwork_workflow(req: ArtworkRequest, seed: int) -> dict:
             "seed": seed, "steps": req.steps, "cfg": req.cfg,
             "sampler_name": req.sampler, "scheduler": req.scheduler, "denoise": 1.0}},
         "6": {"class_type": "VAEDecode", "inputs": {"samples": ["5", 0], "vae": ["1", 2]}},
-        "7": {"class_type": "SaveImage", "inputs": {"images": ["6", 0], "filename_prefix": prefix}},
+        # subfolder "audio/" = config.COMFYUI_OUTPUT_DIR — keeps covers next to
+        # the songs and matches what routes/download.py is able to resolve.
+        "7": {"class_type": "SaveImage", "inputs": {"images": ["6", 0], "filename_prefix": f"audio/{prefix}"}},
     }
 
     wf["2"]["inputs"]["text"] = req.prompt
     return {"workflow": wf, "seed": seed, "prefix": prefix}
 
 
+async def _poll_artwork_and_store(
+    prompt_id: str,
+    prefix: str,
+    req: ArtworkRequest,
+    gen_seed: int,
+    user_email: str,
+) -> None:
+    """Background worker: poll ComfyUI history until the PNG lands, then record it."""
+    client = ComfyUIClient()
+    output_root = config.COMFYUI_OUTPUT_DIR.parent  # SaveImage subfolder is relative to the output root
+
+    for _ in range(_ARTWORK_TIMEOUT_STEPS):
+        await asyncio.sleep(_ARTWORK_POLL_SECONDS)
+        entry = client.get_history(prompt_id).get(prompt_id, {})
+        status_str = entry.get("status", {}).get("status_str", "")
+        if status_str == "error":
+            _ARTWORK_RESULTS[prompt_id] = {
+                "status": "error", "prompt_id": prompt_id, "error": "ComfyUI generation failed",
+            }
+            return
+        for node_out in entry.get("outputs", {}).values():
+            for img in node_out.get("images", []) or []:
+                fname = img.get("filename", "")
+                if not fname or not fname.startswith(prefix):
+                    continue
+                rel = Path(img.get("subfolder", "")) / fname if img.get("subfolder") else Path(fname)
+                path = output_root / rel
+                if path.exists():
+                    _ARTWORK_RESULTS[prompt_id] = {
+                        "status": "done",
+                        "prompt_id": prompt_id,
+                        "filename": fname,
+                        "path": str(path),
+                        "prompt": req.prompt,
+                        "model": req.model,
+                        "steps": req.steps,
+                        "seed": gen_seed,
+                        "dimensions": f"{req.width}x{req.height}",
+                    }
+                    return
+
+    _ARTWORK_RESULTS[prompt_id] = {
+        "status": "timeout", "prompt_id": prompt_id,
+        "error": "Generation timed out — ComfyUI is busy or the run stalled",
+    }
+
+
 @router.post("/generate")
 async def generate_artwork(req: ArtworkRequest, request: Request):
-    """Generate album cover artwork from a text prompt (lyrics, description, etc.)."""
+    """Queue album cover artwork from a text prompt (lyrics, description, etc.).
+
+    Submits the workflow to ComfyUI and returns immediately with a ``prompt_id``;
+    the PNG is produced in the background. Poll ``/api/artwork/status/{id}`` and
+    fetch the finished image from ``/api/artwork/image/{id}``.
+    """
     get_user_email(request)
 
     client = ComfyUIClient()
@@ -75,31 +139,41 @@ async def generate_artwork(req: ArtworkRequest, request: Request):
         return JSONResponse({"error": "ComfyUI submit failed: " + send_result["error"]}, status_code=400)
 
     prompt_id = send_result.get("prompt_id", "")
-    output_dir = config.COMFYUI_OUTPUT_DIR
-    prefix = result["prefix"]
+    if not prompt_id:
+        return JSONResponse({"error": "ComfyUI submit returned no prompt_id"}, status_code=500)
 
-    for _ in range(300):  # up to 150s (SDXL Base is slower)
-        await asyncio.sleep(0.5)
-        hist = client.get_history(prompt_id)
-        entry = hist.get(prompt_id, {})
-        status_str = entry.get("status", {}).get("status_str", "")
-        if status_str == "error":
-            return JSONResponse({"error": "ComfyUI generation failed"}, status_code=500)
-        outputs = entry.get("outputs", {})
-        for node_out in outputs.values():
-            for img in node_out.get("images", []) or []:
-                fname = img.get("filename", "")
-                if fname and fname.startswith(prefix):
-                    path = output_dir / fname
-                    if path.exists():
-                        return {
-                            "filename": fname,
-                            "path": str(path),
-                            "prompt": req.prompt,
-                            "seed": gen_seed,
-                            "dimensions": f"{req.width}x{req.height}",
-                        }
-    return JSONResponse({"error": "Generation timed out"}, status_code=504)
+    _ARTWORK_RESULTS[prompt_id] = {"status": "running", "prompt_id": prompt_id, "song_name": req.song_name}
+    asyncio.create_task(
+        _poll_artwork_and_store(prompt_id, result["prefix"], req, gen_seed, get_user_email(request))
+    )
+    return {"prompt_id": prompt_id, "status": "running", "song_name": req.song_name}
+
+
+@router.get("/status/{prompt_id}")
+async def artwork_status(prompt_id: str, request: Request):
+    """Live state of an artwork job: ``running`` / ``done`` / ``error`` / ``timeout``."""
+    get_user_email(request)
+    res = _ARTWORK_RESULTS.get(prompt_id)
+    if res is None:
+        return {"status": "unknown", "prompt_id": prompt_id}
+    return res
+
+
+@router.get("/image/{prompt_id}")
+async def artwork_image(prompt_id: str, request: Request):
+    """Stream the finished cover PNG for a completed artwork job."""
+    get_user_email(request)
+    res = _ARTWORK_RESULTS.get(prompt_id) or {}
+    if res.get("status") != "done" or not res.get("path"):
+        return JSONResponse({"error": "Artwork not ready"}, status_code=404)
+    path = Path(res["path"])
+    if not path.is_file():
+        return JSONResponse({"error": "Image missing on disk"}, status_code=404)
+    return FileResponse(
+        path,
+        media_type="image/png",
+        headers={"Content-Disposition": f'inline; filename="{res["filename"]}"', "Cache-Control": "no-store"},
+    )
 
 
 class LyricsArtworkRequest(BaseModel):
@@ -392,7 +466,11 @@ def _extract_visual_prompt(lyrics: str, style: str, genre: str = "", mood: str =
 
 @router.post("/from-lyrics")
 async def generate_from_lyrics(req: LyricsArtworkRequest, request: Request):
-    """Generate album cover artwork automatically from song lyrics."""
+    """Queue album cover artwork automatically from song lyrics.
+
+    Extracts visual concepts → builds the art prompt → submits to ComfyUI and
+    returns immediately with a ``prompt_id`` (see ``/generate``).
+    """
     get_user_email(request)
 
     visual_prompt = _extract_visual_prompt(req.lyrics, req.style, req.genre, req.mood)
