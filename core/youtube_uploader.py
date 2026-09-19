@@ -397,7 +397,7 @@ def build_video(
     scale = (
         "[0:v]scale=2200:1240:force_original_aspect_ratio=increase:flags=lanczos,"
         "crop=2200:1240,"
-        "zoompan=z='zoom_expr':x='iw/2-(iw/zoom)/2':y='ih/2-(ih/zoom)/2':"
+        f"zoompan=z='{zoom_expr}':x='iw/2-(iw/zoom)/2':y='ih/2-(ih/zoom)/2':"
         f"d={int(dur * 30)}:fps=30:s=1920x1080,format=yuv420p"
     )
     if ass_path is not None and ass_path.exists():
