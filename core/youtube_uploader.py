@@ -327,10 +327,20 @@ def generate_cover_comfyui(
         lines = []
         for raw in lyrics.splitlines():
             stripped = raw.strip()
-            if not stripped or stripped.startswith("["):
+            if not stripped:
                 continue
-            lines.append(stripped)
-        text = " ".join(lines[:8])
+            if stripped.startswith("[") and stripped.endswith("]"):
+                inner = stripped[1:-1]
+                if ":" in inner:
+                    _, _, detail = inner.partition(":")
+                    detail = detail.strip()
+                    if detail:
+                        lines.append(detail)
+                else:
+                    lines.append(inner)
+            else:
+                lines.append(stripped)
+        text = " ".join(lines[:10])
         text = re.sub(r'\([^)]*\)', '', text)
         text = text[:300]
         if text:
