@@ -54,6 +54,8 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
     tags: document.getElementById("overview-tags").value.trim(),
     lyrics: document.getElementById("overview-lyrics").value,
     song_name: songName,
+    artist: (document.getElementById("artist-name")?.value || "").trim(),
+    album: (document.getElementById("album-name")?.value || "").trim(),
   };
 
   try {

@@ -2,8 +2,11 @@ __pycache__/
 *.pyc
 *.pyo
 .env
+.youtube_token.json
+client_secret.json
 last_sent.json
 presets/
 history.jsonl
 nyx_step.db*
+jobs.db
 venv/

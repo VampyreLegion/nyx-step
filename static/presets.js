@@ -4,6 +4,8 @@ function _buildPreset() {
   return {
     _version: 1,
     song_name: document.getElementById("song-name").value.trim() || "Untitled",
+    artist: (document.getElementById("artist-name")?.value || "").trim(),
+    album: (document.getElementById("album-name")?.value || "").trim(),
     tags: document.getElementById("overview-tags").value,
     lyrics: mwState.lyrics,
     negative_tags: mwState.negative_tags || "",
@@ -83,6 +85,8 @@ function _applyPreset(p) {
     ditEl.dispatchEvent(new Event("change"));  // refresh the model hint text
   }
   _set("song-name",       p.song_name);
+  _set("artist-name",     p.artist ?? "");
+  _set("album-name",      p.album ?? "");
   _set("overview-tags",   p.tags ?? "");
   _set("overview-lyrics", mwState.lyrics);
   _set("lyrics-editor",   mwState.lyrics);
@@ -252,6 +256,8 @@ document.getElementById("btn-clear-overview").addEventListener("click", () => {
     temperature: 0.85, top_p: 0.9, top_k: 0, min_p: 0.0,
   });
   document.getElementById("song-name").value = "";
+  document.getElementById("artist-name").value = "";
+  document.getElementById("album-name").value = "";
   document.getElementById("overview-tags").value = "";
   document.getElementById("overview-lyrics").value = "";
   document.getElementById("lyrics-editor").value = "";

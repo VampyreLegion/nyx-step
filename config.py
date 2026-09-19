@@ -6,6 +6,12 @@ OLLAMA_URL = "http://localhost:11434"
 RADIO_HOST = os.getenv("RADIO_HOST", "127.0.0.1")
 RADIO_PORT = int(os.getenv("RADIO_PORT", "8001"))
 BRAVE_API_KEY = os.getenv("BRAVE_API_KEY", "")
+YOUTUBE_COVER_MODEL = os.getenv("YOUTUBE_COVER_MODEL", "sd_xl_turbo_1.0_fp16.safetensors")
+
+# ID3/FLAC tag defaults. Per-song override is sent as `artist` / `album`
+# in the generate request and stored in job params.
+DEFAULT_ARTIST = os.getenv("DEFAULT_ARTIST", "Legion and Nyx")
+DEFAULT_ALBUM  = os.getenv("DEFAULT_ALBUM", "Nyx-Step AI")
 
 _ACETALK = pathlib.Path("/home/legion/legionprojects/ComfyUI/AceUser")
 _COMFYUI = pathlib.Path("/home/legion/legionprojects/ComfyUI")

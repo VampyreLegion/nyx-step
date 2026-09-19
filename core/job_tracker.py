@@ -38,6 +38,8 @@ def _tag_output_files(job: JobInfo) -> None:
         "song_name": job.song_name,
         "caption": job.caption,
         "seed": job.seed,
+        "lyrics": job.lyrics,
+        "submitted_at": job.submitted_at.isoformat() if hasattr(job.submitted_at, "isoformat") else "",
         "params": job.params,
     }
     for fname in job.output_files:

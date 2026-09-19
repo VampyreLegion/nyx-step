@@ -35,16 +35,78 @@ def _fmt_lrc_time(seconds: float) -> str:
     return f"[{minutes:02d}:{secs:05.2f}]"
 
 
+_INSTRUMENT_VOCAL_TAGS = {
+    "guitar", "guitars", "acoustic guitar", "electric guitar", "clean guitar",
+    "distorted guitar", "lead guitar", "rhythm guitar", "slide guitar",
+    "drums", "drum", "drum kit", "drum set", "percussion", "kick", "snare",
+    "hi-hat", "hihat", "cymbal", "cymbals", "tom", "toms", "ride", "crash",
+    "bass", "bass guitar", "electric bass", "upright bass", "double bass",
+    "piano", "keys", "keyboard", "synth", "synthesizer", "organ", "rhodes",
+    "wurlitzer", "clavinet", "mellotron", "pad", "pads", "lead synth",
+    "strings", "string", "violin", "viola", "cello", "orchestra", "orchestral",
+    "brass", "trumpet", "trombone", "sax", "saxophone", "horn", "horns",
+    "woodwind", "flute", "clarinet", "oboe", "bassoon",
+    "vocal", "vocals", "voice", "lead vocal", "lead vocals", "backing vocal",
+    "backing vocals", "bgv", "harmony", "harmonies", "choir", "a cappella",
+    "acappella", "rap", "spoken word", "soprano", "alto", "tenor", "baritone",
+    "bass vocal", "male vocal", "male vocals", "female vocal", "female vocals",
+    "androgynous vocal", "duet", "group vocal", "call and response",
+    "solo", "guitar solo", "piano solo", "sax solo", "saxophone solo",
+    "drum solo", "bass solo", "violin solo", "trumpet solo", "organ solo",
+    "instrumental", "interlude", "fill", "drum fill", "break", "breakdown",
+    "drop", "build", "buildup", "riser", "downlifter",
+    "ad-lib", "adlib", "improv", "improvisation",
+}
+
+
+def _is_instrument_vocal_tag(text: str) -> bool:
+    """Check if a bracketed line is an instrument/vocal tag (not a structural section)."""
+    stripped = text.strip()
+    if not (stripped.startswith("[") and stripped.endswith("]")):
+        return False
+    content = stripped[1:-1].strip().lower()
+    if not content:
+        return True
+    # Structural sections to KEEP (they guide song structure but aren't timed as lyrics)
+    structural = {
+        "intro", "verse", "pre-chorus", "pre chorus", "chorus", "bridge",
+        "outro", "interlude", "drop", "breakdown", "pre-chorus", "post-chorus",
+        "pre chorus", "post chorus", "pre-drop", "post-drop",
+    }
+    # Check if it's a structural section (with optional number/label)
+    for s in structural:
+        if content == s or content.startswith(s + " ") or content.startswith(s + ":"):
+            return False
+    # Check if it matches known instrument/vocal tags
+    if content in _INSTRUMENT_VOCAL_TAGS:
+        return True
+    # Check for patterns like "guitar solo", "drum fill", "vocal harmony"
+    for tag in _INSTRUMENT_VOCAL_TAGS:
+        if content.startswith(tag + " ") or content.endswith(" " + tag):
+            return True
+    return False
+
+
 def _split_lyrics(text: str) -> list[str]:
-    """Split lyrics into non-empty lines, stripping section markers."""
+    """Split lyrics into non-empty lines, stripping section markers and instrument/vocal tags."""
     lines = []
     for raw in text.splitlines():
         stripped = raw.strip()
         if not stripped:
             continue
-        # ACE-Step section brackets like [Verse], [Chorus] — keep as metadata but skip for timing
-        if re.match(r"^\[[A-Za-z\s]+\]$", stripped):
+        # Skip structural section brackets like [Verse], [Verse 1], [Chorus 2],
+        # [Intro: ...], [Bridge: ...] — metadata, not song text.
+        if re.match(r"^\[[^\]]+\]$", stripped):
             continue
+        # Skip lines that are entirely instrument/vocal tags like [Guitar], [Drums], [Vocals]
+        if _is_instrument_vocal_tag(stripped):
+            continue
+        # Strip leading instrument/vocal tag from lines like "[Guitar] Some lyrics here"
+        leading_tag_match = re.match(r"^\[[^\]]+\]\s*(.+)$", stripped)
+        if leading_tag_match and _is_instrument_vocal_tag(leading_tag_match.group(0).split("]")[0] + "]"):
+            stripped = leading_tag_match.group(1).strip()
+            if not stripped:
+                continue
         lines.append(stripped)
     return lines
 
@@ -76,48 +138,57 @@ def _generate_lrc(audio_path: Path, lyrics_text: str, bpm: float) -> str:
     is_silent = rms < threshold
 
     # Find transitions from silent → active (phrase starts)
-    phrase_starts = [0.0]  # always include t=0
+    phrase_starts: list[float] = []
     min_gap = 0.8  # seconds of silence before counting as a new phrase
     min_phrase = 1.5  # minimum seconds between phrase starts
     in_silence = False
     silence_start = 0.0
 
-    for i, (t, sil) in enumerate(zip(times, is_silent)):
+    for t, sil in zip(times, is_silent):
         if sil and not in_silence:
             in_silence = True
             silence_start = t
         elif not sil and in_silence:
             in_silence = False
             gap = t - silence_start
-            if gap >= min_gap:
-                candidate = t
-                if candidate - phrase_starts[-1] >= min_phrase:
-                    phrase_starts.append(candidate)
+            if gap >= min_gap and (not phrase_starts or t - phrase_starts[-1] >= min_phrase):
+                phrase_starts.append(t)
+    if not phrase_starts:
+        phrase_starts = [0.0]
 
-    # If we have too few boundaries, subdivide based on BPM
-    beats_per_line = max(4, int(bpm / 15))  # ~4 beats per line
-    beat_duration = 60.0 / max(bpm, 40)
-    line_duration = beat_duration * beats_per_line
+    # Keep a trailing margin so the outro/slow-down isn't crammed with lines.
+    tail_margin = 3.0
+    usable_end = max(2.0, duration - tail_margin)
+    anchors = [t for t in phrase_starts if t < usable_end]
 
-    if len(phrase_starts) < len(lines):
-        last = phrase_starts[-1]
-        while len(phrase_starts) < len(lines) and last + line_duration < duration - 1:
-            last += line_duration
-            phrase_starts.append(round(last, 2))
+    # Assign every line a strictly increasing slot spread evenly across the
+    # whole singing window, snapping to a nearby detected phrase start when one
+    # is close — so lines never collapse onto one timestamp before the end.
+    n = len(lines)
+    first = anchors[0] if anchors else 0.0
+    span = max(1.0, usable_end - first)
 
-    # Trim to duration
-    phrase_starts = [t for t in phrase_starts if t < duration - 0.5]
+    line_times: list[float] = []
+    used = 0
+    prev = -1.0
+    for i in range(n):
+        ideal = first + span * ((i + 0.5) / n)
+        while used < len(anchors) and anchors[used] < ideal - 0.8:
+            used += 1
+        t = ideal
+        if used < len(anchors) and anchors[used] <= ideal + 1.0:
+            t = anchors[used]
+            used += 1
+        if t <= prev:
+            t = prev + 0.2
+        t = min(t, usable_end)
+        if t > usable_end - 0.05:
+            t = max(prev, usable_end - 0.05)
+        line_times.append(t)
+        prev = t
 
     # ── Assign lyrics → times ──────────────────────────────────────────────────
-    lrc_lines = []
-    for i, line in enumerate(lines):
-        if i < len(phrase_starts):
-            t = phrase_starts[i]
-        else:
-            # Overflow: continue from last known time + line_duration
-            t = phrase_starts[-1] + (i - len(phrase_starts) + 1) * line_duration
-        t = min(t, duration - 0.1)
-        lrc_lines.append((t, line))
+    lrc_lines = [(t, line) for t, line in zip(line_times, lines)]
 
     header = (
         f"[ti:Generated by Nyx-Step]\n"

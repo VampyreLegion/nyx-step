@@ -52,6 +52,8 @@ class GenerateRequest(BaseModel):
     top_k: int = Field(default=0, ge=0, le=1000)
     min_p: float = Field(default=0.0, ge=0.0, le=1.0)
     song_name: str = "Untitled"
+    artist: str = ""
+    album: str = ""
     audio_format: str = "mp3"
     audio_quality: str = "V0"
     vocal_language: str = "auto"

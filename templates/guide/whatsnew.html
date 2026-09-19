@@ -1,4 +1,14 @@
 <html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.7.0 — YouTube Upload</h2>
+<p>Directly from the redesigned <strong>YouTube</strong> tab (moved to the main tabs for prominence), a freshly-minded song is rendered at native HD into a video — arranged over ComfyUI AI cover art — and uploaded straight to a connected channel, captions included.</p>
+<ul>
+  <li><strong>📤 Upload to a connected channel</strong> — vanilla OAuth flow (Cloudflare Access + Google), or download the generated MP4 for manual upload.</li>
+  <li><strong>🎨 ComfyUI AI cover art</strong> — <code>core/youtube_uploader.py</code> generates the album cover at native resolution, then ffmpeg assembles the Ken Burns + optional karaoke burn (LRC→.srt) mixdown with your vocals on top.</li>
+  <li><strong>🎤 Vocal-ready mixdown</strong> — the "Add Lyrics to My Song" vocal chain (ACE-Step reference-free song + Demucs vocal stem + sidechain mixdown) feeds the same frame, so the lyric video ships with your singer in it.</li>
+</ul>
+
+<hr style="border-color:#2d3041;margin:20px 0">
+
 <h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:16px">✨ What's New in v4.6.0 — Finish My Jam Vocals</h2>
 
 <h3>🎙️ Add Lyrics to My Song — vocals on your original jam</h3>
