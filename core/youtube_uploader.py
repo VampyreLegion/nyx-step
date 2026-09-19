@@ -263,27 +263,62 @@ def generate_cover_ffmpeg(caption: str, song_name: str, out_path: pathlib.Path) 
     return out_path
 
 
-def generate_cover_comfyui(caption: str, song_name: str, lyrics: str = "") -> pathlib.Path | None:
-    """Generate an album-cover via ComfyUI txt2img (SDXL Base for quality).
+MODEL_PRESETS: dict[str, dict] = {
+    # majicmixRealistic = photoreal humans (SD1.5). Native sweet spot ~768 wide.
+    "majicmixRealistic_v7.safetensors": {
+        "width": 768, "height": 1024, "steps": 26, "cfg": 6.5,
+        "sampler": "euler", "scheduler": "simple",
+        "style": "photorealistic, sharp focus, detailed face, cinematic lighting",
+    },
+    # SDXL Base = balanced, generic-natural skin tones (least "Asian-lean").
+    "sd_xl_base_1.0.safetensors": {
+        "width": 1024, "height": 1536, "steps": 24, "cfg": 7.0,
+        "sampler": "euler", "scheduler": "karras",
+        "style": "photorealistic, cinematic lighting, detailed subject",
+    },
+    # Porcelain/"anime" is an SDXL model — needs its own prompt idiom & res.
+    "ponyDiffusionV6XL_v6.safetensors": {
+        "width": 1024, "height": 1536, "steps": 24, "cfg": 7.0,
+        "sampler": "euler", "scheduler": "karras",
+        "prompt_prefix": "score_9, score_8_up, score_7_up, ",
+        "style": "masterpiece, best quality, highly detailed, anime style",
+    },
+}
+
+
+def generate_cover_comfyui(
+    caption: str,
+    song_name: str,
+    lyrics: str = "",
+    model: str = "sd_xl_base_1.0.safetensors",
+) -> pathlib.Path | None:
+    """Generate an album-cover via ComfyUI txt2img (selectable photoreal models).
 
     Uses lyrics (if provided) to extract visual concepts for more relevant artwork.
     Falls back to caption/tags if no lyrics.
+    Accepts `model` = a key into MODEL_PRESETS (default majicmix for photoreal humans).
     """
     import config as cfg
     from core.comfyui import ComfyUIClient
     import re
+    import time as _t
 
-    ckpt = "majicmixRealistic_v7.safetensors"
+    presets = MODEL_PRESETS.get(model) or MODEL_PRESETS["sd_xl_base_1.0.safetensors"]
+    ckpt = presets.get("ckpt") or model  # honor the actually-selected checkpoint
     prefix = "nyx_youtube_cover"
     wf = {
         "1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": ckpt}},
         "2": {"class_type": "CLIPTextEncode", "inputs": {"text": "", "clip": ["1", 1]}},
         "3": {"class_type": "CLIPTextEncode", "inputs": {"text": "text, watermark, signature, logo, blurry, low quality, ugly, deformed, noisy, grain, lowres, bad anatomy, extra limbs, cropped, worst quality, jpeg artifacts", "clip": ["1", 1]}},
-        "4": {"class_type": "EmptyLatentImage", "inputs": {"width": 768, "height": 1024, "batch_size": 1}},
+        "4": {
+            "class_type": "EmptyLatentImage",
+            "inputs": {"width": presets["width"], "height": presets["height"], "batch_size": 1},
+        },
         "5": {"class_type": "KSampler", "inputs": {
             "model": ["1", 0], "positive": ["2", 0], "negative": ["3", 0], "latent_image": ["4", 0],
-            "seed": int(time.time()) % 2**31, "steps": 20, "cfg": 7.0,
-            "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0}},
+            "seed": int(time.time()) % 2**31,
+            "steps": presets["steps"], "cfg": presets["cfg"],
+            "sampler_name": presets["sampler"], "scheduler": presets["scheduler"], "denoise": 1.0}},
         "6": {"class_type": "VAEDecode", "inputs": {"samples": ["5", 0], "vae": ["1", 2]}},
         "7": {"class_type": "SaveImage", "inputs": {"images": ["6", 0], "filename_prefix": prefix}},
     }
@@ -339,8 +374,13 @@ def build_video(
     image_path: pathlib.Path,
     out_path: pathlib.Path,
     ass_path: pathlib.Path | None = None,
+    zoom_rate: float = 0.0004,
 ) -> pathlib.Path:
-    """Compose a lyric-video mp4: static cover + audio (+ burned karaoke if ASS)."""
+    """Compose a lyric-video mp4: static cover + audio (+ burned karaoke if ASS).
+
+    zoom_rate is the Ken Burns per-frame scale increment (default 0.0004, a
+    slow gentle drift). Lower = slower/smoother zoom, higher = more dramatic.
+    """
     dur = _audio_duration(audio_path)
     if dur <= 0:
         raise RuntimeError("Could not read audio duration")
@@ -350,10 +390,14 @@ def build_video(
     # ideal 1965, +2.7x render). zoompan resamples at fixed precision, so a
     # bigger canvas doesn't help. Sharpness comes from native cover resolution,
     # raised in generate_cover_comfyui (EmptyLatentImage).
+    # Gentle Ken Burns on the still, then optional subtitle burn.
+    # zoompan z is a per-frame scale multiplier: zoom_rate controls how fast
+    # the camera pushes in (higher = faster zoom).
+    zoom_expr = f"1+{zoom_rate}*on"
     scale = (
         "[0:v]scale=2200:1240:force_original_aspect_ratio=increase:flags=lanczos,"
         "crop=2200:1240,"
-        "zoompan=z='1+0.0004*on':x='iw/2-(iw/zoom)/2':y='ih/2-(ih/zoom)/2':"
+        "zoompan=z='zoom_expr':x='iw/2-(iw/zoom)/2':y='ih/2-(ih/zoom)/2':"
         f"d={int(dur * 30)}:fps=30:s=1920x1080,format=yuv420p"
     )
     if ass_path is not None and ass_path.exists():
@@ -525,7 +569,7 @@ def _build_video_artifacts(job: dict, tmpdir: pathlib.Path) -> tuple[pathlib.Pat
     if image_path and pathlib.Path(image_path).exists():
         cover = pathlib.Path(image_path)
     elif job.get("ai_cover", True):
-        cover = generate_cover_comfyui(job.get("caption", ""), job.get("song_name", ""), job.get("lyrics", ""))
+        cover = generate_cover_comfyui(job.get("caption", ""), job.get("song_name", ""), job.get("lyrics", ""), model=job.get("model", ""))
         if cover is None:
             cover = generate_cover_ffmpeg(job.get("caption", ""), job.get("song_name", ""), tmpdir / "cover.png")
     else:

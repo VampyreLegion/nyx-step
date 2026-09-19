@@ -3048,6 +3048,15 @@
           </label>
           <button class="secondary small" id="youtube-cover-clear" title="Clear uploaded image" style="display:none;font-size:11px">✕ Clear</button>
           <label style="font-size:12px;color:var(--muted)"><input type="checkbox" id="youtube-ai-cover" checked> AI-generate cover if no image uploaded</label>
+          <div style="margin-top:6px">
+            <label style="font-size:12px;color:var(--muted)">Diffusion model:
+              <select id="youtube-model" style="margin:2px 0 4px;padding:3px 6px;border-radius:6px;border:1px solid var(--border, #3a3a4a);background:#1e1e28;color:var(--text)">
+                <option value="sd_xl_base_1.0.safetensors" selected>SDXL Base 1.0 — most neutral skin tones, least Asian-lean (recommended)</option>
+                <option value="majicmixRealistic_v7.safetensors">majicmixRealistic v7 — photoreal, but Asian-lean (human-focused SD1.5)</option>
+                <option value="ponyDiffusionV6XL_v6.safetensors">Pony Diffusion V6 — anime/manga style</option>
+              </select>
+            </label>
+          </div>
         </div>
         <div id="youtube-cover-preview" style="margin-top:8px"></div>
       </div>

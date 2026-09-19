@@ -316,6 +316,7 @@
     form.append("privacy", $("youtube-privacy")?.value || "private");
     form.append("karaoke", $("youtube-karaoke")?.checked ? "true" : "false");
     form.append("captions", $("youtube-captions")?.checked ? "true" : "false");
+    form.append("model", $("youtube-model")?.value || "");
     form.append("ai_cover", $("youtube-ai-cover")?.checked ? "true" : "false");
     if (_coverFile) form.append("image", _coverFile);
 
@@ -351,6 +352,7 @@
     form.append("title", $("youtube-title")?.value || "");
     form.append("description", $("youtube-description")?.value || "");
     form.append("karaoke", $("youtube-karaoke")?.checked ? "true" : "false");
+    form.append("model", $("youtube-model")?.value || "");
     form.append("ai_cover", $("youtube-ai-cover")?.checked ? "true" : "false");
     if (_coverFile) form.append("image", _coverFile);
 

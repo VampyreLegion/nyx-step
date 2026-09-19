@@ -111,11 +111,12 @@ def _build_job_payload(
     audio_path: Path,
     image_path: str | None,
     title: str,
-    description: str,
-    privacy: str,
-    karaoke: str,
-    captions: str,
-    ai_cover: str,
+    description: str = "",
+    privacy: str = "private",
+    karaoke: str = "false",
+    captions: str = "true",
+    ai_cover: str = "true",
+    model: str = "",
 ) -> dict:
     job = _load_job_for(filename)
     params = job.get("params", {}) or {}
@@ -137,6 +138,7 @@ def _build_job_payload(
         "karaoke": karaoke.lower() in ("1", "true", "on", "yes"),
         "captions": captions.lower() in ("1", "true", "on", "yes"),
         "ai_cover": ai_cover.lower() in ("1", "true", "on", "yes"),
+        "model": job.get("model") or params.get("model") or model or "",
     }
 
 
@@ -150,6 +152,7 @@ async def youtube_upload(
     karaoke: str = Form("false"),
     captions: str = Form("true"),
     ai_cover: str = Form("true"),
+    model: str = Form(""),
     image: UploadFile | None = File(None),
 ):
     user_email = get_user_email(request)
@@ -166,7 +169,7 @@ async def youtube_upload(
         return err
 
     payload = _build_job_payload(
-        filename, audio_path, image_path, title, description, privacy, karaoke, captions, ai_cover
+        filename, audio_path, image_path, title, description, privacy, karaoke, captions, ai_cover, model
     )
     job_id = ytu.create_upload_job(payload)
     return {"job_id": job_id, "filename": filename}
@@ -180,6 +183,7 @@ async def youtube_prepare(
     description: str = Form(""),
     karaoke: str = Form("true"),
     ai_cover: str = Form("true"),
+    model: str = Form(""),
     image: UploadFile | None = File(None),
 ):
     """Build the YouTube-ready mp4 and stream it for manual upload (no Google API)."""
@@ -197,7 +201,7 @@ async def youtube_prepare(
         return err
 
     payload = _build_job_payload(
-        filename, audio_path, image_path, title, description, "private", karaoke, "true", ai_cover
+        filename, audio_path, image_path, title, description, "private", karaoke, "true", ai_cover, model
     )
     outdir = Path(tempfile.mkdtemp(prefix="youtube_manual_"))
     out_path = outdir / f"{_safe_stem(payload['song_name'])}.mp4"
