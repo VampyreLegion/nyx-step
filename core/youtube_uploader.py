@@ -273,13 +273,13 @@ def generate_cover_comfyui(caption: str, song_name: str, lyrics: str = "") -> pa
     from core.comfyui import ComfyUIClient
     import re
 
-    ckpt = "sd_xl_base_1.0.safetensors"
+    ckpt = "majicmixRealistic_v7.safetensors"
     prefix = "nyx_youtube_cover"
     wf = {
         "1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": ckpt}},
         "2": {"class_type": "CLIPTextEncode", "inputs": {"text": "", "clip": ["1", 1]}},
         "3": {"class_type": "CLIPTextEncode", "inputs": {"text": "text, watermark, signature, logo, blurry, low quality, ugly, deformed, noisy, grain, lowres, bad anatomy, extra limbs, cropped, worst quality, jpeg artifacts", "clip": ["1", 1]}},
-        "4": {"class_type": "EmptyLatentImage", "inputs": {"width": 1536, "height": 1024, "batch_size": 1}},
+        "4": {"class_type": "EmptyLatentImage", "inputs": {"width": 768, "height": 1024, "batch_size": 1}},
         "5": {"class_type": "KSampler", "inputs": {
             "model": ["1", 0], "positive": ["2", 0], "negative": ["3", 0], "latent_image": ["4", 0],
             "seed": int(time.time()) % 2**31, "steps": 20, "cfg": 7.0,
