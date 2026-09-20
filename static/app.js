@@ -981,6 +981,9 @@ async function _doArtistLookup(artist, infoEl, stateObj, useWeb = false, applyTy
         _resetOtherApply("easy-artist-info");
         mwState.instruments = [];
         mwState.vocal_tags = [...vocalTags];
+        _easyArtistState.lyric_style = _easyVocalState.lyric_style || "";
+        _easyArtistState.lyric_themes = [...(_easyVocalState.lyric_themes || [])];
+        _easyArtistState.vocal_key = _easyVocalState.vocal_key || "";
       }
       _easyAppliedSource = type;
 
