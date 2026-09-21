@@ -276,9 +276,46 @@ MODEL_PRESETS: dict[str, dict] = {
         "sampler": "euler", "scheduler": "karras",
         "style": "photorealistic, cinematic lighting, detailed subject",
     },
+    # RealVisXL V5.0 — dedicated photoreal SDXL, least-Asian-lean skin tones (recommended default).
+    "RealVisXL_V5.0_fp16.safetensors": {
+        "width": 1024, "height": 1536, "steps": 26, "cfg": 5.5,
+        "sampler": "euler", "scheduler": "karras",
+        "style": "photorealistic, natural skin texture, sharp focus, cinematic lighting",
+    },
+    # Juggernaut XL v9 (RunDiffusion Photo v2) — top all-round SDXL photorealism, warm-natural skin.
+    "Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors": {
+        "width": 1024, "height": 1536, "steps": 28, "cfg": 6.0,
+        "sampler": "euler", "scheduler": "karras",
+        "style": "photorealistic, cinematic lighting, detailed subject, neutral skin tones",
+    },
+    # DreamShaper XL (alpha2 Xl10) — anime/stylized SDXL sibling.
+    "dreamshaperXL_alpha2Xl10.safetensors": {
+        "width": 1024, "height": 1536, "steps": 26, "cfg": 7.0,
+        "sampler": "euler", "scheduler": "karras",
+        "style": "masterpiece, best quality, highly detailed, anime style",
+    },
     # Porcelain/"anime" is an SDXL model — needs its own prompt idiom & res.
     "ponyDiffusionV6XL_v6.safetensors": {
         "width": 1024, "height": 1536, "steps": 24, "cfg": 7.0,
+        "sampler": "euler", "scheduler": "karras",
+        "prompt_prefix": "score_9, score_8_up, score_7_up, ",
+        "style": "masterpiece, best quality, highly detailed, anime style",
+    },
+    # RealVisXL V5 = the least-Asian-lean SDXL photoreal series (neutral skin), 1024 native.
+    "RealVisXL_V5.0_fp16.safetensors": {
+        "width": 1024, "height": 1536, "steps": 22, "cfg": 4.5,
+        "sampler": "euler", "scheduler": "karras",
+        "style": "photorealistic, natural skin texture, sharp focus, cinematic lighting",
+    },
+    # Juggernaut XL v9 — best all-round SDXL photoreal, warm-natural skin (RunDiffusion licensed).
+    "Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors": {
+        "width": 1024, "height": 1536, "steps": 26, "cfg": 5.0,
+        "sampler": "euler", "scheduler": "karras",
+        "style": "photorealistic, detailed face, cinematic lighting, natural skin texture",
+    },
+    # DreamShaper XL alpha2 — SDXL stylized-anime-friendly, fast (alpha1 lineage).
+    "dreamshaperXL_alpha2Xl10.safetensors": {
+        "width": 1024, "height": 1536, "steps": 24, "cfg": 5.5,
         "sampler": "euler", "scheduler": "karras",
         "prompt_prefix": "score_9, score_8_up, score_7_up, ",
         "style": "masterpiece, best quality, highly detailed, anime style",
@@ -290,7 +327,7 @@ def generate_cover_comfyui(
     caption: str,
     song_name: str,
     lyrics: str = "",
-    model: str = "sd_xl_base_1.0.safetensors",
+    model: str = "RealVisXL_V5.0_fp16.safetensors",
 ) -> pathlib.Path | None:
     """Generate an album-cover via ComfyUI txt2img (selectable photoreal models).
 
