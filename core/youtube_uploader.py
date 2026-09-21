@@ -327,7 +327,7 @@ def generate_cover_comfyui(
     caption: str,
     song_name: str,
     lyrics: str = "",
-    model: str = "RealVisXL_V5.0_fp16.safetensors",
+    model: str = "Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors",
 ) -> pathlib.Path | None:
     """Generate an album-cover via ComfyUI txt2img (selectable photoreal models).
 

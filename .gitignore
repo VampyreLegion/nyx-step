@@ -10,3 +10,11 @@ history.jsonl
 nyx_step.db*
 jobs.db
 venv/
+
+# download temps (ComfyUI ckpt .tmp / re-download stubs) — never in the pack
+*.tmp
+*.safetensors.tmp
+
+# download temps (ComfyUI .safetensors.tmp / .tmp) — NEVER enter the pack
+*.safetensors.tmp
+*.safetensors.tmp.*

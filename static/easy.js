@@ -12,7 +12,8 @@ fetch("/ollama/models").then(r => r.json()).then(data => {
     opt.value = m; opt.textContent = m;
     sel.appendChild(opt);
   });
-  if (data.models.includes("gemma4:latest")) sel.value = "gemma4:latest";
+  for (const pick of ["qwen3.5:27b", "gemma4:26b", "gemma4:latest"])
+    if (data.models.includes(pick)) { sel.value = pick; break; }
 });
 
 fetch("/api/genres").then(r => r.json()).then(data => {
