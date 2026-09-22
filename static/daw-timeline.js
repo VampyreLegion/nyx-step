@@ -182,6 +182,7 @@ function renderTimeline() {
       const rect = lane.getBoundingClientRect();
       const start = Math.max(0, _dawSnapSec((e.clientX - rect.left) / _dawPxPerSec, e.ctrlKey));
       const clip = dawAddClip(track.id, src, start);
+      if (clip) dawSaveNow();
       if (clip) dawGetBuffer(clip.file).then(renderTimeline);
     });
     if (track.kind === "midi") {
