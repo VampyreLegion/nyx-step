@@ -1958,8 +1958,17 @@
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-size:48px;margin-bottom:12px">🎛</div>
         <h2 style="color:var(--accent);font-size:1.4rem;margin-bottom:4px">Legion's mental notes and Nyx's music studio changes</h2>
-        <div style="color:var(--muted);font-size:13px">Version 4.7.1 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; September 2026</div>
+        <div style="color:var(--muted);font-size:13px">Version 4.8.0 &nbsp;·&nbsp; by Legion &nbsp;·&nbsp; September 2026</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px">Powered by Nyx AGI goddess of Legion's Nocturnal Constellation</div>
+      </div>
+
+      <div class="about-section">
+        <h3>v4.8.0 — Vocalist Picker in Legion's BioInfusor</h3>
+        <ul>
+          <li><strong>🎤 Vocalist / Singer dropdown</strong> — Legion's BioInfusor now has a pull-down listing <strong>top-15 singers per style across 14 styles</strong> (210 total: EDM, Jazz, Metal, Pop, Rock, Hip-Hop, R&amp;B/Soul, Country, Blues, Classical, Reggae, Latin, Folk, Electronic). Pick <em>Becky Hill</em> for an EDM topline, <em>Amy Winehouse</em> for smoky jazz, <em>Corey Taylor</em> for a metal roar — one click writes the singer's name + vocal descriptors into the generation tags (<code>data/singers.json</code> via <code>/api/singers</code>).</li>
+          <li><strong>🕺 Combines with the existing vocal tools</strong> — the picker shares the <code>vocal_tags</code> pool with manual Vocal Artist lookup and the Vocals tab chips, and feeds the singer's style into AI lyric generation.</li>
+          <li><strong>🎵 Odd meters no longer break generation</strong> — Progressive Metal (7/8) and Progressive Rock (5/4) clapped out with <em>"timesignature not in [2,3,4,6]"</em> because ACE-Step only accepts 2/3/4/6. Meters are now clamped to the nearest supported value at the workflow boundary (7/8 → 6/8, 5/4 → 4/4), so every genre generates cleanly.</li>
+        </ul>
       </div>
 
       <div class="about-section">

@@ -1,6 +1,20 @@
 <html><head><style>body{font-family:Arial,sans-serif;font-size:13px;color:#e2e4ed;background:#0b0c10;padding:12px;}h2{color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;}h3{color:#00d4b6;} p,li{color:#e2e4ed;margin-bottom:6px;}table{border-collapse:collapse;width:100%;margin:8px 0;}th{background:#1a1c26;color:#00d4b6;padding:6px;border:1px solid #2d3041;}td{padding:6px;border:1px solid #2d3041;color:#e2e4ed;}code{background:#151720;color:#a6e3a1;padding:2px 4px;border-radius:3px;font-family:monospace;}pre{background:#151720;color:#cdd6f4;padding:10px;border-radius:6px;border:1px solid #2d3041;}</style></head><body>
 
 <div style="border:1px solid #2d3041;border-radius:8px;padding:14px;margin-bottom:18px;background:#101218">
+<h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:12px">✨ v4.8.0 — Vocalist Picker in Legion's BioInfusor</h2>
+<p><strong>Legion's BioInfusor</strong> now has a <strong>Vocalist / Singer</strong> dropdown: 210 singers in 14 styles, top-15 in each. Pick a singer and their name plus vocal descriptors land straight in your generation tags — one click gets you a "Becky Hill" EDM topline or a "Corey Taylor" metal roar without typing a word.</p>
+<ul>
+  <li><strong>🎤 Top-15 per style</strong> — EDM → Becky Hill, Zara Larsson, Haliene…; Jazz → Amy Winehouse, Ella Fitzgerald, Chet Baker…; Metal → Corey Taylor, Chester Bennington, Tarja Turunen…; plus Pop, Rock, Hip-Hop, R&amp;B/Soul, Country, Blues, Classical, Reggae, Latin, Folk and Electronic (<code>data/singers.json</code>, served at <code>/api/singers</code>).</li>
+  <li><strong>🏷 One pick = a full vocal tag set</strong> — selecting a singer writes <code>"&lt;name&gt; vocal"</code> together with their descriptors (e.g. <em>smoky, soulful, retro jazzy</em>) into <code>vocal_tags</code>, refreshes the Overview tags, and feeds the singer's style into AI lyric generation.</li>
+  <li><strong>🕺 Duets are easy</strong> — the dropdown shares the same <code>vocal_tags</code> pool as the manual Vocal Artist lookup and the Vocals tab chips, so you can combine a picked singer with other vocal descriptors.</li>
+  <li><strong>🎵 Auto-enhance still applies</strong> — the enhancement tags layer works on top of whatever vocalist you pick.</li>
+</ul>
+
+<h3 style="color:#00d4b6">🐛 Odd-time-signature fix</h3>
+<p>Picking <strong>Progressive Metal</strong> (<em>7/8</em>) or <strong>Progressive Rock</strong> (<em>5/4</em>) used to fail generation with <em>"prompt_outputs_failed_validation — timesignature '7' not in [2,3,4,6]"</em> because ACE-Step's text encoder only accepts 2/3/4/6. Nyx-Step now clamps any meter to the nearest supported one at the workflow boundary (7/8 → 6/8, 5/4 → 4/4), so every genre generates cleanly no matter where the value came from — genre pick, AI Quick Idea Starter, or manual entry.</p>
+</div>
+
+<div style="border:1px solid #2d3041;border-radius:8px;padding:14px;margin-bottom:18px;background:#101218">
 <h2 style="color:#7c65d9;border-left:4px solid #7c65d9;padding-left:8px;margin-bottom:12px">🐛 v4.7.1 — Album Cover Details Now Drive the AI Art</h2>
 <p>Every cover used to come out looking like the same stock subject — the generator was only fed the song's genre tags (<em>synthwave / rock / hip-hop…</em>), so ComfyUI kept reaching for a generic <em>car</em> no matter what your song was about. No more.</p>
 <ul>
