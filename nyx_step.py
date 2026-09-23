@@ -111,6 +111,11 @@ async def api_genres():
     import config
     return _json.loads(config.ACETALK_GENRES.read_text())
 
+@app.get("/api/singers")
+async def api_singers():
+    import config
+    return _json.loads(config.SINGERS_DATA.read_text())
+
 @app.get("/api/vocals")
 async def api_vocals():
     return {

@@ -40,6 +40,7 @@ RADIO_OUTPUT_DIR = pathlib.Path("/media/Nyx_storage/Radio")
 _NYX_STEP = pathlib.Path(__file__).resolve().parent
 
 PRESETS_DIR = _NYX_STEP / "presets"
+SINGERS_DATA = _NYX_STEP / "data" / "singers.json"
 
 DB_PATH = _NYX_STEP / "nyx_step.db"
 

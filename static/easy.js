@@ -56,6 +56,49 @@ document.getElementById("easy-style").addEventListener("change", e => {
   updatePayloadPreview();
 });
 
+// ── Vocalist / Singer picker (top-15 per style) ───────────────────────────────
+let _singerMap = {};
+
+fetch("/api/singers").then(r => r.json()).then(data => {
+  const singers = data.singers || [];
+  singers.forEach(s => { _singerMap[s.name] = s; });
+  const sel = document.getElementById("easy-singer");
+  if (!sel) return;
+  const byStyle = {};
+  singers.forEach(s => {
+    if (!byStyle[s.parent]) byStyle[s.parent] = [];
+    byStyle[s.parent].push(s);
+  });
+  Object.keys(byStyle).sort().forEach(style => {
+    const og = document.createElement("optgroup");
+    og.label = style;
+    byStyle[style].forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s.name; opt.textContent = s.name;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+});
+
+document.getElementById("easy-singer").addEventListener("change", e => {
+  const val = e.target.value;
+  const infoEl = document.getElementById("easy-singer-info");
+  if (!val) { infoEl.style.display = "none"; return; }
+  const s = _singerMap[val];
+  if (!s) return;
+  const tags = [s.name.toLowerCase() + " vocal", ...(s.tags || [])];
+  mwState.vocal_tags = tags;
+  document.getElementById("vocal-selected").value = tags.join(", ");
+  document.getElementById("overview-tags").value = buildCaption();
+  updateTagTokenCount();
+  updatePayloadPreview();
+  let html = `<strong style="color:var(--accent)">${esc(s.name)}</strong> <span style="color:var(--muted)">— ${esc(s.parent)}${s.range ? " · " + esc(s.range) : ""}</span>`;
+  html += `<br><span style="color:var(--muted)">Vocal tags:</span> <span style="color:var(--accent2)">${esc(tags.join(", "))}</span>`;
+  infoEl.innerHTML = html;
+  infoEl.style.display = "block";
+});
+
 let _easyAppliedSource = null;
 
 function _resetOtherApply(otherInfoId) {
@@ -247,7 +290,7 @@ document.getElementById("btn-easy-gen").addEventListener("click", () => {
 
   const instrSet = new Set([..._easyStyleInstruments, ...(_easyArtistState.instrument_tags || [])]);
   const instrumentsHint = [...instrSet].join(", ");
-  const vocalTags = [...(_easyVocalState.vocal_tags || []), ...(_easyArtistState.vocal_tags || [])];
+  const vocalTags = [...(_easyVocalState.vocal_tags || []), ...(_easyArtistState.vocal_tags || []), ...(mwState.vocal_tags || [])];
   const vocalStyle = [...new Set(vocalTags)].join(", ");
 
   // Apply auto-enhance tags to the overview caption and pass to Ollama
