@@ -93,7 +93,11 @@ def _apply_text_encoder(
             inputs["tags"] = f"{inputs['tags']}, {scale.lower()} scale"
     time_sig = state.get("time_sig", "4/4")
     if time_sig:
-        inputs["timesignature"] = time_sig.split("/")[0]
+        try:
+            numerator = int(str(time_sig).split("/")[0])
+        except ValueError:
+            numerator = 4
+        inputs["timesignature"] = str(min((2, 3, 4, 6), key=lambda v: abs(v - numerator)))
 
 
 def _apply_ksampler(
