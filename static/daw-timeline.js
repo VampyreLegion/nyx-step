@@ -306,6 +306,8 @@ function _dawWireFadeHandles(fiH, foH, el, clip) {
 
 document.addEventListener("keydown", e => {
   if (!document.getElementById("tab-daw")?.classList.contains("active")) return;
+  const tag = (e.target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "textarea" || tag === "select" || e.target.isContentEditable) return;
   if (!_dawSelectedClip) return;
   if (e.key === "Delete" || e.key === "Backspace") { dawDeleteClip(_dawSelectedClip.id); _dawSelectedClip = null; e.preventDefault(); }
   if (e.key.toLowerCase() === "d" && (e.ctrlKey || e.metaKey)) { dawDuplicateClip(_dawSelectedClip.id); e.preventDefault(); }
