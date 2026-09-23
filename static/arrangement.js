@@ -75,10 +75,10 @@ async function generateArrangement() {
 }
 
 // ── Arrange subtabs ─────────────────────────────────────────────────────────
-function showArrSubtab(id) {
+function showArrSubtab(id, btn) {
   document.querySelectorAll('.arr-subpanel').forEach(p => p.style.display = 'none');
   document.querySelectorAll('.arr-subtab').forEach(b => b.classList.remove('active'));
   const panel = document.getElementById(id);
   if (panel) panel.style.display = '';
-  event.target.classList.add('active');
+  if (btn) btn.classList.add('active');
 }

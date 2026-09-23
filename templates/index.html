@@ -2621,14 +2621,14 @@
     </div>
 
     <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
-      <button class="secondary small arr-subtab active" onclick="showArrSubtab('arr-sections')">Sections</button>
-      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-layers')">Layers</button>
-      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-callresp')">Call &amp; Response</button>
-      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-dynamics')">Dynamics</button>
-      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-transitions')">Transitions</button>
-      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-harmonies')">Harmonies</button>
-      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-batch')">Batch</button>
-      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-voice')">Voice Input</button>
+      <button class="secondary small arr-subtab active" onclick="showArrSubtab('arr-sections', this)">Sections</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-layers', this)">Layers</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-callresp', this)">Call &amp; Response</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-dynamics', this)">Dynamics</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-transitions', this)">Transitions</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-harmonies', this)">Harmonies</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-batch', this)">Batch</button>
+      <button class="secondary small arr-subtab" onclick="showArrSubtab('arr-voice', this)">Voice Input</button>
     </div>
 
     <!-- Sections -->
@@ -2639,7 +2639,7 @@
         <span id="arr-status" style="font-size:11px;color:var(--muted)"></span>
       </div>
       <div id="arrangement-timeline"></div>
-      <script>document.addEventListener('DOMContentLoaded', renderArrangement);</script>
+      <script>document.addEventListener('DOMContentLoaded', () => renderArrangement());</script>
     </div>
 
     <!-- Layers -->
