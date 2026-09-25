@@ -78,9 +78,10 @@
 <p><strong>Double-click a MIDI lane</strong> (or the <strong>🎹</strong> button in its header) to open the piano-roll — a scrollable pitch×time grid with a clickable piano keyboard down the left.</p>
 <ul>
   <li><strong>Draw</strong> — click an empty cell to add a note (snapped to the grid; row = pitch). It plays a preview blip.</li>
-  <li><strong>Move</strong> — drag a note (time snaps, pitch follows the row). <strong>Resize</strong> — drag its right edge.</li>
-  <li><strong>Delete</strong> — <kbd>Delete</kbd>/<kbd>Backspace</kbd> on the selected note, or double-click it.</li>
-  <li><strong>Velocity</strong> — the toolbar slider sets the selected note (0–127); note brightness reflects it.</li>
+  <li><strong>Select</strong> — click a note to select it. <kbd>Shift</kbd>-click (or <kbd>Ctrl</kbd>-click) toggles it in/out of the selection. <kbd>Shift</kbd>-drag an empty area to rubber-band select every note fully inside the box.</li>
+  <li><strong>Move</strong> — drag one of the selected notes; the whole selection moves together keeping its spacing (time snaps, pitch follows the rows). <strong>Resize</strong> — drag the right edge of a note.</li>
+  <li><strong>Delete</strong> — <kbd>Delete</kbd>/<kbd>Backspace</kbd> removes every selected note; double-click removes one. <kbd>Esc</kbd> clears the selection.</li>
+  <li><strong>Velocity</strong> — the toolbar slider sets the velocity of every selected note at once (0–127); note brightness reflects it.</li>
   <li><strong>Preview</strong> — click any key on the left to hear that pitch through the track's synth. Hold <kbd>Ctrl</kbd> while dragging to bypass snap.</li>
 </ul>
 
