@@ -205,6 +205,9 @@ function _dawScheduleAll() {
   _dawStartPlayhead = _dawPlayhead;
   _dawCtxAtStart = ctx.currentTime;
   _dawPerfAtStart = (typeof performance !== "undefined") ? performance.now() : 0;
+  _dawMidiCursor = _dawPlayhead;
+  _dawMidiSent.clear();
+  _dawMidiDone.clear();
   for (const track of dawState.tracks) {
     const chain = _dawTrackChains.get(track.id);
     if (!chain) continue;
@@ -247,16 +250,74 @@ function _dawScheduleAll() {
     }
   }
   _dawApplyMixState();
+  _dawScheduleMidiLookahead();
 }
 
 function _dawStopSources() {
   for (const s of _dawActiveSources) { try { s.stop(); } catch (_) {} }
   _dawActiveSources = [];
-  if (typeof dawMidiAllNotesOff === "function") dawMidiAllNotesOff();
+  _dawMidiSilenceAll();
 }
 
 let _dawMidiActiveOuts = new Set();
 let _dawCtxAtStart = 0, _dawPerfAtStart = 0;
+// ── DAW MIDI out: short-lookahead dispatch.
+// Scheduling the whole arrangement as far-future timestamped messages makes the
+// hardware keep playing queued note-ons after Stop (and survives hardware reset
+// since it's the browser queue). So MIDI notes are dispatched incrementally only
+// a few ms before they're due; Stop can never unleash a long ghost tail.
+const _DAW_MIDI_LOOKAHEAD = 0.12;          // seconds of note-ons pre-queued to hardware
+let _dawMidiCursor = 0;                    // timeline seconds already dispatched to MIDI outs
+let _dawMidiSent = new Map();              // MIDIOutput -> Map(pitch -> timeline off time)
+let _dawMidiDone = new Map();              // MIDIOutput -> Set(trackId:start:pitch) already dispatched
+
+function _dawScheduleMidiLookahead() {
+  if (!_dawIsPlaying) return;
+  const target = _dawPlayhead + _DAW_MIDI_LOOKAHEAD;
+  for (const track of dawState.tracks) {
+    if (track.kind !== "midi" || !track.midi_out) continue;
+    const out = (typeof dawMidiGetOutput === "function") ? dawMidiGetOutput(track.midi_out) : null;
+    if (!out) continue;
+    let done = _dawMidiDone.get(out);
+    for (const n of (track.notes || [])) {
+      const nEnd = n.start + n.dur;
+      if (nEnd <= _dawMidiCursor) continue;
+      if (n.start >= target) continue;
+      const p = n.pitch & 127;
+      const key = track.id + ":" + n.start.toFixed(4) + ":" + p;
+      if (done && done.has(key)) continue;
+      const startT = Math.max(n.start, _dawMidiCursor);
+      if (startT >= target) continue;
+      const when = _dawStartCtxTime + (startT - _dawStartPlayhead);
+      const dur = Math.max(0.02, nEnd - startT);
+      try {
+        const onMs = Math.max(0, _dawPerfAtStart + (when - _dawCtxAtStart) * 1000);
+        const offMs = onMs + dur * 1000;
+        out.send([0x90, p, n.vel & 127], onMs);
+        out.send([0x80, p, 0], offMs);
+        if (!done) { done = new Set(); _dawMidiDone.set(out, done); }
+        done.add(key);
+        let pending = _dawMidiSent.get(out);
+        if (!pending) { pending = new Map(); _dawMidiSent.set(out, pending); }
+        if (!pending.has(p) || pending.get(p) < offMs) pending.set(p, offMs);
+        _dawMidiActiveOuts.add(out);
+      } catch (_) {}
+    }
+  }
+  _dawMidiCursor = target;
+}
+
+function _dawMidiSilenceAll() {
+  try {
+    for (const [out, pending] of _dawMidiSent) {
+      for (const p of pending.keys()) out.send([0x80, p, 0]);
+    }
+  } catch (_) {}
+  _dawMidiSent.clear();
+  _dawMidiDone.clear();
+  if (typeof dawMidiAllNotesOff === "function") dawMidiAllNotesOff();
+}
+
 function _dawApplyAdsr(gainParam, when, dur, peak, env) {
   gainParam.setValueAtTime(0.0001, when);
   if (env === "pad") {
@@ -291,33 +352,23 @@ function dawPreviewNote(trackId, pitch, vel) {
 }
 
 function _dawScheduleMidiTrack(track, chain, ctx) {
-  const out = (track.midi_out && typeof dawMidiGetOutput === "function") ? dawMidiGetOutput(track.midi_out) : null;
   const synth = track.synth || { wave: "sawtooth", env: "pluck" };
+  if (track.midi_out) return; // hardware-bound: dispatched incrementally by _dawScheduleMidiLookahead
   for (const n of (track.notes || [])) {
     const nEnd = n.start + n.dur;
     if (nEnd <= _dawPlayhead) continue;
     const startT = Math.max(n.start, _dawPlayhead);
     const when = _dawStartCtxTime + (startT - _dawPlayhead);
     const dur = Math.max(0.02, nEnd - startT);
-    if (out) {
-      const onMs = _dawPerfAtStart + (when - _dawCtxAtStart) * 1000;
-      const offMs = onMs + dur * 1000;
-      try {
-        out.send([0x90, n.pitch & 127, n.vel & 127], onMs);
-        out.send([0x80, n.pitch & 127, 0], offMs);
-        _dawMidiActiveOuts.add(out);
-      } catch (_) {}
-    } else {
-      const osc = ctx.createOscillator(); osc.type = synth.wave || "sawtooth";
-      osc.frequency.value = (typeof _dawNoteFreq === "function") ? _dawNoteFreq(n.pitch) : 440;
-      const g = ctx.createGain();
-      const peak = Math.max(0.001, (n.vel / 127) * 0.3);
-      _dawApplyAdsr(g.gain, when, dur, peak, synth.env || "pluck");
-      osc.connect(g); g.connect(chain.gain);
-      const rel = (synth.env === "pad") ? 0.4 : 0.08;
-      osc.start(when); osc.stop(when + dur + rel);
-      _dawActiveSources.push(osc);
-    }
+    const osc = ctx.createOscillator(); osc.type = synth.wave || "sawtooth";
+    osc.frequency.value = (typeof _dawNoteFreq === "function") ? _dawNoteFreq(n.pitch) : 440;
+    const g = ctx.createGain();
+    const peak = Math.max(0.001, (n.vel / 127) * 0.3);
+    _dawApplyAdsr(g.gain, when, dur, peak, synth.env || "pluck");
+    osc.connect(g); g.connect(chain.gain);
+    const rel = (synth.env === "pad") ? 0.4 : 0.08;
+    osc.start(when); osc.stop(when + dur + rel);
+    _dawActiveSources.push(osc);
   }
 }
 
@@ -326,9 +377,10 @@ function _dawTick() {
   _dawPlayhead = _dawStartPlayhead + (_dawCtx.currentTime - _dawStartCtxTime);
   const len = dawArrangementLength();
   if (len > 0 && _dawPlayhead >= len) {
-    if (_dawLoop) { dawSeek(0); }
+    if (_dawLoop) { dawSeek(0); _dawRaf = requestAnimationFrame(_dawTick); return; }
     else { dawStop(); if (typeof dawOnPlayhead === "function") dawOnPlayhead(0); return; }
   }
+  _dawScheduleMidiLookahead();
   if (typeof dawOnPlayhead === "function") dawOnPlayhead(_dawPlayhead);
   _dawRaf = requestAnimationFrame(_dawTick);
 }
